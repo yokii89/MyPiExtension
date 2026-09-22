@@ -1,0 +1,2884 @@
+✔ Activity registry orders stable ids and rejects duplicates (78.0011ms)
+✔ Activity dispatcher is non-blocking and isolates handler failures (24.8335ms)
+✔ Activity dispatcher coalesces adjacent deltas but preserves boundaries (2.3506ms)
+✔ Activity normalizer classifies source and assistant segment placement (14.8169ms)
+✔ Activity normalizer exposes completed public blocks without reasoning or tools (1.8107ms)
+✔ Activity normalizer distinguishes local, autonomous, and unknown activities (25.2487ms)
+✔ Activity normalizer abandons standalone compaction before the next run (1.7744ms)
+✔ Activity normalizer ignores late completion after compaction abandonment (2.2997ms)
+✔ Activity bridge creates a fresh dispatcher after session replacement (21.42ms)
+✔ In-flight Activity handlers cannot deliver through a replacement session (8.1949ms)
+✔ Activity context delegates to delivery with source-specific default scope (14.5047ms)
+✔ Delayed Telegram activity keeps the originating immutable target (40.4097ms)
+✔ Activity shutdown fences queued handlers and clears normalization state (0.8031ms)
+✔ Assistant output projection admits public local blocks once and in order (1.0692ms)
+✔ Assistant output projection preserves follower order and admission authority (0.764ms)
+✔ Assistant output mutation fence rejects replaced authority (0.551ms)
+✔ Assistant output Rich and HTML senders fence after async transformation (37.4699ms)
+✔ Assistant output projection drops queued work after generation stop (0.5003ms)
+✔ callback_data stays under Telegram 64-byte limit (2.2837ms)
+✔ parseCallbackData round-trips session/action/payload (9.6054ms)
+✔ parseCallbackData ignores foreign namespaces (0.5156ms)
+✔ buildView renders question header and option buttons (1.4525ms)
+✔ buildView multi-select marks checked options and confirm action (0.9461ms)
+✔ host id is stable for registry identity (0.341ms)
+✔ Assistant output binding composes admission, delivery, and observation (4.9248ms)
+✔ Command binding does not expose a thread rename tool (1.5446ms)
+✔ Command binding rejects a missing profile without stopping active polling (0.9486ms)
+✔ Named profile connect completes old teardown before activating new identity (0.8232ms)
+✔ Named profile setup cancellation preserves the active runtime (1.8686ms)
+✔ Lifecycle binding delegates shutdown to composed session runtime (2.2413ms)
+✔ Lifecycle binding routes native typing, previews, and normalized activity (2.5205ms)
+✔ Bus-aware API runtime uses direct transport while this instance owns Telegram (6.4322ms)
+✔ Bus-aware polling methods fail closed without direct ownership (1.1934ms)
+✔ Bus-aware API runtime routes follower outbound calls through the leader (1.676ms)
+✔ Bus-aware API runtime applies follower default thread to scoped actions (0.5923ms)
+✔ Bus-aware API runtime routes follower multipart uploads through the leader (0.5276ms)
+✔ Bus follower route handlers adapt forwarded envelopes (3.4666ms)
+✔ Bus follower profile key resolver follows the active profile (0.6383ms)
+✔ Bus follower promotion handler transfers binding only after leadership acquisition (142.1639ms)
+✔ Bus follower promotion leaves binding unchanged when election is lost (9.6492ms)
+✖ Bus follower receiver handles leader-forwarded updates and target replacement (18.8264ms)
+✖ Bus follower receiver rejects delayed work from a replaced registration generation (12.9982ms)
+✔ Bus follower heartbeat recovery passes current binding into promotion (2.9022ms)
+✔ Bus follower election defers a higher slot to the lowest live candidate (0.6351ms)
+✔ Bus follower heartbeat recovery never promotes over a live leader lease (1.1664ms)
+✔ Bus follower heartbeat recovery retries until a live lease becomes stale (2.4071ms)
+✔ Bus follower election loser schedules re-registration with the winner (0.6919ms)
+✔ Bus follower scheduled recovery transfers across session context replacement (0.7491ms)
+✔ Bus follower heartbeat recovery swallows stale-context status updates (0.9075ms)
+✔ Bus follower target replacement handler persists restored target (0.9077ms)
+✔ Bus follower target replacement resolves named-profile fallback at call time (0.4308ms)
+✖ Bus follower assembly wires receiver, recovery, and registration (5.7775ms)
+✖ Bus follower registration state tracks successful registration and stop (19.4175ms)
+✖ Bus follower re-registration carries its last known target (13.5427ms)
+✖ Bus follower registration runtime retries while leader endpoint is starting (18.8297ms)
+✖ Bus follower registration runtime waits for slow target provisioning
+✖ Bus follower registration runtime registers and explicitly disconnects
+✖ Bus follower registration runtime accepts explicit manual profile keys
+✖ Bus follower registration runtime reports heartbeat failure with active context
+✖ Bus follower registration runtime reports rejected heartbeat with active context
+✖ Bus follower registration runtime heartbeats until stopped
+✖ Bus follower registration runtime surfaces leader rejection reasons
+✖ Bus follower registration runtime derives leader socket when lock omits it
+✖ Bus follower API caller sends method calls and returns leader results
+✖ Bus follower API caller preserves structured commit-unknown errors
+✖ Bus follower API caller classifies non-idempotent acknowledgement loss as commit-unknown
+✖ Bus follower session replacement preserves a same-process handoff
+✖ Bus session replacement preserves the promoted leader binding
+✖ Bus follower session refresh re-registers with the handed-off target
+✖ Bus leader preserves a binding through follower reload handoff (102.7697ms)
+✔ Bus leader API proxy forwards supported methods and recovers stale targets (2.8259ms)
+✔ Bus leader follower disconnect preserves binding when deletion is unconfirmed (4.4212ms)
+✖ Bus leader follower target provisioner creates thread and announces connection (74.8435ms)
+✖ Bus leader follower target provisioner transfers a live session-reload target (85.4154ms)
+✔ Bus leader replaces a cross-session follower target proven stale by the visibility probe (74.4513ms)
+✔ Bus leader rejects cross-session registration when visibility remains ambiguous (14.2553ms)
+✔ Reloaded bus leader reuses a surviving follower's persisted target (34.0049ms)
+✔ Bus leader recovers a live follower target missing from persisted state (39.4759ms)
+✔ Bus leader reprobes an unresolved absent carried target on targetless retry (33.8232ms)
+✔ Bus leader keeps an absent carried target provisional until visibility succeeds (33.9663ms)
+✔ Bus leader replaces a carried target proven deleted after disconnect acknowledgement loss (110.8195ms)
+✔ Bus leader follower target provisioner restores an existing manual follower thread (49.303ms)
+✔ Bus leader follower target provisioner coalesces concurrent follower registrations (117.4071ms)
+✖ Bus leader target provisioner creates thread and announces connection (141.5609ms)
+✖ Bus leader builds connected lifecycle announcements with thread name before slot (0.7617ms)
+✔ Bus leader activation scheduler hot-switches an owning classic poller (14.7018ms)
+✔ Bus leader envelope handler registers and heartbeats followers (2.308ms)
+✔ Bus leader rejects generationless registration and disconnect envelopes (0.3914ms)
+✔ Bus leader serializes disconnect cleanup before cross-session registration (9.3354ms)
+✔ Bus leader stamps follower liveness after slow target provisioning (0.4708ms)
+✔ Bus leader envelope handler rejects unknown follower heartbeats (0.1582ms)
+✔ Bus leader provisions targets before registering followers (0.2704ms)
+✔ Bus leader does not acknowledge registration after ambiguous visibility failure (0.2522ms)
+✔ Bus leader rejects follower registration after provisioning loses epoch (0.2317ms)
+✔ Bus leader records ownership for follower-sent messages (0.6888ms)
+✔ Bus leader handles follower API call envelopes for registered followers (0.2909ms)
+✔ Bus leader rejects delayed API calls from a replaced follower generation (1.4761ms)
+✔ Bus leader encodes commit-unknown API failures structurally (1.0709ms)
+✔ Bus leader rejects unauthenticated envelopes when a secret is configured (0.4289ms)
+✔ Bus leader authorizes scoped follower API calls (0.4036ms)
+✖ Bus leader assembly wires provisioners, reconciliation, API, and runtime (8.8051ms)
+✖ Bus leader runtime provisions leader target before polling (9.7484ms)
+✖ Bus leader runtime starts the local server around polling (13.6492ms)
+✖ Bus leader runtime prunes stale followers while polling (21.2475ms)
+✖ Bus leader runtime stops stale follower pruning and clears registry on stop (6.3808ms)
+✖ Bus leader runtime stops the local server if polling startup fails (17.4349ms)
+✔ Bus process runtime resolves live profile endpoints (3.783ms)
+✔ Bus process runtime falls back to pid without a parent pid (0.3206ms)
+✔ Bus transport boundary derives socket and pipe endpoints (0.4079ms)
+✔ Bus transport retry policy is operation-aware (1.2622ms)
+✔ Bus transport error classifier marks transient IPC failures retryable (1.466ms)
+✖ Bus socket path is scoped under the agent temp directory (1.8982ms)
+✔ Bus socket paths isolate named profiles and preserve default Unix paths (0.2916ms)
+✔ Bus socket path uses profile-scoped Windows named pipes on win32 (0.5197ms)
+✔ Bus request id factory owns one monotonic instance sequence (0.5338ms)
+✔ Bus contract encodes and parses follower registration envelopes (0.9654ms)
+✔ Bus contract encodes and parses explicit follower disconnect envelopes (0.3157ms)
+✔ Bus contract encodes and parses follower target replacement envelopes (0.3339ms)
+✔ Bus contract encodes and parses follower API call envelopes (0.3531ms)
+✔ Bus contract encodes and parses forwarded update envelopes (0.4381ms)
+✔ Bus contract rejects malformed envelopes (0.196ms)
+✔ Bus follower registry registers, heartbeats, and prunes live instances (0.6758ms)
+✔ Bus follower API authorizer delegates message ownership with follower identity (0.5153ms)
+✔ Bus follower API allowlist permits scoped own-thread Rich media uploads (0.3031ms)
+✔ Bus follower API allowlist permits chat message edit/delete operations (0.3354ms)
+✔ Bus follower API allowlist permits bot command registration (0.326ms)
+✔ Bus follower API allowlist permits own-chat typing and safe identity reads (0.5731ms)
+✔ Bus follower API allowlist permits marked aggregate delivery only in its own chat (0.3227ms)
+✔ Bus follower API allowlist permits scoped own-topic rename only (0.1547ms)
+✔ Bus follower API allowlist permits scoped own-topic cleanup only (0.1851ms)
+✖ Bus transport probe reports reachable and unreachable endpoints (160.9002ms)
+✖ Bus local server resolves the active profile endpoint on each start (85.8517ms)
+✖ Old bus server stop cannot invalidate a replacement endpoint generation (6.7217ms)
+✖ Stale bus server cannot publish over a replacement endpoint generation (7.6716ms)
+✖ Bus local server rebinds an externally unlinked Unix endpoint (8.9862ms)
+✔ Bus local client transport events include request diagnostics (7.4414ms)
+✖ Bus local client classifies response timeouts as transport timeouts (18.5345ms)
+✖ Bus local server memoizes completed and in-flight request results (12.6215ms)
+✖ Bus retry returns the memoized result after the first acknowledgement is lost (11.843ms)
+✖ Bus local server rejects request-id reuse with a changed payload (5.8131ms)
+✖ Bus local IPC server reports handler failures as protocol acks (3.8651ms)
+✖ Bus local IPC server handles request/response envelopes over a private Unix socket (3.4325ms)
+✔ Bus local IPC server roundtrips over a Windows named pipe (9.4454ms)
+✖ Bus foreign-owned update forwarder sends routed update envelopes (5.3587ms)
+✖ Bus foreign-owned update forwarder supports tolerant timeouts (4.66ms)
+✔ Bus follower registry resolves followers by target (0.3115ms)
+✔ Bus follower registry replaces stale registrations by profile and target (0.2864ms)
+✔ Bus follower target ownership carries the live registration generation (0.2512ms)
+✔ Bus follower target ownership never treats persisted bindings as live authority (0.2158ms)
+✔ Bus follower registry returns defensive copies (0.4198ms)
+✔ Command templates split shell-like words without invoking a shell (23.3419ms)
+✖ Command templates accept shorthand string configs (5.0106ms)
+✔ Command template arrays inherit only top-level args and defaults (1.4749ms)
+✔ Template composition expansion preserves retry and failure scope on step objects (1.2198ms)
+✔ Command template repeat expands numbered defaults (2.8792ms)
+✔ Command templates detect high-risk trusted executable shapes (4.207ms)
+✔ Command templates resolve typed inline placeholders (0.3218ms)
+✖ Command templates resolve defaults and inline placeholder defaults (1.0591ms)
+✔ Command templates resolve modern placeholder operators and filter empty args (0.7607ms)
+✔ Command templates resolve inherited default references and when guards (0.9074ms)
+✔ Command template arrays preserve modern control fields (0.2854ms)
+✔ Command templates resolve array-index placeholders and recursive defaults (5.2807ms)
+✔ Command template execution writes stdin without invoking a shell (606.7214ms)
+✔ Command template timeout escalates when SIGTERM is ignored (687.3785ms)
+✔ Command template retry succeeds on second attempt (2601.183ms)
+✔ Command template retry exhausts attempts and surfaces last failure (1768.858ms)
+✔ Command template retry default is 1 (no retry) (529.0688ms)
+✔ Command templates leave timeout disabled by default (838.2374ms)
+✔ Command templates report missing required placeholders (1.0409ms)
+✖ Command helpers expose Telegram bot command definitions (4.0213ms)
+✔ Command helpers register Telegram bot commands through deps (0.7395ms)
+✔ Command helpers keep extension Telegram bot commands hidden by default (0.487ms)
+✔ Command helpers register extension Telegram bot commands when visible (0.4876ms)
+✔ Command helpers reject visible extension commands without emoji (0.561ms)
+✔ Command helpers reject invalid and built-in extension command names (0.325ms)
+✔ Command helpers register disposable extension commands (0.2554ms)
+✔ Command helpers register pi setup and status commands (0.8889ms)
+✔ Bare and explicit default setup/connect commands select the same profile (0.9312ms)
+✔ Command helpers register pi connect and disconnect commands (0.8143ms)
+✔ Command helpers confirm destructive Threaded Mode disconnects (0.5884ms)
+✔ Command helpers keep failed disconnects actionable and retryable (0.4851ms)
+✔ Command helpers move pi polling ownership after confirmation (0.4068ms)
+✔ Command helpers parse slash commands with args (0.2108ms)
+✔ Command helpers ignore non-command input and empty names (0.11ms)
+✔ Command helpers resolve message reply targets (0.1744ms)
+✔ Command control enqueue adapter builds and enqueues control items (1.0282ms)
+✔ Command control queue runtime builds, enqueues, and dispatches control items (0.2817ms)
+✔ Command target queue runtime binds control queue and chat targets (0.345ms)
+✔ Command target runtime binds chat reply targets to command ports (0.4317ms)
+✔ Command helpers build command actions (0.2129ms)
+✔ Command execution mode contract keeps Telegram controls immediate (0.3408ms)
+✔ Command helpers run stop command side effects (0.4138ms)
+✔ Command helpers scope abort history preservation to Telegram-owned turns (0.2773ms)
+✔ Command helpers guard and complete compact command flow (0.5013ms)
+✔ Command helpers open compact confirmation and handle callbacks (1.1575ms)
+✔ Command helpers defer compact-complete queue dispatch (0.335ms)
+✔ Command helpers report compact errors (0.5581ms)
+✔ Command helpers execute status and model controls immediately (0.2584ms)
+✔ Command menu controls swallow only stale context errors (0.3129ms)
+✔ Command helpers build the unified app menu from commands and status (0.4771ms)
+✔ Command handler target runtime binds command targets into command handling (0.8362ms)
+✔ Command runtime routes commands through runtime ports (3.0336ms)
+✔ Command runtime does not first-pair from group start (0.4641ms)
+✔ Command or prompt runtime routes commands before enqueue fallback (0.765ms)
+✔ Command or prompt runtime can ignore non-prompt message batches (0.6567ms)
+✔ Command helpers execute command actions through provided handlers (0.5403ms)
+✔ Telegram profile names allow only lowercase letters and digits (4.5251ms)
+✔ Telegram config helper returns empty config when file is absent (34.1653ms)
+✔ Telegram extension gate defaults to enabled when config file is absent (0.4929ms)
+✔ Telegram extension gate only disables on explicit enabled false (33.9466ms)
+✔ Telegram extension gate treats corrupt config as enabled (25.9326ms)
+✔ Telegram config reads valid atomic snapshots without acquiring the transaction guard (23.8155ms)
+✔ Telegram proactive target getter prefers active then assigned targets (0.7276ms)
+✖ Telegram config helpers persist and reload config (10.0475ms)
+✔ Telegram default profile normalization moves legacy root identity (2.4715ms)
+✔ Telegram default profile normalization rejects conflicting identity (1.3927ms)
+✔ Telegram default profile normalization collapses identical duplicates (0.529ms)
+✔ Telegram default profile normalization merges non-conflicting fields (0.52ms)
+✔ Telegram default profile normalization accepts root session fields without a duplicate token (0.3429ms)
+✔ Telegram config load rejects conflicting default identity without mutation (76.7039ms)
+✔ Telegram config load atomically normalizes the default profile (56.3437ms)
+✔ Telegram config store persists active named profile session fields without overwriting default (24.8041ms)
+✔ Telegram config transactions merge concurrent profile offsets and global fields (1134.8796ms)
+✔ Telegram config keeps same-profile polling offsets monotonic (87.0388ms)
+✔ Telegram config store rejects missing named profile activation (0.6187ms)
+✔ Telegram config load recovers invalid JSON and records a diagnostic (92.3485ms)
+✔ Telegram voice reply mode helpers normalize legacy manual to hidden (0.4485ms)
+✔ Telegram voice reply mode setter persists telegram.json (62.1183ms)
+✔ Telegram proactive push defaults on and reads only assistant.proactivePush (0.7747ms)
+✔ Telegram settings setters reload before scoped writes to preserve shared config changes (294.6643ms)
+✔ Polling offset persistence cannot erase settings written after poll start (149.9843ms)
+✔ Telegram draft preview config reads and migrates legacy rich flag (130.1182ms)
+✔ Telegram settings menu callbacks persist voice and time settings to telegram.json (472.2868ms)
+✔ Telegram time injection mode setter persists telegram.json (110.4583ms)
+✔ Telegram config runtime lets extensions update live voice config (0.4391ms)
+✔ Telegram config store owns load, mutation, and persistence (43.507ms)
+✔ Telegram config helpers classify authorization state for pair, allow, and deny (0.2862ms)
+✔ Telegram config helpers pair only when no user is configured (0.4077ms)
+✔ Telegram config pairing swallows only stale context status errors (0.545ms)
+✔ Telegram config pairing runtime binds config and status ports (0.3407ms)
+✔ Bot token input prefers stored config over env vars (0.1813ms)
+✔ Bot token input prefers the first configured Telegram env var when no config exists (0.2826ms)
+✔ Bot token prompt uses the editor when a real prefill exists (0.1846ms)
+✔ Bot token prompt shows stored config before env values (0.1577ms)
+✔ Bot token input skips blank env vars and falls back to config (0.1242ms)
+✔ Bot token input falls back to placeholder when no value exists (0.106ms)
+✔ Bot token prompt uses placeholder input when no prefill exists (0.1162ms)
+✔ Setup runtime prompts, validates token, persists config, and starts polling (0.7035ms)
+✔ Setup runtime reports invalid tokens without persisting (0.7444ms)
+✔ Setup prompt runtime guards concurrent setup and stores successful config (0.9767ms)
+✔ Delivery API fails softly while no runtime is bound (3.9027ms)
+✔ Delivery API delegates operations to the current runtime (1.0047ms)
+✔ Delivery API rejects empty views before transport (0.4101ms)
+✔ Delivery API fences handles from older runtime generations (0.4333ms)
+✔ A stale runtime disposer cannot clear its replacement (0.8449ms)
+✔ Delivery lifecycle mints fresh generations and invalidates on shutdown (1.0815ms)
+✔ Delivery shutdown fences an in-flight chunk sequence and queued work (2.0349ms)
+✔ Delivery API converts unexpected runtime errors into transport failures (0.5686ms)
+✔ Delivery target policy runtime projects live authority and excludes Guest turns (0.6975ms)
+✔ Delivery target policy resolves classic, leader, and follower instance surfaces (0.8169ms)
+✔ Delivery target policy restricts follower and leader explicit targets (0.4528ms)
+✔ Bridge delivery runtime owns rendering and bus-aware transport adaptation (1.1402ms)
+✔ Bridge delivery runtime rejects work after transport generation replacement (0.7709ms)
+✔ Concrete delivery runtime resolves scopes and rejects unauthorized targets (1.3358ms)
+✔ Concrete delivery runtime keeps active-turn, instance, and aggregate scopes distinct (2.2843ms)
+✔ Concrete delivery runtime anchors first chunk and keyboard on last chunk (0.5112ms)
+✔ Concrete delivery runtime keeps handles opaque and deeply immutable (2.081ms)
+✔ Concrete delivery runtime exposes non-idempotent commit-unknown outcomes (0.9007ms)
+✔ Concrete delivery runtime returns a recoverable handle after partial send failure (0.8724ms)
+✔ Concrete delivery runtime returns all visible ids after edit growth failure (8.1642ms)
+✔ Concrete delivery runtime removes already-deleted ids from partial edit recovery (0.6197ms)
+✔ Concrete delivery runtime reconciles logical view growth and shrink (0.6191ms)
+✔ Concrete delivery runtime serializes operations per target (72.0571ms)
+✔ Projection renders all four cards and stays well inside maxNodes=512 (3.6509ms)
+✔ Tree depth stays under maxDepth=32 (0.4044ms)
+✔ Connection card surfaces identity, polling, and bus role (0.6427ms)
+✔ Connection card degrades to placeholders when unconfigured (0.3743ms)
+✔ Queue card groups items by lane and respects the control-lane order (0.7174ms)
+✔ Queue card shows active turn, not idle, while dispatching (0.2958ms)
+✔ Queue card truncates long queues and reports the overflow count (0.6201ms)
+✔ Threads card renders records and an empty state (0.5601ms)
+✔ Events card is bounded to 20 entries, newest first (2.5618ms)
+✔ Events card shows an empty state without events (14.3651ms)
+✔ Runtime event line is stamped and truncated (0.3223ms)
+✔ Actions enable connect/disconnect according to live state (0.3509ms)
+✔ Connect is disabled without a bot token even when stopped (0.909ms)
+✔ Projection never leaks a bot token (0.2567ms)
+✔ Default frame interval matches the ≤4 updates/second budget (2.1938ms)
+✔ A burst inside one window collapses into a single frame (31.0251ms)
+✔ Backpressure: a change during an in-flight send is not dropped (66.5498ms)
+✔ flush() delivers immediately without waiting for the window (0.6857ms)
+✔ flush() is a no-op when nothing is dirty (0.4304ms)
+✔ flush() during an in-flight send settles once the wire clears (no deadlock) (26.0558ms)
+✔ A synchronously throwing send does not escape as an unhandled error (60.0467ms)
+✔ An async rejecting send recovers on the next frame (78.416ms)
+✔ stop() clears timers and ignores later marks (135.4249ms)
+✔ stop() releases a flush() blocked on an in-flight send (48.6332ms)
+✔ Steady state holds at ≤4 frames/second with the default window (1211.3821ms)
+✔ Inbound handlers match MIME wildcards and Telegram file types (6.0061ms)
+✔ Inbound template handlers substitute paths without shell interpolation (5.0334ms)
+✔ Inbound template handlers apply declared defaults (1.2299ms)
+✔ Inbound text handlers transform raw prompt text through stdin (1.033ms)
+✔ Inbound text handlers can match raw text by MIME only (1.0565ms)
+✔ Inbound text handlers keep original text on empty or failed output (1.3729ms)
+✔ Built-in text attachment handling injects text files into outputs (26.5198ms)
+✔ Inbound handler output is bounded before entering prompts (1.6473ms)
+✔ Inbound handler failure output is bounded before runtime events (1.9936ms)
+✔ Built-in text attachment handling accepts text wildcards (10.3591ms)
+✖ Inbound template invocation keeps args as name declarations only (2.4417ms)
+✖ Inbound template invocation supports inline placeholder defaults (3.6452ms)
+✖ Inbound template handlers resolve relative commands (0.748ms)
+✖ Inbound template handlers append the path when no placeholder is present (0.7979ms)
+✔ Inbound template composition handlers execute steps in order (1.9298ms)
+✔ Inbound template composition wraps timeout and pipes stdout to stdin (0.8629ms)
+✔ Inbound handlers fall back to the next matching handler on failure (0.917ms)
+✔ Inbound handler failures fall back to normal inbound prompts (0.9761ms)
+✔ Inbound handler composition: non-critical failure continues to next step (0.6338ms)
+✔ Programmatic inbound text handlers transform text after configured text handlers (1.2842ms)
+✔ Programmatic inbound media handlers run before voice transcription providers (0.8244ms)
+✔ Inbound voice transcription providers handle voice files when no handler matches (0.7096ms)
+✔ Inbound handlers take precedence over voice transcription providers (0.5786ms)
+✔ Inbound handler composition: critical failure aborts composition (1.3495ms)
+✔ Inbound handler composition: non-critical failure continues, critical stops (4.534ms)
+✔ Extension entrypoint exposes only the default composition root (1.7475ms)
+✔ Extension entrypoint wires domain bindings into the pi API (26.2334ms)
+✔ Extension before-agent-start hook skips Telegram guidance when unconfigured (10.9374ms)
+✖ Public activity delivery reaches the classic instance without blocking agent start (5313.8408ms)
+✔ Follower aggregate delivery crosses the authorized leader transport (2.8881ms)
+✖ Extension runtime polls, pairs, and dispatches an inbound Telegram turn into pi (5624.7902ms)
+✔ Extension runtime coalesces a cross-batch forward comment into one Pi turn (241.5076ms)
+(node:29440) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Extension runtime finalizes queued turn after polling ownership moves away (1232.0079ms)
+✔ Extension runtime keeps local queue progress but fences delivery after ownership moves away (1132.1772ms)
+✔ Extension runtime keeps proactive local result disabled even with Telegram lock ownership (102.7185ms)
+✔ Extension runtime resolves stale same-cwd lock before proactive local result (147.1855ms)
+✔ Extension runtime sends proactive checkpoints and final once in source order (148.1376ms)
+✔ Extension runtime drops queued proactive blocks after session replacement (174.6996ms)
+✔ Extension runtime skips proactive local result without Telegram lock ownership (36.5282ms)
+✖ Extension runtime clears queued follow-ups after a Telegram stop (2130.4182ms)
+✔ Extension runtime handles immediate status before queued prompt after agent end (2198.3562ms)
+✖ Extension runtime opens immediate model menu before queued prompt after agent end (2172.9717ms)
+✖ Extension runtime keeps queued turns blocked until compaction completes (2157.1719ms)
+✔ Extension runtime blocks queued dispatch during observed auto-compaction (2140.7406ms)
+✔ Extension runtime coalesces media-group updates into one delayed dispatch (1353.2739ms)
+✔ Extension runtime coalesces likely split long text updates into one dispatch (1162.0124ms)
+✔ Extension runtime clears pending split-text dispatch on shutdown (1056.2725ms)
+✔ Extension runtime clears pending media-group dispatch on shutdown (1362.9446ms)
+✔ Extension runtime applies reaction priority and removal before the next dispatch (2187.5163ms)
+✖ Extension runtime applies idle model picks immediately and refreshes status (2100.7466ms)
+✖ Extension runtime switches model in flight and dispatches a continuation turn after abort
+✖ Extension runtime preserves long-session queue through abort, next, and model switch
+✖ Extension runtime delays model-switch abort until the active tool finishes
+✔ Import parser includes side-effect imports for cycle checks (2.4921ms)
+✔ Source-only invariant scans ignore strings and comments (0.4969ms)
+✖ Domain test filenames mirror their owning lib domain (2.2986ms)
+✔ Project source imports stay acyclic (39.6764ms)
+✔ Project no longer has shared constants or transport-type domains (0.4343ms)
+✔ Preview domain stays independent from UI/compat rendering (0.5014ms)
+✔ Package exports expose only stable public domains (0.6089ms)
+✔ Project TypeScript files start with responsibility headers (111.5096ms)
+✔ Project source module headers include Domain DAG zone tags (25.9253ms)
+✔ Project source avoids empty interface-extension shells (36.1629ms)
+✔ Pi SDK imports stay centralized in the pi adapter (49.8266ms)
+✔ Entrypoint stays free of direct Node runtime imports (0.6139ms)
+✖ Entrypoint stays a composition root without local runtime adapters (1.1545ms)
+✔ Visible thread identity never falls back directly to bare slot labels (53.2283ms)
+✔ Destructive forum-topic lifecycle cleanup stays in the thread reconciler (43.7787ms)
+✔ Runtime state domain stays free of local domain imports (0.4797ms)
+✖ Structural leaf domains stay free of local nominal imports (1.7664ms)
+✔ Menu domain stays on structural ports and does not re-export model (0.7502ms)
+✔ Telegram API transport stays decoupled from persisted config defaults (0.5911ms)
+✔ Structural update and media domains stay decoupled from concrete API transport shapes (1.3209ms)
+✔ Core assistant output never constructs Telegram Thinking blocks (2.8553ms)
+✔ Outbound attachment delivery stays decoupled from queue, inbound media, and API helpers (0.662ms)
+✔ Session generation fence ignores delayed shutdown from a replaced context (3.2294ms)
+✔ Session context store accepts only the current explicit session identity (0.3737ms)
+✔ Lifecycle composition skips old shutdown extras after replacement during await (0.5395ms)
+✔ Lifecycle helpers compose session hooks in order (0.3163ms)
+✔ Compaction observer mirrors active work with native typing (0.5816ms)
+✔ Compaction observer keeps native typing for non-turn compaction (0.3794ms)
+✔ Compaction observer sends native typing to the resolved thread and All (10.1551ms)
+✔ Compaction observer unrefs fallback timers when supported (0.7624ms)
+✔ Compaction observer stops typing on timeout and shutdown (1.063ms)
+✔ Message activity hooks re-arm typing for active Telegram turns (2.5783ms)
+✔ Message activity hooks preserve typing after transient preview errors (2.3226ms)
+✔ Lifecycle helpers register pi hooks and delegate to handlers (1.7249ms)
+✔ Lock runtime commits side effects only under its exact transaction owner (287.6796ms)
+✔ Lock runtime acquires, refreshes, and releases its own key (103.9088ms)
+✔ Owner slot resolver uses local default and named profile keys (0.3176ms)
+✔ Lock runtime releases only the active profile key (137.4462ms)
+✖ writeLocks writes private lock files (25.3953ms)
+✖ File transaction publishes a private directory guard with owner metadata (31.7663ms)
+✔ Lock transaction recovers a directory guard left by a dead process (117.3437ms)
+✔ Lock transaction recovers dead directory main and recovery guards (147.4928ms)
+✔ Lock transaction releases recovered ownership when recovery cleanup fails (543.9919ms)
+✔ Lock transaction rollback retry restores peer-process recovery (1837.5165ms)
+✔ Lock transaction reclaims an inactive same-process marker after rollback failure (789.9857ms)
+✔ Lock transaction recovery preserves a live recovery guard (414.8836ms)
+✔ Lock transaction recovers dead legacy main and recovery guards (439.9008ms)
+✔ Lock transaction resumes a reclaim marker left by a dead recoverer (158.0604ms)
+✔ File transaction refuses to release a replacement directory owner (48.2595ms)
+✔ Delayed stale recovery cannot claim a replacement generation (4492.691ms)
+✔ Lock transaction recovers a guard left by a dead process (34.4804ms)
+✔ Lock transaction fails closed on an unverified guard (2663.6343ms)
+✔ Lock transaction fails closed on an unverified directory guard (2505.1832ms)
+✔ Lock transaction fails closed on malformed registry content (10.7694ms)
+✔ Lock transaction recovers blank or NUL-padded owner store (12.8154ms)
+✔ Lock transaction elects exactly one concurrent child process (711.4183ms)
+✔ Concurrent stale-guard recovery elects exactly one child process (702.558ms)
+✔ Lock transaction preserves keys acquired by concurrent profiles (772.8677ms)
+✔ Lock runtime preserves other profile owners and refuses a live default owner (10.9152ms)
+✔ Lock runtime records bus leader metadata and refreshes heartbeat (22.1726ms)
+✔ Lock runtime fences refresh and release to the acquired owner epoch (49.3003ms)
+✔ Lock election cannot replace an observed stale owner after its lease refreshes (30.4104ms)
+✔ Lock election cannot replace an owner that appeared after inactive observation (19.5401ms)
+✔ Lock runtime mints collision-resistant epochs independently of heartbeat time (29.6317ms)
+✔ Lock runtime upgrades adopted legacy ownership during refresh (13.4144ms)
+✔ Lock runtime prunes legacy bus socket path on heartbeat refresh (13.0882ms)
+✔ Lock runtime treats stale bus heartbeats as replaceable even when pid is alive (13.4101ms)
+✔ Lock runtime replaces stale owners (12.5471ms)
+✔ Locked polling runtime prevents inherited child sessions from polling the same agent dir (39.9421ms)
+✔ Locked polling runtime registers as follower when another live owner blocks start (10.5657ms)
+✔ Locked polling runtime falls back to takeover when follower registration is not applicable (9.9574ms)
+✔ Locked polling runtime records follower registration failures without blocking takeover prompt (11.3145ms)
+✔ Locked polling runtime diagnoses a live owner with unreachable bus endpoint (13.4681ms)
+✔ Locked polling runtime stops follower heartbeat on stop (29.8665ms)
+✔ Locked polling runtime can force takeover of live polling owners (37.1512ms)
+✔ Locked polling runtime hands same-process ownership to a replacement instance (62.971ms)
+✔ Default runtime generation supersedes a pre-reload same-process counter (16.1745ms)
+✔ Older same-process runtime cannot reverse a replacement handoff (57.7885ms)
+✔ Same instance id cannot bypass same-process generation handoff (21.4643ms)
+✔ Retained lock ownership cannot cross a dynamic profile key (28.6922ms)
+✔ Locked polling runtime releases ownership when setup is missing (1.6795ms)
+✔ Locked polling runtime refuses start when run mode disallows polling (1.7811ms)
+✔ Locked polling runtime refreshes ownership during slow startup (74.0761ms)
+✔ Locked polling runtime fails startup closed after ownership loss (40.3057ms)
+✔ Locked polling runtime rolls back ownership when startup fails (27.6702ms)
+✔ Locked polling runtime refreshes retained heartbeat before auto-start (30.4355ms)
+✔ Locked polling runtime auto-starts only from an existing owned lock (33.5584ms)
+✔ isTelegramAutoConnectEnabled accepts common truthy env values (0.23ms)
+✔ Locked polling runtime auto-connects when no owned lock and shouldAutoConnect (30.0438ms)
+✔ Locked polling runtime auto-connect registers follower without force takeover (22.9133ms)
+✔ Locked polling runtime does not auto-connect without shouldAutoConnect (38.1ms)
+✔ Locked polling runtime session auto-start does not block session initialization (39.1399ms)
+✖ Locked polling runtime suspend waits for pending session auto-start before stopping (13.9648ms)
+✔ Locked polling runtime does not auto-start when run mode disallows polling (4.0172ms)
+✔ Locked polling runtime suspends session replacement without releasing ownership (18.9967ms)
+✔ Locked polling runtime stops after ownership loss without live context (27.8493ms)
+✔ Locked polling runtime records refresh write failures instead of throwing from watcher (17.0742ms)
+✔ Locked polling runtime resumes stale same-cwd ownership after process restart (43.8645ms)
+✔ Locked polling runtime does not claim stale ownership from another cwd during session initialization (3.9129ms)
+✖ Runtime log paths preserve default compatibility and isolate named profiles (3.9794ms)
+✖ Runtime JSONL paths do not collide across profile lifecycle names (1.1133ms)
+✔ Runtime JSONL log resets and appends session events (176.048ms)
+✔ Runtime JSONL destructive reset commits only under exact ownership (71.7298ms)
+✔ Runtime JSONL append failures stay contained and do not poison later records (74.1574ms)
+✔ Runtime JSONL contains one failed record under strict unhandled rejection mode (831.8633ms)
+✖ Runtime JSONL appends serialize across processes without lost lines (3015.4829ms)
+✔ Runtime JSONL append captures its profile path before queued execution (125.0283ms)
+✔ Runtime JSONL log keeps previous logs per active profile path (450.4683ms)
+✔ Media helpers collect file infos across Telegram message variants (2.7405ms)
+✔ Media helpers collect embedded Rich Message media (0.5714ms)
+✔ Media helpers download collected file infos (0.5142ms)
+✔ Media helpers extract text, ids, and history summaries (0.5488ms)
+✔ Media helpers keep raw text command-safe and add reply context only for prompts (0.5113ms)
+✔ Media helpers prefer rich-message text for reply context (0.4319ms)
+✔ Media helpers truncate long reply context for prompt text (0.1956ms)
+✔ Media helpers infer image media types from file paths (0.2011ms)
+✔ Media helpers key messages by chat and media group (0.5479ms)
+✔ Media helpers replace debounce timers and dispatch grouped messages (1.001ms)
+✔ Media group keeps messages until asynchronous dispatch succeeds (0.5217ms)
+✔ Media group controller owns timers, removal, and cleanup (0.5366ms)
+✔ Media group suspension preserves admitted messages for replacement context (0.3766ms)
+✔ Media group dispatch runtime handles immediate and grouped messages (0.4416ms)
+✔ Media helpers remove pending groups by message id (0.1731ms)
+✔ Settings menu text and reply markup expose built-in controls (3.203ms)
+✔ Settings detail markups show active values (1.6367ms)
+✔ Settings callback action mutates voice, time, and proactive settings (8.5374ms)
+✔ Settings runtime opens menus and rehydrates stale callback state (1.9736ms)
+✔ Status menu reply markup exposes model, thinking, queue, and settings rows (16.982ms)
+✔ Status menu hides thinking row for non-reasoning and voice-active states (0.4759ms)
+✔ Status callback routing updates target menus and guards thinking controls (0.5969ms)
+✔ Status menu open, send, and update helpers apply status mode (1.3265ms)
+✔ Thinking menu text and reply markup expose all levels with current marker (2.4876ms)
+✔ Thinking callback sets valid levels and reports current level (2.7632ms)
+✔ Thinking callback handles invalid, voice-active, non-reasoning, and unrelated actions (0.3828ms)
+✔ Thinking menu open and update helpers apply thinking mode and respect voice guard (0.8851ms)
+✔ Menu helpers store, refresh, prune, and bound model menu state (2.9102ms)
+✔ Menu helpers scope stored model menu state by chat and message (0.4ms)
+✔ Menu helpers resolve and reuse cached model menu inputs (1.0842ms)
+✔ Menu runtime controller owns stored state and cached inputs (2.749ms)
+✔ Menu state builder wires runtime to settings and model-registry ports (0.6037ms)
+✔ Menu runtime builds menu state from settings and model-registry ports (0.5466ms)
+✔ Menu helpers expose UI constants (0.1746ms)
+✔ Menu helpers build model menu state and parse callback actions (3.0401ms)
+✔ Menu helpers apply menu mutations and resolve model selections (0.6344ms)
+✔ Menu helpers omit pagination controls for one-page unscoped model lists (1.0203ms)
+✔ Menu helpers derive normalized menu pages without mutating state (0.3779ms)
+✔ Menu helpers build model page selector markup and payloads (0.6051ms)
+✔ Menu helpers build model callback plans for paging, page menu, selection, and restart modes (1.1551ms)
+✔ Menu helpers keep model detail selection stable after scope changes (0.7116ms)
+✔ Menu helpers expand wildcard scope patterns when disabling one matched model (16.3972ms)
+✔ Menu helpers apply scoped thinking from active model detail (0.4853ms)
+✔ Menu helpers send active detail selection back to model list page (0.2909ms)
+✔ Menu helpers open status and model menus through runtime ports (0.6523ms)
+✔ Menu helpers report model-menu busy and no-model paths (0.438ms)
+✔ Menu helpers route callback entry states before action handlers (0.4982ms)
+✔ Menu helpers route stored callback queries through matching action handlers (0.5262ms)
+✔ Menu runtime routes stored callback queries through callback action ports (3.9473ms)
+✔ Menu callback handler captures runtime ports (0.4821ms)
+✔ Menu callback adapter converts active tool count into runtime booleans (1.2662ms)
+✔ Menu helpers execute model callback actions across update, switch, and restart paths (4.4385ms)
+✔ Menu helpers handle status and thinking callback actions (0.5659ms)
+✔ Menu helpers build pure render payloads before transport (0.6969ms)
+✔ Menu action runtime opens and updates interactive menu messages (1.4993ms)
+✔ Menu action runtime with state builder opens menus from settings runtime (0.771ms)
+✔ Menu helpers update and send interactive menu messages (1.2713ms)
+✔ Queue menu keeps main-menu navigation on top (4.009ms)
+✔ Queue item detail renders prompt as raw preformatted HTML (0.9408ms)
+✔ Queue item delete requires confirmation (1.3804ms)
+✔ Queue refresh rotates empty queue title (0.6788ms)
+✔ Menu helpers build model, thinking, and status UI payloads (0.9997ms)
+✔ Section callback actions preserve callback thread target (1.1959ms)
+✔ Settings menu labels proactive push with state text (0.5333ms)
+✔ Settings menu exposes time injection mode selection (0.378ms)
+✔ Settings menu marks voice mode selection with model-style dot (0.3667ms)
+✔ Settings menu rehydrates expired state before persisting and rendering voice mode (1.2428ms)
+✔ Settings submenu headings include current values (0.326ms)
+✔ Settings menu marks one-line on/off checkbox controls symmetrically (0.221ms)
+✔ Current model store prefers explicit Telegram model over context fallback (1.8142ms)
+✔ Current model runtime combines store fallback and status updates (14.9822ms)
+✔ Current model update runtime stores selections and refreshes status (0.2778ms)
+✔ Model helpers match models, detect thinking levels, and expose constants (0.2873ms)
+✔ Model helpers parse scoped model pattern lists and CLI flags (0.4479ms)
+✔ Model helpers resolve scoped model patterns and sort current models first (1.1919ms)
+✔ Pending model-switch store owns selection state helpers (0.5764ms)
+✔ In-flight model switch is allowed only for active Telegram turns with abort support (0.2332ms)
+✔ Pending model switch abort waits until no tool executions remain (2.5711ms)
+✔ Model-switch continuation restart queues before abort when state is present (1.1197ms)
+✔ Model-switch controller centralizes pending abort and continuation queueing (0.6456ms)
+✔ Model-switch controller runtime binds continuation queue construction (1.2789ms)
+✔ Model-switch continuation turn stays control-lane and resume-oriented (0.4398ms)
+✔ Model-switch continuation queue runtime builds and appends control-lane turns (0.2458ms)
+✔ Model-switch continuation queue creates and appends continuation turns (0.2311ms)
+✔ Continuation prompt stays Telegram-scoped and resume-oriented (0.158ms)
+✔ Rich outbound attachment planner builds one target-scoped media result (9.8281ms)
+✔ Rich outbound attachment planner classifies probe-confirmed video and audio (0.8751ms)
+✔ Rich outbound attachment planner preserves compatibility paths (0.211ms)
+✔ Rich outbound attachment sender records exact message ownership (0.5707ms)
+✔ Rich outbound attachment sender falls back only after known failure (1.4106ms)
+✔ Outbound attachment byte-limit helpers own the outbound file default (0.24ms)
+✔ Outbound attachment tool registration delegates queueing (2.1828ms)
+✔ Outbound attachment tool sends immediately when no Telegram turn is active (1.8341ms)
+✔ Outbound attachment tool sends to assigned thread target by default (0.9ms)
+✔ Outbound attachment tool sends explicit thread target immediately (1.1002ms)
+✔ Outbound message tool sends direct Telegram markdown with parsed buttons (1.0689ms)
+✔ Outbound message tool sends explicit thread target (0.5638ms)
+✔ Direct outbound message carries internal thread target (0.3942ms)
+✔ Direct outbound message defaults to assigned thread target (0.3508ms)
+✔ Direct outbound files carry internal thread target (0.4496ms)
+✔ Direct outbound files accept explicit tool thread target (0.5545ms)
+✔ Direct Telegram tools require local polling lock ownership (1.2295ms)
+✔ Outbound attachment queueing adds files to the active Telegram turn (0.431ms)
+✔ Outbound attachment queueing admits exactly one Guest Mode file (0.5205ms)
+✔ Guest attachment staging builds cached media results and always deletes staging messages (2.3041ms)
+✔ Guest attachment staging cleans up extraction and answer failures (0.842ms)
+✔ Guest attachment staging falls back to one text answer before media answer (0.3614ms)
+✔ Guest attachment staging records cleanup failure without retrying the answer (0.3943ms)
+✔ Outbound attachment queueing uses the domain stat fallback (162.5758ms)
+✔ Outbound attachment queueing rejects oversized files (1.6612ms)
+✔ Outbound attachment queueing stays atomic when a later file is rejected (0.4422ms)
+✔ Outbound attachment queueing rejects missing turns, non-files, and full queues (0.9359ms)
+✔ Outbound attachment delivery includes reply parameters for uploads (0.8798ms)
+✔ Outbound attachment delivery includes thread target for uploads (0.3505ms)
+✔ Outbound attachment delivery chooses photo vs document methods from file paths (0.4206ms)
+✔ Outbound attachment delivery uses the domain stat fallback for size checks (25.9023ms)
+✔ Outbound attachment delivery checks attachment sizes before upload (1.7419ms)
+✔ Outbound attachment delivery reports per-file failures via text replies (0.7601ms)
+✔ Outbound attachment sender runtime binds delivery ports (0.3925ms)
+✔ Outbound attachment sender runtime applies the default outbound size limit (0.3148ms)
+✔ Button reply planner strips telegram_button markup and registers actions (3.74ms)
+✔ Button action store resolves registered actions once and expires old entries (1.1293ms)
+✔ Button prompt turn preserves prompt text and queue metadata (0.5031ms)
+✔ Button callback handler enqueues owned actions and consumes expired buttons (0.444ms)
+✔ Markup collector ignores comments inside fenced code (4.2611ms)
+✔ Markup stripping removes closed and partial top-level comments (1.9493ms)
+✔ Comment attribute parser supports quoted and unquoted values (1.8224ms)
+✔ Voice reply planner extracts multiple voice replies and cleans markdown (1.4476ms)
+✔ Outbound voice sender uploads provider opus result with reply markup and transcript (4.0875ms)
+✔ Outbound voice sender uploads voice into thread target (0.6283ms)
+✔ Outbound voice sender records and throws when every source fails (1.0794ms)
+✔ Outbound text handler transforms text and markdown replies (6.7136ms)
+✔ Outbound text handler preserves inline buttons on transformed replies (4.0332ms)
+✔ Outbound text handler transforms finalized markdown previews (0.7468ms)
+✔ Outbound text handler keeps original reply on failure (0.6309ms)
+✔ Voice reply planner extracts multiline telegram_voice comments (1.3972ms)
+✔ Voice reply planner supports paired voice comments (0.6366ms)
+✔ Voice reply planner supports compact inline comments (0.3528ms)
+✔ Voice reply planner supports text attribute comments (0.5089ms)
+✔ Voice reply planner recovers one-line action bodies (0.6043ms)
+✔ Voice reply planner keeps multiple telegram_voice blocks as independent artifacts (5.7358ms)
+✔ Voice reply planner strips non-voice comments from delivered markdown (0.6075ms)
+✔ Voice preview stripping hides closed and currently open telegram_voice blocks (0.5262ms)
+✔ Comment preview stripping hides generic and partial comments (0.4624ms)
+✔ Outbound comments inside fenced code stay literal (0.7835ms)
+✔ Outbound comments resume after indented and longer closing fences (0.9047ms)
+✔ Outbound action comments require top-level column-zero markers (9.3567ms)
+✔ Button reply planner supports independent label blocks (2.6331ms)
+✔ Outbound reply planner strips voice and button markup without losing artifacts (1.4434ms)
+✔ Button reply planner supports colon label-only shortcut (0.775ms)
+✔ Button reply planner supports prompt attribute shortcut (2.0935ms)
+✔ Button reply planner recovers one-line action bodies (1.8983ms)
+✔ Button reply planner requires prompt attribute for closed heads (0.6098ms)
+✔ Button reply planner bounds inline-closed body recovery (0.261ms)
+✔ Button action store resolves generated callback data (1.0466ms)
+✔ Button callback handler enqueues prompt actions (0.5478ms)
+✔ Button callback handler consumes expired button callbacks (0.6089ms)
+✔ Button prompt turns use Telegram prompt content (0.6195ms)
+✔ Voice reply sender includes thread target fields and scoped reply parameters (2.0259ms)
+✔ Voice reply sender can suppress prompt reply metadata for secondary voice (0.4243ms)
+✔ Outbound artifact sender sends multiple voice replies independently (0.8528ms)
+✖ Voice reply sender prefers configured outbound voice handlers over registered synthesis providers (46.5316ms)
+✔ Voice reply sender falls back from configured handlers to registered synthesis providers (2.7566ms)
+✖ Voice reply sender uses configured outbound voice handlers when no provider is registered (3.0355ms)
+✔ Voice reply sender falls back to the next voice synthesis provider (1.1931ms)
+✔ Voice reply sender uploads generated ogg via sendVoice (0.519ms)
+✔ Voice synthesis provider registration and invocation (0.3215ms)
+✔ Voice synthesis provider registry supports multiple providers (0.2471ms)
+✔ Voice reply sender passes replyMarkup to sendMultipart (0.7835ms)
+✔ Voice reply sender only passes replyMarkup to first successful voice reply (1.76ms)
+✔ Voice reply sender throws when every handler fails (1.7179ms)
+✔ Voice reply sender skips provider that returns undefined and tries next (0.4245ms)
+✔ Voice reply sender records event when provider returns empty string (0.3828ms)
+✔ Voice reply sender accepts Opus files (0.3561ms)
+✔ Voice reply sender accepts OGG files (1.6559ms)
+✔ Voice reply sender throws for non-ogg files (0.4847ms)
+✔ Voice reply sender falls back to next handler when sendMultipart throws (0.3816ms)
+✔ Voice reply sender accepts provider returning { audioPath } (0.3578ms)
+✔ Voice reply sender passes transcriptText as caption (0.352ms)
+✔ Bus ownership runtime scopes follower authority to registration generation (1.7514ms)
+✔ Message ownership records default private targets (1.0475ms)
+✔ Message ownership preserves createdAt when ownership is refreshed (0.2578ms)
+✔ Message ownership can forget a whole target (0.3231ms)
+✔ Message ownership isolates bot profiles and rejects stale follower generations (0.4081ms)
+✔ Message ownership prunes by age and record count (0.3872ms)
+▶ resolveAgentDir
+  ✔ returns PI_CODING_AGENT_DIR when env is set (4.3063ms)
+  ✔ returns ~/.omp/agent for OMP-compatible runtimes (0.3411ms)
+  ✔ returns ~/.pi/agent as fallback when no env and no OMP runtime (0.3134ms)
+✔ resolveAgentDir (6.5551ms)
+✔ resolveTelegramConfigPath (0.3585ms)
+✖ resolveTelegramOwnersPath (0.8479ms)
+✖ resolveTelegramTempDir (0.3801ms)
+✖ resolveTelegramRuntimeLogPath (0.3641ms)
+✔ explicit default profile keeps canonical unsuffixed paths (1.3069ms)
+✔ Pi context mode helpers feature-detect passive run modes (2.0329ms)
+✔ Pi API runtime ports bind methods without losing receiver context (1.8642ms)
+✔ Pi scoped model persister invalidates cached inputs without clearing live menus (1.0726ms)
+✔ Pi context helpers expose model, idle, pending-message, and compact adapters (0.3413ms)
+✔ Polling helpers build the initial sync request (2.8615ms)
+✔ Polling helpers build long-poll requests with and without lastUpdateId (0.3562ms)
+✔ Polling helpers extract the latest update id (0.2717ms)
+✔ Thread target observation binding supports late runtime composition (0.3598ms)
+✔ Thread capability state runtime owns transition flags (0.3722ms)
+✔ Thread-aware polling blocks follower takeover during Threaded Mode downgrade (1.2876ms)
+✔ Thread capability downgrade retries classic restore after failure (1.7495ms)
+✔ Thread-aware polling still allows classic takeover path without thread bindings (0.4358ms)
+✔ Polling helpers start only when a bot token exists and polling is idle (0.528ms)
+✔ Polling runtime starts and stops polling through state ports (1.2699ms)
+✔ Polling runtime still aborts and settles when typing cleanup fails (1.1023ms)
+✔ Polling runtime ignores stale-context status failures during cleanup (0.5541ms)
+✔ Polling runtime ignores stale-context status failures during start (0.4878ms)
+✔ Polling controller owns polling promise and abort-controller state (1.3521ms)
+✔ Polling controller runtime binds loop runner and controller state (0.9037ms)
+✔ Polling helpers stop only for abort conditions (0.1804ms)
+✔ Poll loop runner binds config, status, and transport ports (0.4251ms)
+✔ Poll loop runner ignores stale-context status failures while retrying (1.3645ms)
+✔ Poll loop initializes lastUpdateId and processes prepared update batches (0.7239ms)
+✔ Poll loop persists long-poll offsets only after handling updates (1.2793ms)
+✔ Poll loop does not readmit an update after offset persistence fails (1.5088ms)
+✔ Poll loop skips repeatedly failing updates after the configured threshold (1.5794ms)
+✔ Polling retry sleep resolves immediately when aborted (0.4844ms)
+✔ Poll loop stops without status reset when aborted during retry sleep (0.3532ms)
+✔ Poll loop suppresses getUpdates conflicts while another long poll drains (0.4737ms)
+✔ Poll loop reports retryable errors and sleeps before retrying (0.3866ms)
+✔ Preview helpers create draft-only state and allocate draft ids (2.2489ms)
+✔ Preview final text prefers pending text then last sent draft text (0.3225ms)
+✔ Preview helpers always use native rich drafts (0.2052ms)
+✔ Native Markdown draft prefix keeps only structurally closed Markdown (2.8634ms)
+✔ Preview runtime sends only safe native markdown draft prefixes (1.2836ms)
+✔ Preview runtime sends draft previews into thread target (0.4365ms)
+✔ Preview runtime clears thread drafts in thread target (0.3752ms)
+✔ Preview runtime does not send thinking placeholder for unsafe draft tails (0.3501ms)
+✔ Preview runtime skips unchanged unsafe draft tails (1.1791ms)
+✔ Preview runtime records draft failures without plain fallback (1.3686ms)
+✔ Preview runtime serializes overlapping flush requests (0.6716ms)
+✔ Preview runtime clears active rich draft on explicit clear (0.2338ms)
+✔ Preview runtime optional send gate clears without sending new content (0.2418ms)
+✔ Native Markdown finalizer waits for active draft flush before final reply (0.6816ms)
+✔ Native Markdown finalizer stops when preview generation changes during flush (0.414ms)
+✔ Plain preview finalization does not send fallback messages (0.3161ms)
+✔ Assistant preview runtime finalizes previous markdown through native reply sender (0.8224ms)
+✔ Assistant preview runtime suppresses text preview for voice-tagged turns (0.4053ms)
+✔ Preview controller runtime binds Bot API draft transport (0.8608ms)
+✖ Child process sharing the agent dir does not poll while parent owns Telegram lock (5256.6956ms)
+✔ Direct Telegram tools refuse delivery from a non-owner process (2711.5518ms)
+﹣ pi -p with Telegram extension and no active lock exits (0.236ms) # SKIP
+﹣ pi -p with Telegram-owned lock stays passive and does not poll (0.141ms) # SKIP
+﹣ pi -p with proactive config and Telegram-owned lock exits (0.1398ms) # SKIP
+﹣ pi -p non-owner skips proactive Telegram result (0.1254ms) # SKIP
+✔ Extension session shutdown without active lock lets process exit (2573.3971ms)
+✔ Extension session shutdown lets an active polling owner process exit (2539.6074ms)
+✔ Prompt-template helpers expose valid Telegram command templates (24.5165ms)
+✔ Prompt-template helpers skip commands without source paths (0.3049ms)
+✔ Prompt-template helpers map pi template names to Telegram commands (0.376ms)
+✔ Prompt-template command getter hides extension command conflicts (0.398ms)
+✔ Prompt-template helpers parse and substitute arguments like pi templates (0.639ms)
+✔ Prompt-template helpers expand command content from template files (0.464ms)
+✔ Prompt helpers append context-aware system prompt suffixes (2.7927ms)
+✔ Prompt helpers keep local prompts on compact safety guidance only (0.6518ms)
+✔ Prompt helpers add full Telegram-turn guidance for Telegram prompts (0.9132ms)
+✔ Prompt helpers expose detailed Telegram guidance through agent help tool (1.1401ms)
+✔ Prompt helpers leave local prompts private for proactive result push (1.1427ms)
+✔ Prompt helpers skip suffix injection when Telegram is not configured (0.3562ms)
+✔ Public package subpaths expose the stable extension API (4808.614ms)
+✔ Activity API declares the Pi lifecycle compatibility floor (4.9018ms)
+✔ Package-private lib implementation paths are not exported (1.2736ms)
+✔ Queue store owns queued item state helpers (3.0748ms)
+✔ Transport stamp runtime owns profile and token generations (0.3615ms)
+✔ Transport-stamped queue store preserves admitted generations (0.2882ms)
+✔ Active turn store owns active turn state helpers (0.4741ms)
+✔ Control item builder creates control-lane queue items (0.3353ms)
+✔ Queue lane contracts define admission modes and dispatch order (1.0463ms)
+✔ Queue planning rejects invalid queue admission (0.3607ms)
+✔ Queue prompt append-once deduplicates repeated callback prompts (0.5645ms)
+✔ Control-lane items sort before priority and default prompt items (0.7027ms)
+✔ Queue mutation helpers remove prompt items by Telegram message id (1.0326ms)
+✔ Queue mutation controller binds queue accessors to runtime mutations (1.2987ms)
+✔ Queue mutation runtime removes, sorts, and reprioritizes prompts (16.5923ms)
+✔ Queue mutation runtime swallows only stale context status errors (0.4508ms)
+✔ Queue mutation helpers scope message-id mutations by chat and thread (0.2774ms)
+✔ Queue mutation helpers apply and clear prompt priority without touching control items (0.2113ms)
+✔ Queue priority reactions apply to attachment-only prompt turns (2.3719ms)
+✔ Queued status formatting keeps the terminal status bar compact (0.2148ms)
+✔ Queue enqueue planning folds queued prompts into history when requested (0.3646ms)
+✔ History partition keeps control items queued and extracts prompt items (0.2217ms)
+✔ Dispatch planning returns the prompt item when dispatch is allowed (3.1224ms)
+✔ Dispatch planning runs control items before normal prompts (1.3392ms)
+✔ Dispatch planning returns none when dispatch is blocked (1.4913ms)
+✔ Control-item dispatch sequencing hands off to the next prompt (0.1974ms)
+✔ Abort-history leaves queued prompts waiting for explicit continuation (1.4858ms)
+✔ Agent end dispatch policy resumes after success and error, but not abort-history (0.398ms)
+✔ Agent end runtime resets state, finalizes replies, sends attachments, and dispatches (3.3766ms)
+✔ Agent end runtime delivers one Rich attachment result without duplicate text or upload (0.5454ms)
+✔ Agent end runtime never falls back after ambiguous Rich attachment delivery (0.4474ms)
+✔ Agent end runtime delivers one Guest Mode attachment instead of a text article (0.4057ms)
+✔ Agent end runtime routes Guest Mode voice markup through one media result (1.0231ms)
+✔ Agent end runtime records Guest Mode attachment failure without a second answer (0.8398ms)
+✔ Agent end runtime can schedule active-turn final delivery without blocking (0.5496ms)
+✔ Agent end scheduled delivery stops after session generation loss (0.3618ms)
+✔ Agent end Rich attachment delivery never starts through a replacement session (0.6762ms)
+✔ Agent end Rich attachment delivery stops stale continuation after replacement (0.9893ms)
+✔ Agent end stops old-profile delivery after preview finalization yields (0.6022ms)
+✔ Agent end runtime keeps plain notices in the active turn target (0.5739ms)
+✔ Agent end runtime records final delivery failures and dispatches (0.51ms)
+✔ Agent end runtime leaves proactive local output to Activity projection (0.533ms)
+✔ Agent end runtime keeps queued Telegram turn delivery independent from polling ownership (0.4879ms)
+✔ Agent end runtime plans assistant button comments for active Telegram replies (3.4566ms)
+✔ Agent end runtime passes assistant button markup to final text delivery (0.6937ms)
+✔ Agent end runtime splits assistant voice markup into text and voice delivery (0.606ms)
+✔ Agent end transparently intercepts text reply for voice-preferred turn (2.1794ms)
+✔ Agent end falls back to text when voice handler throws in always mode (0.642ms)
+✔ Agent end falls back to text when voice handler throws in voice-received mode (2.0871ms)
+✔ Agent end does not intercept when explicit voice markup exists (0.4513ms)
+✔ Agent end does not intercept without planOutboundReply (0.3473ms)
+✔ Agent end sends text as reply and voice without reply when both exist (0.4733ms)
+✔ Agent end does not intercept when planOutboundReply returns voiceReplies (1.9049ms)
+✔ Agent end records event when voice fallback text delivery also fails (0.6614ms)
+✔ Agent end does not intercept when rawFinalText is whitespace only (0.3426ms)
+✔ Agent end uses rawFinalText when plannedReply is undefined (1.4266ms)
+✔ Agent end hook binds assistant extraction and runtime ports (85.7082ms)
+✔ Agent end runtime reports errors and dispatches next turn (1.3933ms)
+✔ Agent end plan classifies turn outcomes correctly (1.7128ms)
+✔ Agent start runtime consumes dispatched prompts and initializes active preview (1.4941ms)
+✔ Agent lifecycle hooks bind start, end, and tool lifecycle ports (7.7583ms)
+✔ Agent lifecycle retains retryable errors until recovery or settlement (1.473ms)
+✔ Agent start hook binds abort handler and runtime ports (0.3976ms)
+✔ Agent start plan consumes a dispatched prompt and resets transient flags (0.1503ms)
+✔ Agent start plan clears stale abort-history mode for local prompts (0.1359ms)
+✔ Tool execution runtimes update counts and trigger delayed aborts (0.244ms)
+✔ Tool execution hooks bind counter and pending model-switch abort ports (0.2129ms)
+✔ Tool execution count helper respects active-turn presence (0.1099ms)
+✔ Dispatch readiness checker binds live guard ports (0.331ms)
+✔ Dispatch is allowed only when every guard is clear (0.1157ms)
+✔ Dispatch is blocked during compaction (0.1227ms)
+✔ Dispatch is blocked while a Telegram turn is active or pending (0.1144ms)
+✔ Dispatch is blocked when pi is busy or has pending messages (0.1961ms)
+✔ Session state applier syncs start and shutdown state through live stores (0.3753ms)
+✔ Session runtime helper runs shutdown side effects in order (0.6589ms)
+✔ Session shutdown does not clear replacement state after polling await (0.2932ms)
+✖ Session shutdown bounds a stuck preview clear (10.4958ms)
+✖ Control queue controller appends and dispatches control items
+✖ Prompt enqueue controller binds runtime ports to context
+✖ Prompt enqueue runtime folds queued prompts into history
+✖ Local agent start prevents stale abort-history mode from absorbing old queue
+✖ Control runtime runs the control item and always settles
+✖ Control runtime reports failures before settling
+✖ Deferred queue dispatch uses only the bound session context
+✖ Queue dispatch watchdog retries dispatch for queued work
+✖ Dispatch controller skips inactive stale contexts before readiness checks
+✖ Dispatch controller drops stale transport work before sending the next prompt
+✖ Dispatch runtime idles on none and executes control items directly
+✖ Dispatch runtime sends prompt turns as normal user messages
+✖ Dispatch runtime reports prompt dispatch failures after starting
+✖ Queue dispatch controller plans prompts and reports dispatch failures
+✖ Queue dispatch runtime binds readiness guards to dispatch controller
+✖ Queue dispatch controller executes control items and continues
+✖ Queue dispatch controller blocks reentrant prompt dispatch while control is pending
+✖ Queue dispatch controller does not resume prompts after shutdown clears context during control
+✖ Session runtime helper resets session start state
+✖ Session runtime helper runs start side effects in order
+✖ Session runtime start swallows only stale deferred-dispatch context binding
+✖ Session runtime helper clears shutdown state
+✖ Session lifecycle runtime binds state applier into lifecycle hooks
+✖ Session lifecycle hooks bind start and shutdown runtime ports
+✖ executeTelegramQueueDispatchPlan sends ready prompts as normal user turns
+✔ HTML helpers escape text and attribute contexts (8.9748ms)
+✔ HTML helpers chunk long text while preserving open tags (3.2603ms)
+✔ HTML helpers do not reopen void tags across chunks (0.2403ms)
+✔ Malformed and boundary markdown renders safely (29.7012ms)
+✔ Nested lists stay out of code blocks (0.9196ms)
+✔ Fenced code blocks preserve literal markdown (0.6117ms)
+✔ Underscores inside words do not become italic (0.5807ms)
+✔ Bold markdown can span soft line breaks (0.533ms)
+✔ Quoted nested lists stay in blockquote rendering (0.8242ms)
+✔ Numbered lists use monospace numeric markers (1.0417ms)
+✔ Ordered task lists preserve numeric markers in rendering (0.5049ms)
+✔ Leading indentation on the first markdown line stays intact (0.4284ms)
+✔ UI/compat rendering preserves multiple blank lines between blocks (0.3007ms)
+✔ UI/compat rendering preserves original blank-line spacing across block transitions (9.2847ms)
+✔ Headings keep visible spacing before following code blocks even without source blank lines (2.826ms)
+✔ Standalone checkbox-looking prose stays literal outside task lists (3.752ms)
+✔ Nested blockquotes flatten into one Telegram blockquote with indentation (3.0485ms)
+✔ UI/compat Markdown tables render as literal monospace blocks without outer side borders (3.4425ms)
+✔ Markdown table padding uses emoji grapheme display width (0.9091ms)
+✔ Markdown table padding handles CJK and combining marks (1.9895ms)
+✔ Links, code spans, and underscore-heavy text coexist safely (0.712ms)
+✔ HTML attributes are escaped or sanitized in generated Telegram markup (0.3458ms)
+✔ HTML mode chunks long messages below Telegram limits (0.2304ms)
+✔ HTML mode keeps tags balanced across long chunk boundaries (0.624ms)
+✔ Links degrade or normalize safely across supported and unsupported markdown forms (1.0746ms)
+✔ Long quoted blocks stay chunked with balanced blockquote tags (4.9239ms)
+✔ Long UI/compat Markdown messages stay chunked below Telegram limits (18.9976ms)
+✔ Long mixed links and code spans stay chunked with balanced inline tags (31.0995ms)
+✔ Long multi-block markdown keeps quotes and code fences structurally balanced (13.5222ms)
+✔ Chunked mixed block transitions keep quote and list structure balanced (42.4144ms)
+✔ Chunked code fence transitions keep code blocks closed before following prose (23.7068ms)
+✔ Long inline formatting paragraphs stay balanced across chunk boundaries (17.5719ms)
+✔ Realistic Markdown fixtures render safely for UI/compat surfaces (1.3622ms)
+✔ Chunked list, code, quote, and prose cycles stay balanced across transitions (54.1282ms)
+✔ Reply helpers extract assistant message text and metadata (3.8339ms)
+✔ Reply transport forwards send and edit operations through delivery helpers (1.7404ms)
+✔ Reply delivery includes thread target on rendered chunks (0.7358ms)
+✔ Reply delivery includes thread target on rendered edits and continuation chunks (0.6235ms)
+✔ Reply delivery sends chunks and applies reply markup only to the last chunk (1.081ms)
+✔ Reply delivery rejects generated buttons above Telegram callback limit (1.1895ms)
+✔ Reply delivery applies reply parameters only to the first chunk (0.5482ms)
+✔ Reply delivery edits the first chunk and sends remaining chunks separately (0.5185ms)
+✔ Reply runtime bundles text, native markdown, and UI/compat interactive delivery (3.1995ms)
+✔ Plain reply includes thread target on rendered messages (0.8014ms)
+✔ Native Markdown reply anchors only the first rich chunk in thread targets (1.2235ms)
+✔ Reply runtime can send markdown through native rich messages (0.584ms)
+✔ Reply runtime uses native rich messages for anchored thread markdown replies (0.7683ms)
+✔ Reply runtime does not fall back to HTML when native rich message delivery fails (1.2626ms)
+✔ Reply delivery runtime exposes transport and UI/compat rendered-message helpers (0.9097ms)
+✔ Guest replies answer with native Rich Markdown content (0.4635ms)
+✔ Native Markdown delivery normalizes space-after-marker blockquotes outside code (0.5883ms)
+✔ Native Markdown delivery neutralizes indented list markers that break Rich Markdown (0.3054ms)
+✔ Native Markdown delivery preserves top-level list markers (0.522ms)
+✔ Native Markdown delivery converts multiline display math to math fences (0.3372ms)
+✔ Native Markdown delivery preserves Bot API 10.2 structured blocks (6.4742ms)
+✔ Native Markdown delivery ignores math delimiters inside fences when pairing (0.3256ms)
+✔ Native Markdown splitter keeps truncation-risk fixture intact (0.494ms)
+✔ Native Markdown delivery sends normalized risky fixture without losing tail text (0.4472ms)
+✔ Native Markdown delivery escapes dollar ticker atoms outside code (0.6625ms)
+✔ Native Markdown splitter prefers paragraph boundaries (0.7273ms)
+✔ Native Markdown splitter falls back to hard limits for long atoms (0.7887ms)
+✔ Native Markdown splitter keeps fenced code blocks together when possible (0.759ms)
+✔ Native Markdown splitter rewraps oversized fenced code blocks (0.6541ms)
+✔ Native Markdown splitter rewraps oversized display math blocks (0.8342ms)
+✔ Native Markdown splitter rewraps oversized inline formatting blocks (0.5797ms)
+✔ Native Markdown splitter respects the rich-message block limit for lists (2.9386ms)
+✔ Native Markdown delivery attaches reply metadata first and markup last (0.6667ms)
+✔ Reply runtime sends plain replies using the requested parse mode (0.3957ms)
+✔ Transport reply dedup scopes repeated prompt message ids by chat and thread (0.3192ms)
+✔ Reply dedup tracks first reply per prompt message id and resets (0.3744ms)
+✔ Dedup wrapper suppresses reply_to_message_id after the first message in a turn (0.7918ms)
+✔ Dedup reset fires on agent_start through lifecycle hook (0.6193ms)
+✔ Inbound bus projection owns target authority and local labels (27.7283ms)
+✔ Routing runtime forwards authorized text messages into prompt queueing (18.2187ms)
+✔ Routing runtime binds the first unbound thread to the leader without visible rename when leader has no active thread (84.7313ms)
+✔ Routing runtime assigns internal baked name without visibly renaming unnamed leader startup topic (75.8752ms)
+✔ Routing runtime restores stale leader thread identity internally without visible rename (57.7923ms)
+✔ Routing runtime assigns internal baked name when restoring unnamed stale prior leader (51.1984ms)
+✔ Routing runtime serves an active leader topic locally (157.1529ms)
+✔ Routing runtime falls back to baked name for non-identity topic thread names (45.862ms)
+✔ Routing runtime preserves active follower topics when the follower is not connected (7.9823ms)
+✔ Routing runtime does not claim an unknown unbound thread while another thread is live (59.8798ms)
+✔ Routing runtime prefers local thread label over stale shared store binding (59.9433ms)
+✔ Routing runtime refuses threadless prompts in multi-instance thread mode (36.3603ms)
+✔ Routing runtime degrades threadless prompts to classic when topic targets are stale (422.0009ms)
+✔ Routing runtime assigns guest-mode prompts to the current transport leader (1.7223ms)
+✔ Routing runtime labels private guest-mode prompts with dm metadata (1.0574ms)
+✔ Routing runtime labels owner-authored private guest turns with the remote chat peer (0.38ms)
+✔ Guest peer resolver never labels the paired owner and uses stable fallbacks (0.364ms)
+✔ Routing runtime separates private guest identity from replied peer metadata (0.5573ms)
+✔ Routing runtime keeps private guest identity when replying to the bot (0.3121ms)
+✔ Routing runtime preserves follower thread target for generated button callbacks (1.7181ms)
+✔ Routing runtime treats All menu commands as threaded target chooser (187.3633ms)
+✔ Routing runtime filters All chooser buttons to live routable thread targets (109.4179ms)
+✔ Routing runtime treats extension and prompt-template commands as All chooser commands (48.1695ms)
+✔ Routing runtime keeps extension command replies in the invoking thread (28.2231ms)
+✔ Routing runtime opens selected All menu command in the target thread (33.9987ms)
+✔ Routing runtime preserves later unbound threads and offers reroute (21.852ms)
+✔ Routing runtime answers expired reroute callbacks without queueing (0.4001ms)
+✔ Routing runtime answers stale reroute target callbacks gracefully (30.3011ms)
+✔ Routing runtime forwards media-group reroutes to foreign follower targets (1276.3658ms)
+✔ Routing runtime routes reroute source to confirmed current leader thread (11.2908ms)
+✔ Routing runtime assigns a new slot when user explicitly chooses source thread (18.2093ms)
+✔ Routing runtime blocks follower thread restore until bus replacement exists (17.082ms)
+✔ Routing runtime restores follower thread through bus replacement (24.1201ms)
+✔ Routing runtime reclaims unbound prompt without visible rename when current leader target is stale (20.5524ms)
+✔ Routing runtime assigns internal baked name when reclaiming unnamed stale current leader target (22.4905ms)
+✔ Routing runtime reclaims reroute source when selected stale leader target has prior instance id (18.742ms)
+✔ Routing runtime defers unbound guidance until user content in created topics (11.8396ms)
+✔ Routing runtime keeps known-command unbound threads open with chooser (10.4465ms)
+✔ Routing runtime skips stale-epoch unbound thread deletion (11.7332ms)
+✔ Routing runtime deletes reserved old leader topics through reconciler (18.5297ms)
+✔ Routing runtime treats pruned failed topic history as unbound (15.1963ms)
+✔ Runtime facade binds grouped operations to one bridge state (3.6ms)
+✔ Runtime state helpers allocate queue order and manage typing loops (3.0122ms)
+✔ Typing loop retargets chat-level activity into the active thread (0.8242ms)
+✔ Typing loop sends chat actions into thread target and aggregate surface (0.5908ms)
+✖ Typing loop idle wait is bounded for slow in-flight chat actions (10.4966ms)
+✖ Abort handler setter and agent-end resetter bind runtime cleanup
+✖ Prompt dispatch lifecycle owns dispatch flags, typing, and status
+✖ Prompt dispatch lifecycle records stale status failures
+✖ Prompt dispatch runtime binds typing starter and dispatch lifecycle
+✖ Typing loop starter uses a conservative native keepalive interval
+✖ Typing loop starter sends one thread action and one aggregate action
+✖ Typing loop starter binds default chat and reports failures
+✖ Typing loop starter records stale status failures
+✔ Registry registers a section and returns a disposer (2.2477ms)
+✔ Registry assigns unique tokens to each section (37.2655ms)
+✔ Registry rejects duplicate section ids (1.4774ms)
+✔ Registry sorts sections by order then id (0.9322ms)
+✔ Registry getByToken resolves token to section (0.4299ms)
+✔ Registry getByToken returns undefined for unknown token (0.2071ms)
+✔ Registry clear removes all sections and resets tokens (0.3985ms)
+✔ Registry diagnostics reports active and error states (0.3698ms)
+✔ getTelegramExtensionSettingsRows returns rows only for sections with settings (0.9075ms)
+✔ getTelegramExtensionSettingsRows sorts by settings order (0.7617ms)
+✔ getTelegramSectionMainMenuRows omits sections with failing labels (1.2561ms)
+✔ getTelegramExtensionSettingsRows omits settings with failing labels (0.3024ms)
+✔ successful labels do not clear unrelated runtime diagnostics (0.1767ms)
+✔ parseTelegramSectionCallback parses section:token:action (0.185ms)
+✔ parseTelegramSectionCallback parses section:token:action:payload (0.1274ms)
+✔ parseTelegramSectionCallback parses payload with colons (0.1381ms)
+✔ parseTelegramSectionCallback returns undefined for non-section data (0.1269ms)
+✔ handleTelegramSectionOpen renders section view with back row (0.6195ms)
+✔ section callbackData rejects payloads above Telegram's byte limit (0.5914ms)
+✔ handleTelegramSectionOpen preserves existing back button (0.2853ms)
+✔ handleTelegramSectionOpen handles stale token gracefully (0.1955ms)
+✔ handleTelegramSectionOpen records and clears render errors (0.3841ms)
+✔ handleTelegramSectionCallback dispatches to section handler (0.4828ms)
+✔ handleTelegramSectionCallback falls back to settings handler (0.3526ms)
+✔ handleTelegramSectionCallback gives settings-only handlers settings navigation (0.3301ms)
+✔ handleTelegramSectionCallback answers when no handler exists (0.2237ms)
+✔ handleTelegramSectionCallback handles stale token (0.2677ms)
+✔ handleTelegramSectionSettingsOpen renders settings view (0.4317ms)
+✔ handleTelegramSectionSettingsOpen handles section without settings gracefully (0.1956ms)
+✔ buildStatusReplyMarkup includes extension section rows before Settings (99.3127ms)
+✔ buildTelegramSettingsMenuReplyMarkup injects extension settings rows (6.7253ms)
+✔ Setup token defaults prefer config, then env aliases, then placeholder (3.1237ms)
+✔ Setup prompt spec uses editor for real tokens and input for placeholder (3.6893ms)
+✔ Setup runner validates token, persists config, starts polling, and updates status (0.9548ms)
+✔ Setup runner reports invalid tokens without persisting or starting polling (4.978ms)
+✔ Setup runner distinguishes cancellation and polling startup failure (1.1406ms)
+✔ Setup prompt runtime stores config before starting polling (0.997ms)
+✔ Setup prompt runtime rolls memory back when persistence fails (1.5246ms)
+✔ Setup prompt runtime persists the first validated config to missing or empty files (199.6841ms)
+✔ Setup prompt runtime persists a first named profile without changing siblings (61.3506ms)
+✔ Setup prompt runtime reports token check errors and always finishes (1.1362ms)
+✔ resolveTelegramSpawnScriptPath picks platform script under package scripts/ (30.337ms)
+✔ buildTelegramSpawnScriptPlan uses whitelist args without shell interpolation (1.3074ms)
+✔ evaluateTelegramSpawnGate requires threaded mode and rate limit (0.3531ms)
+✔ confirmAndRunTelegramSpawn marks rate limit and runs whitelist runner (0.6154ms)
+✔ handleTelegramSpawnConfirmationCallback cancel and confirm (0.8553ms)
+✔ runTelegramSpawnScript surfaces missing script (0.8424ms)
+✔ runTelegramSpawnScript treats zero exit as success when script exists (138.5377ms)
+✔ Status helpers build runtime log scope and persisted snapshot projections (4.2803ms)
+✔ Status runtime diagnostics scheduler coalesces snapshot persists (0.4508ms)
+✔ Status bar text renders bridge connection and queue states (0.771ms)
+✔ Status runtime updates the status bar and exposes bridge lines (1.0755ms)
+✔ Status lines expose thread reconciliation state (0.4071ms)
+✔ Status runtime propagates status update failures to safety wrappers (0.7912ms)
+✔ Status bar processing labels prefer the most specific live state (0.2656ms)
+✔ Bridge status runtime stays active while tools run after queue changes (0.6785ms)
+✔ Bridge status runtime builds status state from live ports (1.4607ms)
+✔ Bridge status lines render named-profile diagnostic paths (0.7998ms)
+✔ Bridge status lines distinguish unknown bot identity from missing config (0.3406ms)
+✔ Bridge status lines include role and instance thread name (0.2056ms)
+✔ Bridge status lines include sync slice diagnostics (1.2805ms)
+✔ Bridge status lines include bot thread capability diagnostics (0.1906ms)
+✔ Bridge status lines include topic binding diagnostics (4.6178ms)
+✔ Bridge status lines include bus follower diagnostics when present (0.2984ms)
+✔ Bridge status lines include local bus diagnostics (0.2158ms)
+✔ Bridge status lines include queue lanes and recent runtime events (0.9122ms)
+✔ Status HTML builder binds active model lookup (1.6878ms)
+✔ Status HTML builder appends Threaded Mode bus role to status row (2.9635ms)
+✔ Status HTML builder includes extension-provided status lines (0.5672ms)
+✔ Status HTML builder leaves compaction lifecycle to Pi (1.0172ms)
+✔ Runtime event lines render the recent-event ring newest first (18.3011ms)
+✔ Structured runtime event recording redacts messages and details (0.6699ms)
+✔ Runtime event recording bounds messages and string details (0.3445ms)
+✔ Runtime event recorder owns redacted bounded event state (0.4259ms)
+✔ Runtime event recording redacts bot tokens and keeps a bounded ring (0.273ms)
+✔ Telegram sync state runtime owns transitions and nested provisioning activity (19.835ms)
+✔ Telegram sync reconciliation is demand-driven, not per ordinary action (0.7963ms)
+✔ Telegram sync recovers stale topic API errors outside the entrypoint (2.746ms)
+✔ Telegram sync ignores non-stale topic API errors (0.3821ms)
+✔ Telegram leader health runtime refreshes sync slices outside the entrypoint (19.987ms)
+✔ Telegram leader health runtime marks transport suspect on probe failure (14.773ms)
+✔ Telegram sync model includes every local assumption slice (1.9919ms)
+✔ Telegram sync slice state records suspect and fresh transitions (1.5845ms)
+✔ Leader thread sync creates a visible leader thread when no binding exists (133.9504ms)
+✔ Leader thread sync reuses same-profile topic across reload (102.8839ms)
+✔ Leader thread sync rejects reused binding after load loses epoch (26.2684ms)
+✔ Leader thread sync reuses same-process legacy leader topic across reload (131.0762ms)
+✔ Leader thread sync does not visibly probe same-profile topic during reload (72.2414ms)
+✔ Leader thread sync proactively deletes known reservations on startup (301.3401ms)
+✔ Leader thread sync preserves follower records from previous instances (106.2873ms)
+✔ Leader thread sync cleans previous leader records regardless of profile key (101.6035ms)
+✔ Leader thread sync preserves previous leader state when deletion is unconfirmed (25.7428ms)
+✔ Leader thread sync aborts local previous-leader cleanup after ownership loss (15.0553ms)
+✔ Leader thread sync gets next monotonic slot after D on reload (118.0581ms)
+✔ Leader thread sync can force-refresh unnamed stale-prone leader bindings (120.6215ms)
+✔ Leader thread sync force-refresh preserves promoted follower bindings (33.1447ms)
+✔ Topic lifecycle sync marks known topics stale or active (2.3408ms)
+✔ Topic lifecycle sync loads persisted bindings before deleting created topics (0.5546ms)
+✔ Topic lifecycle sync observes unknown created topics without deleting them (0.3755ms)
+✔ Topic lifecycle sync does not delete unknown created topics during provisioning (0.9449ms)
+✔ Manual follower disconnect delegates thread deletion to its live leader (5.4055ms)
+✔ Manual leader disconnect rejects unconfirmed cleanup after epoch loss (3.2199ms)
+✔ Promoted leader deletes its inherited follower thread under owned epoch (0.684ms)
+✔ Manual leader disconnect remains live when deletion is unconfirmed (2.3057ms)
+✔ Telegram target helpers model private chat targets (2.7056ms)
+✔ Telegram target helpers model topic thread targets (0.336ms)
+✔ Telegram target equality includes thread identity (0.2383ms)
+✔ Outgoing Rich Message type excludes explicit structured blocks (11.7206ms)
+✔ Telegram API byte-limit helpers expose the inbound file default (0.2939ms)
+✔ Telegram API byte-limit config prefers positive integer env values (1.6584ms)
+✔ Telegram API helpers detect unchanged edit errors (0.2673ms)
+✔ Telegram API chat-action sender binds a fixed action (0.4668ms)
+✔ Telegram bridge API runtime includes thread target on chat actions (2.08ms)
+✔ Telegram native Markdown draft sender disables automatic entity detection (0.5828ms)
+✔ Telegram assistant draft sender follows final rendering mode (0.5106ms)
+✔ Telegram API helper fetches bot identity through getMe (2.803ms)
+✔ Telegram API helper fetches bot identity through IPv4 fallback (2.9239ms)
+✔ Telegram temp cleanup removes only stale files (47.3155ms)
+✖ Telegram temp preparation creates the directory and removes stale files (14.4597ms)
+✔ Telegram API helpers reject missing bot token for direct calls (2.0396ms)
+✔ Telegram API helpers include HTTP status details for failed responses (1.4438ms)
+✔ Non-idempotent Telegram API calls retry explicit 429 but report 5xx commit unknown (32.0395ms)
+✔ Retry-safe Telegram API methods replay 5xx responses (0.9235ms)
+✔ Retry-safe Telegram API transport falls back to IPv4 once (0.6848ms)
+✔ Telegram API transport does not IPv4-fallback retry HTTP 400 (0.4461ms)
+✔ Telegram multipart transport failure reports commit unknown without fallback (15.4945ms)
+✔ Telegram file downloads use transport fallback for file content (18.5688ms)
+✔ Telegram transport diagnostics serialize nested fetch causes (2.5332ms)
+✔ Telegram multipart 5xx reports commit unknown without replay (9.8861ms)
+✖ Telegram file downloads use unique sanitized temp file names (9.4088ms)
+✔ Telegram file downloads reject files above configured limits (14.5582ms)
+✔ Telegram streaming downloads remove partial files after limit failures (14.5708ms)
+✔ Telegram API helpers reject malformed successful responses (0.9616ms)
+✔ Non-idempotent malformed success becomes commit-unknown (0.4633ms)
+✔ answerTelegramCallbackQuery records Telegram API failures without throwing (0.7054ms)
+✔ Default Telegram bridge API runtime binds lazy token client and defaults (0.7302ms)
+✔ Default Telegram bridge API runtime honors PI_CODING_AGENT_DIR for temp files (11.8339ms)
+✔ Telegram bridge API runtime prepares its configured temp directory (13.2457ms)
+✔ Telegram bridge API runtime records structured failures (1.7396ms)
+✔ Telegram bridge API runtime exposes typed Bot API helpers (1.7592ms)
+✔ Telegram bridge API runtime edits messages and tolerates unchanged text (0.5631ms)
+✔ Telegram API client resolves bot tokens lazily for wrapped calls (0.9044ms)
+✔ Text group helper delays likely split messages and appends quick continuations (3.9664ms)
+✔ Text group controller coalesces same-batch forward comments and bounds ordinary text delay (1.247ms)
+✔ Text group controller coalesces a cross-batch comment with a rich forwarded message (0.799ms)
+✔ Text group controller coalesces media-only forwards and comments in either order (1.9887ms)
+✔ Text group keeps split messages until asynchronous dispatch succeeds (0.5707ms)
+✔ Text group controller clears pending timers without stale dispatch (0.4109ms)
+✔ Text group suspension resumes admitted input in the replacement context (1.6623ms)
+✔ Text group helper uses 3600 as the default near-limit threshold (0.384ms)
+✔ Text group helper ignores commands, bots, media groups, and non-contiguous tails (0.6794ms)
+✔ Text group helper scopes split recovery by thread target (3.2884ms)
+✔ Text group helper appends many split tails with wider id gaps (0.5596ms)
+✔ Thread reconciler treats unknown created topics as observations, not cleanup proof (6.8288ms)
+✔ Thread reconciler marks current bindings active or stale from lifecycle observations (1.6191ms)
+✔ Thread reconciler requires unbound user-message proof before destructive cleanup (0.4063ms)
+✔ Thread reconciler protects current, reserved, pending, and freshly-created targets from cleanup (0.6214ms)
+✔ Thread reconciler runtime records state transitions and schedules snapshots (0.6429ms)
+✔ Thread reconciler exposes explicit reconciliation state transitions (1.2007ms)
+✔ Thread reconciler plans replaced binding cleanup for same-instance old targets (0.4778ms)
+✔ Thread reconciler plans previous leader cleanup from owner/profile evidence (0.6366ms)
+✔ Thread reconciler plans proactive reservation cleanup (0.5883ms)
+✔ Thread reconciler plans reserved topic cleanup only with reservation proof (2.3991ms)
+✔ Thread reconciler plans expired targeted pending provision cleanup (0.5785ms)
+✔ Thread reconciler ignores stale-epoch cleanup observations (0.232ms)
+✔ Thread reconciler apply closes replaced instance topics and marks them stale (1.9489ms)
+✔ Thread reconciler reports failed replaced-topic closure as incomplete (0.4849ms)
+✔ Thread reconciler reports unfenced replaced-topic closure as incomplete (0.2382ms)
+✔ Thread reconciler apply skips destructive actions from stale leader epochs (1.4117ms)
+✔ Thread reconciler rechecks leader epoch between close and delete (1.535ms)
+✔ Thread reconciler rechecks leader epoch before cleanup persistence (0.4935ms)
+✔ Thread reconciler rechecks leader epoch before expired-pending mutation (0.2721ms)
+✔ Thread reconciler apply deletes expired pending topics and removes pending state (0.4257ms)
+✔ Thread reconciler apply keeps expired pending state when cleanup API fails (0.4482ms)
+✔ Thread reconciler apply reports incomplete cleanup API failures (11.4011ms)
+✔ Thread reconciler apply treats stale delete errors as confirmed cleanup (0.4903ms)
+✔ Thread reconciler does not treat a closed-only topic as deleted (0.2464ms)
+✔ Thread reconciler fails closed when destructive action lacks leader epoch (2.3944ms)
+✔ Thread reconciler fails closed when ownership probe returns undefined (0.2865ms)
+✔ Thread reconciler plans manual disconnect cleanup as a domain action (0.2281ms)
+✔ Thread reconciler apply closes and deletes manual disconnect topics without marking stale (0.3198ms)
+✔ Thread reconciler apply is the close/delete path for unbound cleanup actions (2.1027ms)
+✔ Thread owner keys isolate named Telegram profiles without changing default keys (6.5074ms)
+✔ Thread names are deterministic for the same seed (4.4849ms)
+✔ Baked thread names stay compact for narrow Telegram tabs (1.7854ms)
+✔ Baked thread names can be selected from timestamp entropy (0.4515ms)
+✔ Thread names include workspace and role hints (0.4321ms)
+✔ Thread names can include the assigned slot (0.1988ms)
+✔ Thread state path is transient and profile-aware (2.9039ms)
+✖ Thread store persists explicit owner target mappings privately (48.8814ms)
+✔ Thread store persists status snapshot sections separately from threads (27.9361ms)
+✔ Thread store status snapshot persist preserves unloaded thread records (32.14ms)
+✔ Thread store stale status writer refreshes current bindings before persist (54.0512ms)
+✔ Thread store denies follower writes until transport ownership promotes (52.7377ms)
+✔ Thread store snapshot commit is fenced by exact transport ownership (160.7604ms)
+✔ Thread store load does not clobber unpersisted thread mutations (27.3094ms)
+✔ Thread store concurrent persists use unique temp files (53.0898ms)
+✔ Thread store retains mutations that arrive during snapshot commit (20.5568ms)
+✔ Thread store persists bot-wide capability state separately from threads (14.0022ms)
+✔ Thread store migrates legacy displayName fields to threadName on load (10.1395ms)
+✔ Thread store returns defensive copies and prunes offline/stale observations (1.7867ms)
+✔ Thread cursor reconciliation preserves a live cursor and collision guards (0.6856ms)
+✔ Thread slot allocator preserves existing slots on reuse (0.2899ms)
+✔ Thread slot allocator follows the latest fresh slot around the ring (0.1514ms)
+✔ Thread slot allocator starts from the cursor instead of higher live slots (0.1238ms)
+✔ Thread slot allocator treats unexpired reservations as occupied (0.2324ms)
+✔ Thread slot allocator treats live pending provisions as occupied (0.1956ms)
+✔ Thread store persists and prunes pending provisions (33.475ms)
+✔ Thread store retains expired targeted pending provisions for reconciler cleanup (15.4507ms)
+✔ Thread slot allocator continues after persisted last slot when no threads remain (36.3936ms)
+✔ Thread slot allocator ignores expired reservations (0.3275ms)
+✔ Thread store prunes expired reservations on load (6.818ms)
+✔ Thread slot allocator returns undefined when all slots are occupied (0.4896ms)
+✔ Thread store enforces one active target per live instance (0.2293ms)
+✔ Thread renamer edits the Telegram topic and persisted thread name (18.6027ms)
+✔ Thread renamer rejects bare slot and generic role labels (0.5087ms)
+✔ Thread store preserves thread identity after stale target pruning (32.0299ms)
+✔ Thread provisioner does not reuse offline target history by profile key (229.9001ms)
+✔ Thread provisioner restores an active manual follower profile across runtime replacement (0.4412ms)
+✔ Thread provisioner allocates a fresh follower slot after stale identity is forgotten (206.8121ms)
+✔ Thread provisioner restores a named manual follower across runtime replacement (0.4691ms)
+✔ Thread provisioner reuses the same-runtime active manual follower target (0.2808ms)
+✔ Thread provisioner persists pending provision while creating a fresh topic (17.5367ms)
+✔ Thread provisioner preserves ambiguous creation intent and blocks successor duplication (11.3893ms)
+✔ Thread provisioner treats a malformed successful create as commit-unknown (12.7025ms)
+✔ Thread provisioner fails closed before mutation without leader ownership (0.5207ms)
+✔ Thread provisioner preserves its intent and stops binding after create loses ownership (30.6627ms)
+✔ Thread provisioner keeps targeted pending provision after post-create binding failure (17.9556ms)
+✔ Thread provisioner creates forum topics without retrying non-idempotent requests (223.8267ms)
+✔ Thread provisioner creates a new topic for new or stale profiles (182.7921ms)
+✔ Thread provisioner reuses current instance target before claiming another topic (0.541ms)
+✔ Thread provisioner claims pending topic before creating a new one (0.5843ms)
+✔ Thread provisioner ignores inactive history before creating a new one (226.5644ms)
+✔ Thread provisioner does not claim inactive slot with a live owner (182.4362ms)
+✔ Thread provisioner assigns follower slot after active leader slot (181.2582ms)
+✔ Thread provisioner assigns monotonic slots to new topics (182.5237ms)
+✔ Thread provisioner assigns fresh baked names from visible thread-name sequence (182.8762ms)
+✔ Thread helpers resolve the current instance record from preferred target or active instance (0.3964ms)
+✔ Thread identity resolver keeps status and prompt on registered local metadata (0.3278ms)
+✔ Thread helpers prefer follower and current store targets when resolving an instance thread target (0.1926ms)
+✔ Leader thread state runtime owns target identity transitions (0.1995ms)
+✔ Current-instance thread runtime owns record and live identity selection (0.3923ms)
+✔ Thread status runtime owns bus and identity projections (0.5582ms)
+✔ Thread helpers project thread state for status without entrypoint mapping (0.9517ms)
+✔ Thread helpers extract thread targets from Bot API bodies (0.2294ms)
+✔ Bot API Threaded Mode unavailable helper detects disabled thread support (0.177ms)
+✔ Thread stale error helper detects deleted or missing topics (0.1519ms)
+✔ Thread identity helpers require compact capitalized Latin names (0.448ms)
+✔ Thread titles are trimmed and capped to Telegram's 128 character limit (0.1303ms)
+✔ Own bus topic provisioner assigns a leader topic through the common provisioner (30.1191ms)
+✔ Own bus topic provisioner cleans previous leader before reusing promoted follower topic (14.1954ms)
+✔ Own bus topic provisioner reuses promoted follower topic (13.1693ms)
+✔ Own bus topic provisioner restores a promoted leader session handoff (17.3617ms)
+✔ Own bus topic provisioner does not claim pending follower topics (24.2328ms)
+✔ Own bus topic provisioner ignores non-current offline history (25.2135ms)
+✔ Own bus topic provisioner reuses a current topic without visible startup probes (17.2937ms)
+✔ Thread store persists only current state statuses (9.7973ms)
+✔ Time config resolves defaults when keys are missing (42.4108ms)
+✔ Time config maps legacy off mode to hidden (0.695ms)
+✔ Time config rejects non-positive interval (0.3508ms)
+✔ Time injection runtime returns null for every call when injectionMode is hidden (1.5631ms)
+✔ Time injection runtime returns formatted line on every call when injectionMode is always (1.7589ms)
+✔ Time injection runtime suppresses repeat lines within the interval window (0.9096ms)
+✔ Time injection runtime tracks interval state per chatId (1.2811ms)
+✔ Time injection formatting honours the requested timezone (0.8822ms)
+✔ Turn helpers truncate queue summaries predictably (3.4532ms)
+✔ Turn helpers build prompt text with history and attachments (0.8529ms)
+✔ Turn helpers keep attachment outputs with user content before reply context (0.2477ms)
+✔ Turn helpers omit [time] section by default (0.2091ms)
+✔ Turn helpers inject [time] as the final context section (0.5119ms)
+✔ Turn helpers still inject [time] when raw text is empty (0.1995ms)
+✔ Turn runtime builder calls resolveTimeLine with chatId and embeds result (3.1906ms)
+✔ Turn runtime builder adds explicit thread attribute to Telegram prefix (0.6455ms)
+✔ Turn helpers summarize text and attachment-only turns (0.5007ms)
+✔ Turn helpers update queued prompt text for edited Telegram messages (1.1598ms)
+✔ Turn runtime builder extracts text, downloads files, and allocates order (0.8574ms)
+✔ Turn runtime builder injects Telegram reply context into prompt turns (0.4703ms)
+✔ Turn runtime builder identifies forwarded messages from non-owner users (1.0404ms)
+✔ Turn runtime builder keeps a same-turn comment before forwarded content (0.8491ms)
+✔ Turn runtime builder keeps forwarded Rich media in source attachment context (37.1665ms)
+✔ Turn runtime builder keeps a trailing comment before a forwarded photo source (7.0276ms)
+✔ Turn runtime builder places replied-message attachments in source attachment context (1.1648ms)
+✔ Turn runtime builder keeps current attachments before source reply context (0.4958ms)
+✔ Turn runtime builder includes reply block for attachment-only replied messages (1.167ms)
+✔ Turn runtime builder routes inbound handler output into prompt text (0.5805ms)
+✔ Turn runtime omits voice context when reply mode is only the implicit default (1.1591ms)
+✔ Turn builder preserves topic thread target (0.6013ms)
+✔ Turn builder keeps private bot topic metadata out of prompt prefix (0.4211ms)
+✔ Turn builder keeps group topic metadata out of prompt prefix (0.2304ms)
+✔ Voice reply mode tags turn when voice file present and mode is mirror (0.3324ms)
+✔ Voice reply mode tags turn with voice-required when mode is always (0.2784ms)
+✔ Voice reply mode mirror with no voice file stays on the hidden text path (2.3545ms)
+✔ Voice reply mode always with voice file present sets voiceReplyRequired only (0.3514ms)
+✔ Turn runtime keeps hidden mode silent without voice flags (0.2662ms)
+✔ Turn runtime helper reads image payloads from local files (22.8803ms)
+✔ Turn helpers update matching queued prompt items only (0.8802ms)
+✔ Turn edit runtime binds queued prompt updates to status (2.1535ms)
+✔ Turn edit runtime keeps reply context prompt-only when queued messages change (0.3076ms)
+✖ Turn helpers preserve queued prompt attachments when captions are edited (4.9366ms)
+✔ Turn helpers preserve abort-history prompt context when queued turns are edited (0.593ms)
+✔ Turn edit preserves voice reply tags (4.0357ms)
+✔ Turn helpers assemble prompt turns with text, ids, history, and image payloads (4.1589ms)
+✔ getTelegramVoiceReplyMode returns default when no config provided (0.6204ms)
+✔ getTelegramVoiceReplyMode reads frozen config with valid replyMode (0.1372ms)
+✔ getTelegramVoiceReplyMode ignores frozen config with invalid replyMode (0.3344ms)
+✔ getTelegramVoiceReplyMode reads config voice.replyMode (0.1394ms)
+✔ getTelegramVoiceReplyMode falls back to hidden for invalid, legacy, or missing config (0.1355ms)
+✔ Update helpers normalize emoji reactions and collect emoji-only entries (3.2185ms)
+✔ Update helpers extract topic lifecycle service messages (0.3712ms)
+✔ Update helpers extract private and thread targets from messages (0.4392ms)
+✔ Update helpers extract deleted business-message ids only from Bot API shapes (0.5221ms)
+✔ Paired update runtime binds pairing ports into update routing (1.6557ms)
+✔ Paired update runtime preserves follower target ownership forwarding (0.5186ms)
+✔ Paired update runtime preserves topic lifecycle handling (0.6009ms)
+✔ Update routing extracts private and authorized group human callback queries (0.3468ms)
+✔ Update routing extracts private human messages and edited messages separately (0.6892ms)
+✔ Update routing extracts guest messages without private chat filter (0.6877ms)
+✔ Update flow prioritizes deleted business-message handling over other update kinds (0.3139ms)
+✔ Update flow detects topic lifecycle before prompt routing (0.2105ms)
+✔ Update flow returns authorized callback, message, and edit actions (0.52ms)
+✔ Update flow classifies guest messages with authorization (0.3202ms)
+✔ Update flow ignores unauthorized transport shapes and preserves reaction events (0.2613ms)
+✔ Update execution plan maps callback and message authorization to side-effect flags (0.2423ms)
+✔ Update execution plan preserves deleted and reaction actions (0.2727ms)
+✔ Update execution plan maps guest authorization to deny flag (0.1661ms)
+✔ Update execution plan can be built directly from updates (0.132ms)
+✔ Update runtime controller binds update and reaction ports (0.6517ms)
+✔ Update runtime routes guest messages through guest handler (1.5554ms)
+✔ Update runtime denies guest messages before pairing (0.3933ms)
+✔ Update runtime answers guest query with access denied for unauthorized users (0.4913ms)
+✔ Update runtime handles authorized reaction priority and removal effects (0.7196ms)
+✔ Update runtime handles authorized group reactions and ignores other users (0.2972ms)
+✔ Update runtime ignores reactions owned by another instance (0.6847ms)
+✔ Update runtime forwards reactions owned by another instance (0.3455ms)
+✔ Update runtime records forwarded message ownership for later reactions (0.7598ms)
+✔ Update runtime executes delete and reaction plans through the right side effects (0.2632ms)
+✔ Update runtime can execute directly from raw updates (0.3387ms)
+✔ Update runtime swallows only stale context execution errors (1.0989ms)
+✔ Update runtime routes edited messages without creating normal message turns (0.554ms)
+✔ Update runtime answers callbacks owned by another instance without handling (0.8817ms)
+✔ Update runtime forwards callbacks owned by another instance (0.3833ms)
+✔ Update runtime forwards callbacks from threads owned by another target instance (0.4504ms)
+✔ Update runtime forwards messages owned by another target instance (0.7054ms)
+✔ Update runtime forwards edited messages owned by another message instance (0.3317ms)
+✔ Update runtime forwards edited messages owned by another target instance (0.4246ms)
+✔ Update runtime keeps unauthorized message replies in the source thread (0.3062ms)
+✔ Update runtime handles callback deny and message pair flows (0.4668ms)
+✔ executeTelegramUpdatePlan with handleUnboundTelegramTopicMessage calls unbound handler for message with threadId (0.2981ms)
+✔ executeTelegramUpdatePlan with handleUnboundTelegramTopicMessage falls through for message without threadId (0.3104ms)
+✔ executeTelegramUpdatePlan with foreign target ownership skips unbound handler (0.2879ms)
+✔ Registry is created lazily on first access and reused (0.2882ms)
+✔ Registry is shared across import paths via globalThis (0.1329ms)
+✔ Dispatch returns 'pass' when no handlers are registered (0.1917ms)
+✔ registerTelegramUpdateHandler registers handlers and disposer removes them (0.2495ms)
+✔ Consume short-circuits later handlers and bubbles up to dispatch (0.2569ms)
+✔ Handler errors do not break polling and do not consume the update (0.2086ms)
+✔ Void/undefined return values are treated as 'pass' (0.2914ms)
+✔ createTelegramUpdateHandle skips defaultHandle on consume (0.3854ms)
+✔ createTelegramUpdateHandle calls defaultHandle when no handlers registered (0.3498ms)
+✔ Pre-existing docs-style registry missing 'dispatch' is replaced with a valid one (0.3783ms)
+✔ Pre-existing malformed registry (wrong types) is replaced (0.1922ms)
+✔ Pre-existing registry with future version is replaced (v1 runtime, v2 squatter) (0.1791ms)
+✔ Pre-existing fully-formed v1 registry from a layered extension is reused (0.7515ms)
+✔ Pre-existing non-object value at registry key is replaced (0.1672ms)
+✔ createTelegramUpdateHandle accepts an explicit registry override (0.3272ms)
+✔ voice reply modes expose only hidden, mirror, and always (3.239ms)
+✔ getTelegramVoiceReplyMode returns 'hidden' by default (0.44ms)
+✔ getTelegramVoiceReplyMode reads valid mode from config (0.4971ms)
+✔ getTelegramVoiceReplyMode ignores invalid config values (0.6612ms)
+✔ getTelegramVoiceReplyMode ignores provider policy without config (0.4704ms)
+✔ getTelegramVoiceReplyMode reads config even when provider returns invalid policy (0.3096ms)
+✔ getTelegramVoiceReplyMode defaults to hidden despite provider policies (0.275ms)
+✔ computeVoiceTurnFlags works for all modes (0.3186ms)
+✔ isVoiceTurn detects voice-tagged turns correctly (0.4572ms)
+✔ shouldSuppressPreviewForVoice works correctly (0.5099ms)
+✔ planTelegramVoiceReply extracts simple voice text (2.5068ms)
+✔ planTelegramVoiceReply extracts lang and rate attributes (0.7408ms)
+✔ planTelegramVoiceReply handles colon shorthand form (0.3939ms)
+✔ planTelegramVoiceReply handles multiple voice blocks (0.5075ms)
+✔ planTelegramVoiceReply returns cleaned markdown (0.5027ms)
+✔ Voice synthesis provider registry - basic register / get / has / clear (0.413ms)
+✔ Voice synthesis provider registry accepts both function and object form (1.2004ms)
+✔ Voice synthesis generated ids skip existing registry entries (0.6568ms)
+✔ Voice synthesis stable id stale disposer does not delete replacement (0.3223ms)
+✔ Voice synthesis fixture re-registers cleanly across lifecycle boundaries (0.3629ms)
+✔ Voice synthesis generated ids do not collide after disposal (0.2487ms)
+✔ Voice transcription generated ids skip existing registry entries (0.2401ms)
+✔ Voice transcription stable id stale disposer does not delete replacement (0.1833ms)
+✔ Voice transcription fixture re-registers cleanly across lifecycle boundaries (0.251ms)
+✔ Voice transcription generated ids do not collide after disposal (0.1638ms)
+✔ Voice synthesis provider registry clear works reliably for tests (0.149ms)
+✔ stripTelegramCommentMarkupForPreview removes voice blocks and normalizes whitespace (0.2342ms)
+✔ planTelegramVoiceReply works with the original generic parsers (fence + comment) (0.4722ms)
+ℹ tests 1343
+ℹ suites 0
+ℹ pass 1223
+ℹ fail 60
+ℹ cancelled 56
+ℹ skipped 4
+ℹ todo 0
+ℹ duration_ms 36489.8572
+
+✖ failing tests:
+
+test at tests\bus-follower.test.ts:183:1
+✖ Bus follower receiver handles leader-forwarded updates and target replacement (18.8264ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-forward-ZZryHG\.pi-telegram-4865ba227210098f.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-follower.test.ts:220:18)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-forward-ZZryHG\\.pi-telegram-4865ba227210098f.sock',
+    port: -1
+  }
+
+test at tests\bus-follower.test.ts:344:1
+✖ Bus follower receiver rejects delayed work from a replaced registration generation (12.9982ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-forward-generation-S9E2yt\.pi-telegram-9630733ca0311ff7.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-follower.test.ts:359:18)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-forward-generation-S9E2yt\\.pi-telegram-9630733ca0311ff7.sock',
+    port: -1
+  }
+
+test at tests\bus-follower.test.ts:858:1
+✖ Bus follower assembly wires receiver, recovery, and registration (5.7775ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-follower-assembly-awfZcB\.pi-telegram-93fd0e36397a2858.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-follower.test.ts:914:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-follower-assembly-awfZcB\\.pi-telegram-93fd0e36397a2858.sock',
+    port: -1
+  }
+
+test at tests\bus-follower.test.ts:932:1
+✖ Bus follower registration state tracks successful registration and stop (19.4175ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-follower-state-eOTYMT\.pi-telegram-0a042c252092146c.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-follower.test.ts:958:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-follower-state-eOTYMT\\.pi-telegram-0a042c252092146c.sock',
+    port: -1
+  }
+
+test at tests\bus-follower.test.ts:978:1
+✖ Bus follower re-registration carries its last known target (13.5427ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-follower-reload-target-UKlyhY\.pi-telegram-9c37d822d5f96586.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-follower.test.ts:1013:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-follower-reload-target-UKlyhY\\.pi-telegram-9c37d822d5f96586.sock',
+    port: -1
+  }
+
+test at tests\bus-follower.test.ts:1032:1
+✖ Bus follower registration runtime retries while leader endpoint is starting (18.8297ms)
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1077:1
+✖ Bus follower registration runtime waits for slow target provisioning
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1116:1
+✖ Bus follower registration runtime registers and explicitly disconnects
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1162:1
+✖ Bus follower registration runtime accepts explicit manual profile keys
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1188:1
+✖ Bus follower registration runtime reports heartbeat failure with active context
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1223:1
+✖ Bus follower registration runtime reports rejected heartbeat with active context
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1262:1
+✖ Bus follower registration runtime heartbeats until stopped
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1297:1
+✖ Bus follower registration runtime surfaces leader rejection reasons
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1330:1
+✖ Bus follower registration runtime derives leader socket when lock omits it
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1357:1
+✖ Bus follower API caller sends method calls and returns leader results
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1400:1
+✖ Bus follower API caller preserves structured commit-unknown errors
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1430:1
+✖ Bus follower API caller classifies non-idempotent acknowledgement loss as commit-unknown
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1466:1
+✖ Bus follower session replacement preserves a same-process handoff
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1512:1
+✖ Bus session replacement preserves the promoted leader binding
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-follower.test.ts:1564:1
+✖ Bus follower session refresh re-registers with the handed-off target
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\bus-leader.test.ts:27:1
+✖ Bus leader preserves a binding through follower reload handoff (102.7697ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+        body: {
+          chat_id: 7,
+          message_thread_id: 42,
+          parse_mode: 'HTML',
+  +       text: '实例 <b>Cedar</b> 已连接。'
+  -       text: '📡 Instance <b>Cedar</b> connected.'
+        },
+        method: 'sendMessage'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-leader.test.ts:70:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { method: 'sendMessage', body: [Object] } ],
+    expected: [ { method: 'sendMessage', body: [Object] } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\bus-leader.test.ts:196:1
+✖ Bus leader follower target provisioner creates thread and announces connection (74.8435ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+  
+    [
+      {
+        body: {
+          chat_id: 7,
+          name: 'Atlas'
+  ...
+          parse_mode: 'HTML',
+  +       text: '实例 <b>Atlas</b> 已连接。'
+  -       text: '📡 Instance <b>Atlas</b> connected.'
+        },
+        method: 'sendMessage'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-leader.test.ts:238:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { method: 'createForumTopic', body: [Object] }, { method: 'sendMessage', body: [Object] } ],
+    expected: [ { method: 'createForumTopic', body: [Object] }, { method: 'sendMessage', body: [Object] } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\bus-leader.test.ts:262:1
+✖ Bus leader follower target provisioner transfers a live session-reload target (85.4154ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      {
+        body: {
+          chat_id: 7,
+          message_thread_id: 12,
+          parse_mode: 'HTML',
+  +       text: '实例 <b>Ember</b> 已连接。'
+  -       text: '📡 Instance <b>Ember</b> connected.'
+        },
+        method: 'sendMessage'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-leader.test.ts:304:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { method: 'sendMessage', body: [Object] } ],
+    expected: [ { method: 'sendMessage', body: [Object] } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\bus-leader.test.ts:844:1
+✖ Bus leader target provisioner creates thread and announces connection (141.5609ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+  
+    [
+      {
+        body: {
+          chat_id: 7,
+          name: 'Atlas'
+  ...
+          parse_mode: 'HTML',
+  +       text: '实例 <b>Atlas</b> 已连接。'
+  -       text: '📡 Instance <b>Atlas</b> connected.'
+        },
+        method: 'sendMessage'
+      }
+    ]
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-leader.test.ts:890:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { method: 'createForumTopic', body: [Object] }, { method: 'sendMessage', body: [Object] } ],
+    expected: [ { method: 'createForumTopic', body: [Object] }, { method: 'sendMessage', body: [Object] } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\bus-leader.test.ts:924:1
+✖ Bus leader builds connected lifecycle announcements with thread name before slot (0.7617ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      parseMode: 'HTML',
+      target: {
+        chatId: 123,
+        threadId: 45
+      },
+  +   text: '实例 <b>Cedar</b> 已连接。'
+  -   text: '📡 Instance <b>Cedar</b> connected.'
+    }
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-leader.test.ts:925:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { target: { chatId: 123, threadId: 45 }, text: '实例 <b>Cedar</b> 已连接。', parseMode: 'HTML' },
+    expected: { target: { chatId: 123, threadId: 45 }, text: '📡 Instance <b>Cedar</b> connected.', parseMode: 'HTML' },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\bus-leader.test.ts:1581:1
+✖ Bus leader assembly wires provisioners, reconciliation, API, and runtime (8.8051ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-leader-assembly-GCYoTC\.pi-telegram-8a72d13d5743397a.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at Object.startPolling (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus-leader.ts:1237:22)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-leader.test.ts:1612:17)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-leader-assembly-GCYoTC\\.pi-telegram-8a72d13d5743397a.sock',
+    port: -1
+  }
+
+test at tests\bus-leader.test.ts:1621:1
+✖ Bus leader runtime provisions leader target before polling (9.7484ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-leader-target-Mx41kS\.pi-telegram-e9f23a17b3d91d08.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at Object.startPolling (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus-leader.ts:1237:22)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-leader.test.ts:1639:17)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-leader-target-Mx41kS\\.pi-telegram-e9f23a17b3d91d08.sock',
+    port: -1
+  }
+
+test at tests\bus-leader.test.ts:1647:1
+✖ Bus leader runtime starts the local server around polling (13.6492ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-leader-tHBG52\.pi-telegram-edbc2ad4ac11116a.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at Object.startPolling (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus-leader.ts:1237:22)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-leader.test.ts:1664:17)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-leader-tHBG52\\.pi-telegram-edbc2ad4ac11116a.sock',
+    port: -1
+  }
+
+test at tests\bus-leader.test.ts:1706:1
+✖ Bus leader runtime prunes stale followers while polling (21.2475ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-prune-CliPmw\.pi-telegram-bb90cc72a8296637.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at Object.startPolling (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus-leader.ts:1237:22)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-leader.test.ts:1729:17)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-prune-CliPmw\\.pi-telegram-bb90cc72a8296637.sock',
+    port: -1
+  }
+
+test at tests\bus-leader.test.ts:1744:1
+✖ Bus leader runtime stops stale follower pruning and clears registry on stop (6.3808ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-prune-stop-wBPi7W\.pi-telegram-a6979c64e4dc721e.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at Object.startPolling (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus-leader.ts:1237:22)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-leader.test.ts:1760:17)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-prune-stop-wBPi7W\\.pi-telegram-a6979c64e4dc721e.sock',
+    port: -1
+  }
+
+test at tests\bus-leader.test.ts:1771:1
+✖ Bus leader runtime stops the local server if polling startup fails (17.4349ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /poll failed/. Input:
+  
+  'Error: listen EACCES: permission denied C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-leader-fail-5FfvPD\\.pi-telegram-bc6fbcb2d91c0213.sock'
+  
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-leader.test.ts:1783:3)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-leader-fail-5FfvPD\.pi-telegram-bc6fbcb2d91c0213.sock
+        at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+        at listenInCluster (node:net:1997:12)
+        at Server.listen (node:net:2119:5)
+        at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+        at new Promise (<anonymous>)
+        at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+        at Object.startPolling (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus-leader.ts:1237:22)
+        at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus-leader.test.ts:1783:32)
+        at Test.runInAsyncScope (node:async_hooks:214:14)
+        at Test.run (node:internal/test_runner/test:1047:25),
+    expected: /poll failed/,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests\bus.test.ts:151:1
+✖ Bus socket path is scoped under the agent temp directory (1.8982ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '\\\\.\\pipe\\pi-telegram-l9uEbdkz4G73UbkR-bus'
+  - '\\agent\\tmp\\telegram\\bus.sock'
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:152:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '\\\\.\\pipe\\pi-telegram-l9uEbdkz4G73UbkR-bus',
+    expected: '\\agent\\tmp\\telegram\\bus.sock',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\bus.test.ts:762:1
+✖ Bus transport probe reports reachable and unreachable endpoints (160.9002ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-probe-KMwoDc\.pi-telegram-d34c1c678e7629bd.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:776:16)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-probe-KMwoDc\\.pi-telegram-d34c1c678e7629bd.sock',
+    port: -1
+  }
+
+test at tests\bus.test.ts:792:1
+✖ Bus local server resolves the active profile endpoint on each start (85.8517ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-profile-switch-uua4p2\tmp\telegram\.pi-telegram-7c5809747cc99a2f.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:802:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-profile-switch-uua4p2\\tmp\\telegram\\.pi-telegram-7c5809747cc99a2f.sock',
+    port: -1
+  }
+
+test at tests\bus.test.ts:819:1
+✖ Old bus server stop cannot invalidate a replacement endpoint generation (6.7217ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-generation-nLXFwm\.pi-telegram-1334b23a83073427.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:841:15)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-generation-nLXFwm\\.pi-telegram-1334b23a83073427.sock',
+    port: -1
+  }
+
+test at tests\bus.test.ts:876:1
+✖ Stale bus server cannot publish over a replacement endpoint generation (7.6716ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-publish-fence-EAwQAV\.pi-telegram-874bc162c057c710.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:906:28)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-publish-fence-EAwQAV\\.pi-telegram-874bc162c057c710.sock',
+    port: -1
+  }
+
+test at tests\bus.test.ts:935:1
+✖ Bus local server rebinds an externally unlinked Unix endpoint (8.9862ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-rebind-G1Ohy0\.pi-telegram-26b77ed17faee921.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:945:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-rebind-G1Ohy0\\.pi-telegram-26b77ed17faee921.sock',
+    port: -1
+  }
+
+test at tests\bus.test.ts:998:1
+✖ Bus local client classifies response timeouts as transport timeouts (18.5345ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-client-timeout-810I3Q\.pi-telegram-7c00cc261ca462c0.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:1007:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-client-timeout-810I3Q\\.pi-telegram-7c00cc261ca462c0.sock',
+    port: -1
+  }
+
+test at tests\bus.test.ts:1032:1
+✖ Bus local server memoizes completed and in-flight request results (12.6215ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-ledger-Z09b23\.pi-telegram-ee74101e64fa2e1d.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:1054:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-ledger-Z09b23\\.pi-telegram-ee74101e64fa2e1d.sock',
+    port: -1
+  }
+
+test at tests\bus.test.ts:1081:1
+✖ Bus retry returns the memoized result after the first acknowledgement is lost (11.843ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-ledger-ack-loss-iUFul7\.pi-telegram-87680324a94ffbcf.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:1104:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-ledger-ack-loss-iUFul7\\.pi-telegram-87680324a94ffbcf.sock',
+    port: -1
+  }
+
+test at tests\bus.test.ts:1132:1
+✖ Bus local server rejects request-id reuse with a changed payload (5.8131ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-ledger-collision-IfnLwg\.pi-telegram-7dad375a833349cb.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:1148:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-ledger-collision-IfnLwg\\.pi-telegram-7dad375a833349cb.sock',
+    port: -1
+  }
+
+test at tests\bus.test.ts:1174:1
+✖ Bus local IPC server reports handler failures as protocol acks (3.8651ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-handler-failure-YcN9P2\.pi-telegram-4ebf6d501e24d77b.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:1186:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-handler-failure-YcN9P2\\.pi-telegram-4ebf6d501e24d77b.sock',
+    port: -1
+  }
+
+test at tests\bus.test.ts:1212:1
+✖ Bus local IPC server handles request/response envelopes over a private Unix socket (3.4325ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-gZjXFQ\.pi-telegram-3d944bce1d675b3a.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:1224:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-gZjXFQ\\.pi-telegram-3d944bce1d675b3a.sock',
+    port: -1
+  }
+
+test at tests\bus.test.ts:1282:1
+✖ Bus foreign-owned update forwarder sends routed update envelopes (5.3587ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-forwarder-y0J2Nh\.pi-telegram-0733f8fbedd1f37c.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:1300:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-forwarder-y0J2Nh\\.pi-telegram-0733f8fbedd1f37c.sock',
+    port: -1
+  }
+
+test at tests\bus.test.ts:1373:1
+✖ Bus foreign-owned update forwarder supports tolerant timeouts (4.66ms)
+  Error: listen EACCES: permission denied C:\Users\yecen\AppData\Local\Temp\pi-telegram-bus-forwarder-slow-KdzUI2\.pi-telegram-1f232f8957cf32ed.sock
+      at Server.setupListenHandle [as _listen2] (node:net:1918:21)
+      at listenInCluster (node:net:1997:12)
+      at Server.listen (node:net:2119:5)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:839:14
+      at new Promise (<anonymous>)
+      at Object.start (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/bus.ts:837:11)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/bus.test.ts:1389:16)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18) {
+    code: 'EACCES',
+    errno: -4092,
+    syscall: 'listen',
+    address: 'C:\\Users\\yecen\\AppData\\Local\\Temp\\pi-telegram-bus-forwarder-slow-KdzUI2\\.pi-telegram-1f232f8957cf32ed.sock',
+    port: -1
+  }
+
+test at tests\command-templates.test.ts:28:1
+✖ Command templates accept shorthand string configs (5.0106ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      args: [
+        '--text',
+        'hello world',
+        '--lang',
+        'ru'
+      ],
+  +   command: 'D:\\work\\tts'
+  -   command: '/work/tts'
+    }
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/command-templates.test.ts:34:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { command: 'D:\\work\\tts', args: [ '--text', 'hello world', '--lang', 'ru' ] },
+    expected: { command: '/work/tts', args: [ '--text', 'hello world', '--lang', 'ru' ] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\command-templates.test.ts:180:1
+✖ Command templates resolve defaults and inline placeholder defaults (1.0591ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+  
+    {
+      args: [
+        '--text',
+        'hello world',
+        '--lang',
+  ...
+      ],
+  +   command: 'D:\\work\\tts'
+  -   command: '/work/tts'
+    }
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/command-templates.test.ts:189:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { command: 'D:\\work\\tts', args: [ '--text', 'hello world', '--lang', 'ru', '--rate', '+30%' ] },
+    expected: { command: '/work/tts', args: [ '--text', 'hello world', '--lang', 'ru', '--rate', '+30%' ] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\commands.test.ts:84:1
+✖ Command helpers expose Telegram bot command definitions (4.0213ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+  
+    [
+      {
+        command: 'start',
+        description: '🟢 打开菜单或完成配对'
+      },
+  ...
+      {
+  +     command: 'spawn',
+  +     description: '🆕 新开本机 Pi 实例与 Telegram 话题'
+  +   },
+  +   {
+        command: 'next',
+        description: '⏩ 强制执行下一任务'
+      },
+      {
+        command: 'continue',
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/commands.test.ts:111:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.start (node:internal/test_runner/test:944:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { command: 'start', description: '🟢 打开菜单或完成配对' }, { command: 'compact', description: '🗜 压缩当前会话' }, { command: 'spawn', description: '🆕 新开本机 Pi 实例与 Telegram 话题' }, { command: 'next', description: '⏩ 强制执行下一任务' }, { command: 'continue', description: '▶️ 排队继续提示' }, { command: 'abort', description: '⏹️ 中止当前任务' }, { command: 'stop', description: '🟥 中止任务并清空队列' } ],
+    expected: [ { command: 'start', description: '🟢 打开菜单或完成配对' }, { command: 'compact', description: '🗜 压缩当前会话' }, { command: 'next', description: '⏩ 强制执行下一任务' }, { command: 'continue', description: '▶️ 排队继续提示' }, { command: 'abort', description: '⏹️ 中止当前任务' }, { command: 'stop', description: '🟥 中止任务并清空队列' } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\config.test.ts:134:1
+✖ Telegram config helpers persist and reload config (10.0475ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  438 !== 384
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/config.test.ts:147:9)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 438,
+    expected: 384,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\inbound.test.ts:296:1
+✖ Inbound template invocation keeps args as name declarations only (2.4417ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      args: [
+        '/tmp/a.ogg',
+        'ru'
+      ],
+  +   command: 'D:\\work\\scripts\\transcribe'
+  -   command: '/work/scripts/transcribe'
+    }
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/inbound.test.ts:305:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { command: 'D:\\work\\scripts\\transcribe', args: [ '/tmp/a.ogg', 'ru' ] },
+    expected: { command: '/work/scripts/transcribe', args: [ '/tmp/a.ogg', 'ru' ] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\inbound.test.ts:311:1
+✖ Inbound template invocation supports inline placeholder defaults (3.6452ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      args: [
+        '/tmp/a.ogg',
+        'ru',
+        'voxtral-mini-latest'
+      ],
+  +   command: 'D:\\work\\scripts\\transcribe'
+  -   command: '/work/scripts/transcribe'
+    }
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/inbound.test.ts:319:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { command: 'D:\\work\\scripts\\transcribe', args: [ '/tmp/a.ogg', 'ru', 'voxtral-mini-latest' ] },
+    expected: { command: '/work/scripts/transcribe', args: [ '/tmp/a.ogg', 'ru', 'voxtral-mini-latest' ] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\inbound.test.ts:325:1
+✖ Inbound template handlers resolve relative commands (0.748ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      args: [
+        '/tmp/a.ogg',
+        'ru'
+      ],
+  +   command: 'D:\\work\\scripts\\transcribe'
+  -   command: '/work/scripts/transcribe'
+    }
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/inbound.test.ts:331:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { command: 'D:\\work\\scripts\\transcribe', args: [ '/tmp/a.ogg', 'ru' ] },
+    expected: { command: '/work/scripts/transcribe', args: [ '/tmp/a.ogg', 'ru' ] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\inbound.test.ts:337:1
+✖ Inbound template handlers append the path when no placeholder is present (0.7979ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      args: [
+        '--lang',
+        'ru',
+        '/tmp/a.ogg'
+      ],
+  +   command: 'D:\\work\\scripts\\transcribe'
+  -   command: '/work/scripts/transcribe'
+    }
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/inbound.test.ts:343:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { command: 'D:\\work\\scripts\\transcribe', args: [ '--lang', 'ru', '/tmp/a.ogg' ] },
+    expected: { command: '/work/scripts/transcribe', args: [ '--lang', 'ru', '/tmp/a.ogg' ] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration.test.ts:24:7
+✖ Public activity delivery reaches the classic instance without blocking agent start (5313.8408ms)
+  'test timed out after 5000ms'
+
+test at tests\integration.test.ts:24:7
+✖ Extension runtime polls, pairs, and dispatches an inbound Telegram turn into pi (5624.7902ms)
+  'test timed out after 5000ms'
+
+test at tests\integration.test.ts:24:7
+✖ Extension runtime clears queued follow-ups after a Telegram stop (2130.4182ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/integration.test.ts:1381:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration.test.ts:24:7
+✖ Extension runtime opens immediate model menu before queued prompt after agent end (2172.9717ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'send:<b>模型</b>'
+  - 'send:<b>🤖 选择模型：</b>'
+             ^
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/integration.test.ts:1650:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'send:<b>模型</b>',
+    expected: 'send:<b>🤖 选择模型：</b>',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration.test.ts:24:7
+✖ Extension runtime keeps queued turns blocked until compaction completes (2157.1719ms)
+  Error: Timed out waiting for condition
+      at waitForCondition (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/integration.test.ts:65:8)
+      at async TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/integration.test.ts:1760:3)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+
+test at tests\integration.test.ts:24:7
+✖ Extension runtime applies idle model picks immediately and refreshes status (2100.7466ms)
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\integration.test.ts:24:7
+✖ Extension runtime switches model in flight and dispatches a continuation turn after abort
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\integration.test.ts:24:7
+✖ Extension runtime preserves long-session queue through abort, next, and model switch
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\integration.test.ts:24:7
+✖ Extension runtime delays model-switch abort until the active tool finishes
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\invariants.test.ts:135:1
+✖ Domain test filenames mirror their owning lib domain (2.2986ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'desktop-view-project',
+  +   'desktop-view-throttle'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/invariants.test.ts:147:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'desktop-view-project', 'desktop-view-throttle' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\invariants.test.ts:231:1
+✖ Entrypoint stays a composition root without local runtime adapters (1.1545ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/invariants.test.ts:237:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\invariants.test.ts:274:1
+✖ Structural leaf domains stay free of local nominal imports (1.7664ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      'lib\\polling.ts': [],
+      'lib\\setup.ts': [],
+  +   'lib\\status.ts': [
+  +     './ui-copy.ts'
+  +   ]
+  -   'lib\\status.ts': []
+    }
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/invariants.test.ts:283:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { 'lib\\polling.ts': [], 'lib\\setup.ts': [], 'lib\\status.ts': [ './ui-copy.ts' ] },
+    expected: { 'lib\\polling.ts': [], 'lib\\setup.ts': [], 'lib\\status.ts': [] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\locks.test.ts:222:1
+✖ writeLocks writes private lock files (25.3953ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  438 !== 384
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/locks.test.ts:226:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 438,
+    expected: 384,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\locks.test.ts:232:1
+✖ File transaction publishes a private directory guard with owner metadata (31.7663ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  438 !== 448
+  
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/locks.test.ts:238:11
+      at withTelegramFileTransaction (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/lib/locks.ts:586:10)
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/locks.test.ts:236:3)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 438,
+    expected: 448,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\locks.test.ts:2003:1
+✖ Locked polling runtime suspend waits for pending session auto-start before stopping (13.9648ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      'start:begin',
+      'start:end',
+  +   'status',
+      'stop'
+    ]
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/locks.test.ts:2034:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'start:begin', 'start:end', 'status', 'stop' ],
+    expected: [ 'start:begin', 'start:end', 'stop' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\logs.test.ts:29:1
+✖ Runtime log paths preserve default compatibility and isolate named profiles (3.9794ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '\\agent\\tmp\\telegram\\logs.jsonl'
+  - '/agent/tmp/telegram/logs.jsonl'
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/logs.test.ts:30:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.start (node:internal/test_runner/test:944:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '\\agent\\tmp\\telegram\\logs.jsonl',
+    expected: '/agent/tmp/telegram/logs.jsonl',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\logs.test.ts:36:1
+✖ Runtime JSONL paths do not collide across profile lifecycle names (1.1133ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + '\\agent\\tmp\\telegram\\logs.previous.jsonl'
+  - '/agent/tmp/telegram/logs.previous.jsonl'
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/logs.test.ts:44:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '\\agent\\tmp\\telegram\\logs.previous.jsonl',
+    expected: '/agent/tmp/telegram/logs.previous.jsonl',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\logs.test.ts:215:1
+✖ Runtime JSONL appends serialize across processes without lost lines (3015.4829ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  49 !== 50
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/logs.test.ts:266:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 49,
+    expected: 50,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\outbound.test.ts:766:1
+✖ Voice reply sender prefers configured outbound voice handlers over registered synthesis providers (46.5316ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^\/tmp\/pi-telegram-voice-handler-test\/.+-voice\.ogg$/. Input:
+  
+  '\\tmp\\pi-telegram-voice-handler-test\\3db0d6e8-3a5f-4777-944b-486ee9de6f1a-voice.ogg'
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/outbound.test.ts:795:9)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '\\tmp\\pi-telegram-voice-handler-test\\3db0d6e8-3a5f-4777-944b-486ee9de6f1a-voice.ogg',
+    expected: /^\/tmp\/pi-telegram-voice-handler-test\/.+-voice\.ogg$/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests\outbound.test.ts:822:1
+✖ Voice reply sender uses configured outbound voice handlers when no provider is registered (3.0355ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^\/tmp\/pi-telegram-voice-handler-test\/.+-voice\.mp3$/. Input:
+  
+  '\\tmp\\pi-telegram-voice-handler-test\\47ab2268-fd58-4466-87ed-e01e3e2759fa-voice.mp3'
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/outbound.test.ts:865:9)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '\\tmp\\pi-telegram-voice-handler-test\\47ab2268-fd58-4466-87ed-e01e3e2759fa-voice.mp3',
+    expected: /^\/tmp\/pi-telegram-voice-handler-test\/.+-voice\.mp3$/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests\paths.test.ts:61:7
+✖ resolveTelegramOwnersPath (0.8479ms)
+  AssertionError [ERR_ASSERTION]: owners path ends with /tmp/telegram/owners.json
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/paths.test.ts:62:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.start (node:internal/test_runner/test:944:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+      at run (node:internal/test_runner/harness:307:12)
+      at test (node:internal/test_runner/harness:316:12)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/paths.test.ts:61:7 {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\paths.test.ts:68:7
+✖ resolveTelegramTempDir (0.3801ms)
+  AssertionError [ERR_ASSERTION]: temp dir ends with /tmp/telegram
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/paths.test.ts:69:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.start (node:internal/test_runner/test:944:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+      at run (node:internal/test_runner/harness:307:12)
+      at test (node:internal/test_runner/harness:316:12)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/paths.test.ts:68:7 {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\paths.test.ts:72:7
+✖ resolveTelegramRuntimeLogPath (0.3641ms)
+  AssertionError [ERR_ASSERTION]: runtime log path ends with logs.jsonl
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/paths.test.ts:73:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.start (node:internal/test_runner/test:944:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+      at run (node:internal/test_runner/harness:307:12)
+      at test (node:internal/test_runner/harness:316:12)
+      at file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/paths.test.ts:72:7 {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\process-shutdown.test.ts:218:1
+✖ Child process sharing the agent dir does not poll while parent owns Telegram lock (5256.6956ms)
+  Error: Parent did not exit. stderr=
+      at Timeout._onTimeout (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/process-shutdown.test.ts:361:13)
+      at listOnTimeout (node:internal/timers:585:17)
+      at process.processTimers (node:internal/timers:521:7)
+
+test at tests\queue.test.ts:2811:1
+✖ Session shutdown bounds a stuck preview clear (10.4958ms)
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:2830:1
+✖ Control queue controller appends and dispatches control items
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:2854:1
+✖ Prompt enqueue controller binds runtime ports to context
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:2891:1
+✖ Prompt enqueue runtime folds queued prompts into history
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:2951:1
+✖ Local agent start prevents stale abort-history mode from absorbing old queue
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3018:1
+✖ Control runtime runs the control item and always settles
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3048:1
+✖ Control runtime reports failures before settling
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3082:1
+✖ Deferred queue dispatch uses only the bound session context
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3114:1
+✖ Queue dispatch watchdog retries dispatch for queued work
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3141:1
+✖ Dispatch controller skips inactive stale contexts before readiness checks
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3168:1
+✖ Dispatch controller drops stale transport work before sending the next prompt
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3199:1
+✖ Dispatch runtime idles on none and executes control items directly
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3258:1
+✖ Dispatch runtime sends prompt turns as normal user messages
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3299:1
+✖ Dispatch runtime reports prompt dispatch failures after starting
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3340:1
+✖ Queue dispatch controller plans prompts and reports dispatch failures
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3383:1
+✖ Queue dispatch runtime binds readiness guards to dispatch controller
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3432:1
+✖ Queue dispatch controller executes control items and continues
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3488:1
+✖ Queue dispatch controller blocks reentrant prompt dispatch while control is pending
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3552:1
+✖ Queue dispatch controller does not resume prompts after shutdown clears context during control
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3607:1
+✖ Session runtime helper resets session start state
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3618:1
+✖ Session runtime helper runs start side effects in order
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3643:1
+✖ Session runtime start swallows only stale deferred-dispatch context binding
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3673:1
+✖ Session runtime helper clears shutdown state
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3686:1
+✖ Session lifecycle runtime binds state applier into lifecycle hooks
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3769:1
+✖ Session lifecycle hooks bind start and shutdown runtime ports
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\queue.test.ts:3840:7
+✖ executeTelegramQueueDispatchPlan sends ready prompts as normal user turns
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\runtime.test.ts:14:7
+✖ Typing loop idle wait is bounded for slow in-flight chat actions (10.4966ms)
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\runtime.test.ts:14:7
+✖ Abort handler setter and agent-end resetter bind runtime cleanup
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\runtime.test.ts:14:7
+✖ Prompt dispatch lifecycle owns dispatch flags, typing, and status
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\runtime.test.ts:14:7
+✖ Prompt dispatch lifecycle records stale status failures
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\runtime.test.ts:14:7
+✖ Prompt dispatch runtime binds typing starter and dispatch lifecycle
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\runtime.test.ts:14:7
+✖ Typing loop starter uses a conservative native keepalive interval
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\runtime.test.ts:14:7
+✖ Typing loop starter sends one thread action and one aggregate action
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\runtime.test.ts:14:7
+✖ Typing loop starter binds default chat and reports failures
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\runtime.test.ts:14:7
+✖ Typing loop starter records stale status failures
+  'Promise resolution is still pending but the event loop has already resolved'
+
+test at tests\telegram-api.test.ts:304:1
+✖ Telegram temp preparation creates the directory and removes stale files (14.4597ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  438 !== 448
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/telegram-api.test.ts:308:9)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 438,
+    expected: 448,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\telegram-api.test.ts:601:1
+✖ Telegram file downloads use unique sanitized temp file names (9.4088ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  438 !== 448
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/telegram-api.test.ts:614:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 438,
+    expected: 448,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\threads.test.ts:144:1
+✖ Thread store persists explicit owner target mappings privately (48.8814ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  438 !== 384
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/threads.test.ts:162:10)
+      at async Test.run (node:internal/test_runner/test:1054:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 438,
+    expected: 384,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\turns.test.ts:808:1
+✖ Turn helpers preserve queued prompt attachments when captions are edited (4.9366ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'new caption\n\n[attachments] \\tmp\n- /demo.png\n- /report.txt'
+  - 'new caption\n\n[attachments] /tmp\n- /demo.png\n- /report.txt'
+  
+      at TestContext.<anonymous> (file:///D:/Code/PI/MyPiExtension/packages/pi-telegram-main/tests/turns.test.ts:838:9)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'new caption\n\n[attachments] \\tmp\n- /demo.png\n- /report.txt',
+    expected: 'new caption\n\n[attachments] /tmp\n- /demo.png\n- /report.txt',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

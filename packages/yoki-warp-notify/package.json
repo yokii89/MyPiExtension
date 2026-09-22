@@ -1,0 +1,44 @@
+{
+  "name": "@yoki/yoki-warp-notify",
+  "version": "1.21.0",
+  "description": "Pi extension. Native Warp terminal notifications, dispatched via OSC 777 on Pi lifecycle events.",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "yoki",
+    "warp",
+    "terminal",
+    "notifications",
+    "osc-777"
+  ],
+  "type": "module",
+  "license": "MIT",
+  "author": "<GITHUB_OWNER>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/<GITHUB_OWNER>/<REPO>.git",
+    "directory": "packages/yoki-warp-notify"
+  },
+  "homepage": "https://github.com/<GITHUB_OWNER>/<REPO>/tree/main/packages/yoki-warp-notify#readme",
+  "bugs": {
+    "url": "https://github.com/<GITHUB_OWNER>/<REPO>/issues"
+  },
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "ambientObserver": true
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "dependencies": {
+    "@yoki/yoki-config": "^1.20.0"
+  }
+}

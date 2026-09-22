@@ -1,0 +1,45 @@
+{
+	"name": "@yoki/yoki-ask-user-question",
+	"version": "1.20.0",
+	"description": "Pi extension. A structured questionnaire the model can put to you when it would otherwise guess, with typed options instead of free-form replies.",
+	"keywords": [
+		"pi-package",
+		"pi-extension",
+		"yoki"
+	],
+	"type": "module",
+	"exports": {
+		".": "./index.ts",
+		"./events": "./events.ts",
+		"./host": "./host.ts"
+	},
+	"license": "MIT",
+	"author": "<GITHUB_OWNER>",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/<GITHUB_OWNER>/<REPO>.git",
+		"directory": "packages/yoki-ask-user-question"
+	},
+	"homepage": "https://github.com/<GITHUB_OWNER>/<REPO>/tree/main/packages/yoki-ask-user-question#readme",
+	"bugs": {
+		"url": "https://github.com/<GITHUB_OWNER>/<REPO>/issues"
+	},
+	"scripts": {
+		"test": "vitest run"
+	},
+	"pi": {
+		"extensions": [
+			"./index.ts"
+		]
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": "*",
+		"@earendil-works/pi-tui": "*"
+	},
+	"dependencies": {
+		"@pidesk/view-sdk": "file:../../../pidesk/packages/view-sdk",
+		"@yoki/yoki-config": "^1.20.0",
+		"typebox": "^1.1.24",
+		"yoki_ui": "*"
+	}
+}

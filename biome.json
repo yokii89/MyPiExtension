@@ -1,0 +1,47 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.6/schema.json",
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended",
+			"style": {
+				"noNonNullAssertion": "off",
+				"useConst": "error",
+				"useNodejsImportProtocol": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "off",
+				"noControlCharactersInRegex": "off",
+				"noEmptyInterface": "off"
+			}
+		}
+	},
+	"formatter": {
+		"enabled": true,
+		"formatWithErrors": false,
+		"indentStyle": "tab",
+		"indentWidth": 3,
+		"lineWidth": 120
+	},
+	"files": {
+		"includes": [
+			"packages/*/**/*.ts",
+			"packages/*/**/*.js",
+			"scripts/**/*.js",
+			"scripts/**/*.mjs",
+			"test/**/*.ts",
+			"vitest.config.ts",
+			"!**/node_modules",
+			"!**/.pi",
+			"!**/.yoki",
+			"!**/thoughts",
+			"!**/docs",
+			"!**/dist",
+			"!**/.astro",
+			"!packages/yoki-newapi",
+			"!packages/yoki-skills",
+			"!packages/yoki-ui",
+			"!packages/yoki-mcp-adapter"
+		]
+	}
+}

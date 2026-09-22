@@ -1,0 +1,64 @@
+{
+	"name": "@yoki/yoki-plan",
+	"version": "1.20.0",
+	"description": "Pi extension. Plan/edit agent mode with read-only tool gates, Shift+Tab toggle via yoki-ui, and dual-axis model+thinking selector.",
+	"keywords": [
+		"pi-package",
+		"pi-extension",
+		"yoki",
+		"plan-mode",
+		"read-only"
+	],
+	"type": "module",
+	"license": "MIT",
+	"author": "<GITHUB_OWNER>",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/<GITHUB_OWNER>/<REPO>.git",
+		"directory": "packages/yoki-plan"
+	},
+	"homepage": "https://github.com/<GITHUB_OWNER>/<REPO>/tree/main/packages/yoki-plan#readme",
+	"bugs": {
+		"url": "https://github.com/<GITHUB_OWNER>/<REPO>/issues"
+	},
+	"exports": {
+		".": "./index.ts",
+		"./bridge": "./bridge.ts"
+	},
+	"scripts": {
+		"test": "vitest run"
+	},
+	"pi": {
+		"extensions": [
+			"./index.ts"
+		]
+	},
+	"pidesk": {
+		"contributes": {
+			"accessModes": [
+				{
+					"id": "yoki-plan",
+					"title": "计划模式",
+					"description": "只读探索：edit/write 禁用，bash 限白名单；产出计划后再执行。",
+					"icon": "clipboard",
+					"accent": "warning",
+					"activation": "onAccessMode"
+				}
+			],
+			"settingsViews": []
+		},
+		"worker": {
+			"safe": false
+		}
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-ai": "*",
+		"@earendil-works/pi-coding-agent": "*",
+		"@earendil-works/pi-tui": "*"
+	},
+	"dependencies": {
+		"@pidesk/view-sdk": "file:../../../pidesk/packages/view-sdk",
+		"@yoki/yoki-config": "^1.20.0",
+		"yoki_ui": "*"
+	}
+}

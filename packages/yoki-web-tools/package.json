@@ -1,0 +1,55 @@
+{
+  "name": "@yoki/yoki-web-tools",
+  "version": "1.20.0",
+  "description": "Web research for Pi: search, content fetching, GitHub repository reading, PDF extraction, curation, and summaries.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "extension",
+    "web-search",
+    "perplexity",
+    "fetch",
+    "scraping"
+  ],
+  "author": "<GITHUB_OWNER>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/<GITHUB_OWNER>/<REPO>.git",
+    "directory": "packages/yoki-web-tools"
+  },
+  "bugs": {
+    "url": "https://github.com/<GITHUB_OWNER>/<REPO>/issues"
+  },
+  "homepage": "https://github.com/<GITHUB_OWNER>/<REPO>/tree/main/packages/yoki-web-tools#readme",
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "linkedom": "^0.16.0",
+    "p-limit": "^6.1.0",
+    "turndown": "^7.2.0",
+    "unpdf": "^1.6.2",
+    "yoki_ui": "*"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  },
+  "devDependencies": {
+    "@types/turndown": "^5.0.6"
+  }
+}
