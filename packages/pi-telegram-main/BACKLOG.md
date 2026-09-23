@@ -28,7 +28,7 @@ Done when: new client quirks are either fixed with targeted coverage or document
 
 ## P1 — PiDesk Desktop Panel Live Verification
 
-Context: The PiDesk panel ships with automated coverage only (projection budget, frame scheduler, lifecycle, capability fallback). The desktop client changes real Electron + named-pipe behavior that this repository's Node test runner cannot exercise, and the `@pidesk/view-sdk` runtime import resolves only under a bundler-capable loader.
+Context: The PiDesk panel ships with automated coverage only (projection budget, lifecycle, capability fallback, and the panel's wiring to the SDK frame scheduler). The desktop client changes real Electron + named-pipe behavior that this repository's Node test runner cannot exercise, and `@pidesk/view-sdk` is not published to a registry, so a live run is the only proof that the lazily resolved SDK surface and the PiDesk Host agree.
 
 Open work:
 

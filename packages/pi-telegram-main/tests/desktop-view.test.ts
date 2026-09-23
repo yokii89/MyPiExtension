@@ -1,17 +1,21 @@
 /**
  * Regression tests for the Telegram desktop panel
  * Covers projection (node budget, empty states, lane grouping, event bounds),
- * the frame budget (coalescing, backpressure, action-boundary flush), and the
- * resident lifecycle (docs/design/19 §8.1)
+ * the frame budget as driven by the SDK scheduler, and the resident lifecycle
+ * (docs/design/19 §8.1).
+ *
+ * The scheduler itself is not unit-tested here: `createViewFrameScheduler` moved
+ * into `@pidesk/view-sdk` (docs/design/20 O4) and its merge/backpressure/stop
+ * semantics are pinned by that package's 13 tests. What this suite owns is the
+ * wiring — the panel gets one frame per window, flushes at action boundaries, and
+ * never resurrects a stopped scheduler.
  */
 
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { createViewFrameScheduler, measureViewTree, VIEW_LIMITS } from "@pidesk/view-sdk";
 import {
-	countNodes,
-	createFrameScheduler,
-	DEFAULT_FRAME_INTERVAL_MS,
 	formatRuntimeEvent,
 	isTelegramPanelAction,
 	PANEL_MAX_EVENTS,
@@ -22,7 +26,6 @@ import {
 	TELEGRAM_PANEL_ID,
 	type TelegramPanelProjection,
 	type TelegramPanelSource,
-	VIEW_TABLE_CAPABILITY,
 } from "../lib/desktop-view.ts";
 import {
 	createTelegramPanelRuntime,
@@ -148,8 +151,9 @@ test("Panel renders all four cards and stays well inside maxNodes=512", () => {
 		root.children?.map((child) => child.title),
 		["连接", "队列", "Threads", "事件"],
 	);
-	assert.equal(projection.nodeCount, countNodes(projection.root));
-	assert.ok(projection.nodeCount < 100, `expected a light tree, got ${projection.nodeCount}`);
+	// 预算口径来自 SDK（与 Host `sanitizeTree` 锁步），不是扩展自己的计数
+	const budget = measureViewTree(projection.root, VIEW_LIMITS);
+	assert.ok(budget.nodes < 100, `expected a light tree, got ${budget.nodes}`);
 });
 
 test("Worst-case tree stays inside the node and depth budgets", () => {
@@ -188,14 +192,11 @@ test("Worst-case tree stays inside the node and depth budgets", () => {
 		queue,
 	);
 
-	// 实测上界：远低于 VIEW_LIMITS.maxNodes = 512
-	assert.ok(projection.nodeCount < 512, `node budget exceeded: ${projection.nodeCount}`);
-
-	const depth = (node: AnyNode): number => {
-		const children = [...(node.children ?? []), ...(node.tabs ?? []).flatMap((tab) => tab.children)];
-		return children.length === 0 ? 1 : 1 + Math.max(...children.map(depth));
-	};
-	assert.ok(depth(projection.root as unknown as AnyNode) <= 4, "depth budget (32) has plenty of headroom");
+	// 实测上界：远低于 VIEW_LIMITS.maxNodes = 512，深度也仍是 4 层以内的扁树
+	const budget = measureViewTree(projection.root, VIEW_LIMITS);
+	assert.ok(budget.nodes < 512, `node budget exceeded: ${budget.nodes}`);
+	assert.ok(budget.depth <= 4, `expected a shallow tree, got depth ${budget.depth}`);
+	assert.equal(budget.hitNodeBudget, false, "no child was dropped by the node budget");
 });
 
 // --- projection: connection card ---
@@ -501,8 +502,8 @@ test("Table mode needs fewer nodes than the row fallback for the same state", ()
 	const threads = Array.from({ length: PANEL_MAX_THREAD_ROWS }, (_, index) => threadRecord(index));
 	const state = baseState({ queuedItems: queue.map((item) => ({ queueLane: item.queueLane })) });
 
-	const rowMode = project(state, threads, queue, false).nodeCount;
-	const tableMode = project(state, threads, queue, true).nodeCount;
+	const rowMode = measureViewTree(project(state, threads, queue, false).root, VIEW_LIMITS).nodes;
+	const tableMode = measureViewTree(project(state, threads, queue, true).root, VIEW_LIMITS).nodes;
 	assert.ok(
 		tableMode < rowMode,
 		`expected tables to be lighter: ${tableMode} vs row composition ${rowMode}`,
@@ -518,229 +519,87 @@ test("Row fallback stays the default so an old Host never sees an unknown placeh
 	assert.equal(tableInChildren(cardByTitle(root, "Threads")), undefined);
 });
 
-// --- frame budget ---
+// --- frame budget wiring (docs/design/20 O4) ---
 
-test("Default frame interval matches the ≤4 updates/second budget", () => {
-	assert.equal(DEFAULT_FRAME_INTERVAL_MS, 250);
-	assert.equal(1000 / DEFAULT_FRAME_INTERVAL_MS, 4);
+/**
+ * The coalescer's own semantics — merge window, in-flight backpressure,
+ * action-boundary flush, `stop()` settling waiters — are pinned in
+ * `@pidesk/view-sdk` by `frame-scheduler.test.ts` (13 cases). What this suite
+ * owns is the wiring: the panel is the thing feeding it, and a torn-down panel
+ * must not leave a scheduler running.
+ */
+
+test("A burst of marks inside one window reaches the host as a single frame", async () => {
+	const { sdk, sessions } = fakeSdk();
+	const runtime = createTelegramPanelRuntime({
+		source: source(baseState()),
+		actions: { connect: () => undefined, disconnect: () => undefined, refresh: () => undefined },
+		sdk,
+		pollIntervalMs: 0,
+		frameIntervalMs: 250,
+	});
+
+	await runtime.open();
+	await until(() => sessions[0].updates.length === 1, 500);
+	for (let i = 0; i < 20; i += 1) runtime.refresh();
+	await delay(60);
+
+	assert.equal(sessions[0].updates.length, 1, "20 marks stayed inside the merge window");
+	runtime.dispose();
 });
 
-test("A burst inside one window collapses into a single frame", async () => {
-	let sends = 0;
-	const scheduler = createFrameScheduler({
-		send: () => {
-			sends += 1;
-		},
-		intervalMs: 20,
+test("Sustained marks deliver at the ≤4 frames/second ceiling", async () => {
+	const { sdk, sessions } = fakeSdk();
+	const runtime = createTelegramPanelRuntime({
+		source: source(baseState()),
+		actions: { connect: () => undefined, disconnect: () => undefined, refresh: () => undefined },
+		sdk,
+		pollIntervalMs: 5,
 	});
 
-	for (let i = 0; i < 20; i += 1) scheduler.markDirty();
-	assert.equal(sends, 0, "nothing sent before the window elapses");
-	await until(() => sends === 1);
-	assert.equal(scheduler.stats.requested, 20);
-	assert.equal(scheduler.stats.coalesced, 19);
-	scheduler.stop();
-});
-
-test("Backpressure: a change during an in-flight send is not dropped", async () => {
-	let sends = 0;
-	let release!: () => void;
-	const gate = new Promise<void>((resolve) => {
-		release = resolve;
-	});
-	const scheduler = createFrameScheduler({
-		send: async () => {
-			sends += 1;
-			if (sends === 1) await gate; // 第一帧挂起，模拟慢速 IPC
-		},
-		intervalMs: 10,
-	});
-
-	scheduler.markDirty();
-	await until(() => sends === 1);
-
-	// 在飞行中又发生多次变化 → 必须补发一帧，最终状态对账
-	scheduler.markDirty();
-	scheduler.markDirty();
-	scheduler.markDirty();
-	release();
-	await until(() => sends === 2);
-	assert.ok(scheduler.stats.coalesced >= 2, "the in-flight marks were absorbed");
-	scheduler.stop();
-});
-
-test("flush() delivers immediately without waiting for the window", async () => {
-	let sends = 0;
-	const scheduler = createFrameScheduler({
-		send: () => {
-			sends += 1;
-		},
-		intervalMs: 5000, // 若 flush 未生效，本测试会明显超时
-	});
-
-	scheduler.markDirty();
-	assert.equal(sends, 0);
-	await scheduler.flush();
-	assert.equal(sends, 1, "flush bypasses the merge window");
-	scheduler.stop();
-});
-
-test("flush() is a no-op when nothing is dirty", async () => {
-	let sends = 0;
-	const scheduler = createFrameScheduler({
-		send: () => {
-			sends += 1;
-		},
-		intervalMs: 10,
-	});
-	await scheduler.flush();
-	assert.equal(sends, 0);
-	scheduler.stop();
-});
-
-test("flush() during an in-flight send settles once the wire clears (no deadlock)", async () => {
-	let sends = 0;
-	let release!: () => void;
-	const gate = new Promise<void>((resolve) => {
-		release = resolve;
-	});
-	const scheduler = createFrameScheduler({
-		send: async () => {
-			sends += 1;
-			if (sends === 1) await gate;
-		},
-		intervalMs: 10,
-	});
-
-	scheduler.markDirty();
-	await until(() => sends === 1);
-
-	scheduler.markDirty();
-	const flushing = scheduler.flush();
-	// flush() 必须等到飞行中的帧落地并让最新状态上线
-	release();
-	await flushing;
-	assert.equal(sends, 2, "flush converged on the latest state");
-	scheduler.stop();
-});
-
-test("A synchronously throwing send does not escape as an unhandled error", async () => {
-	let attempts = 0;
-	const scheduler = createFrameScheduler({
-		send: () => {
-			attempts += 1;
-			if (attempts === 1) throw new Error("pipe reset");
-		},
-		intervalMs: 10,
-	});
-
-	scheduler.markDirty();
-	await until(() => attempts >= 1);
-	assert.equal(scheduler.stats.delivered, 0, "the first attempt failed");
-	// 失败后必须自动重试，而不是永久卡死
-	await until(() => scheduler.stats.delivered === 1);
-	assert.ok(attempts >= 2);
-	scheduler.stop();
-});
-
-test("An async rejecting send recovers on the next frame", async () => {
-	let attempts = 0;
-	const scheduler = createFrameScheduler({
-		send: async () => {
-			attempts += 1;
-			if (attempts === 1) throw new Error("pipe reset");
-		},
-		intervalMs: 10,
-	});
-
-	scheduler.markDirty();
-	await until(() => scheduler.stats.delivered === 1);
-	assert.ok(attempts >= 2);
-	scheduler.stop();
-});
-
-test("stop() clears timers and ignores later marks", async () => {
-	let sends = 0;
-	const scheduler = createFrameScheduler({
-		send: () => {
-			sends += 1;
-		},
-		intervalMs: 10,
-	});
-
-	scheduler.markDirty();
-	scheduler.stop();
-	await delay(50);
-	assert.equal(sends, 0, "a stopped scheduler never sends");
-
-	// 已 stop 的 flush 必须立刻结算，不能挂住调用方
-	await scheduler.flush();
-
-	scheduler.markDirty();
-	await delay(50);
-	assert.equal(sends, 0, "marks after stop are ignored");
-});
-
-test("stop() releases a flush() blocked on an in-flight send", async () => {
-	let sends = 0;
-	const gate = new Promise<void>(() => undefined); // never resolves
-	const scheduler = createFrameScheduler({
-		send: async () => {
-			sends += 1;
-			await gate;
-		},
-		intervalMs: 10,
-	});
-
-	scheduler.markDirty();
-	await until(() => sends === 1);
-
-	const flushing = scheduler.flush();
-	scheduler.stop();
-	// waiter 已被结算，flush 必须 resolve（§9 未结算 Promise 清理）
-	await Promise.race([
-		flushing,
-		delay(500).then(() => {
-			throw new Error("flush hung after stop");
-		}),
-	]);
-});
-
-test("Steady state holds at ≤4 frames/second with the default window", async () => {
-	let sends = 0;
-	const gaps: number[] = [];
-	let previous = 0;
-	const scheduler = createFrameScheduler({
-		send: () => {
-			const now = Date.now();
-			if (previous !== 0) gaps.push(now - previous);
-			previous = now;
-			sends += 1;
-		},
-	});
-
+	await runtime.open();
 	const start = Date.now();
-	const deadline = start + 1200;
-	while (Date.now() < deadline) {
-		scheduler.markDirty();
-		await delay(10);
-	}
-	const elapsed = Date.now() - start;
-	scheduler.stop();
+	while (Date.now() - start < 1100) await delay(10);
+	runtime.dispose();
 
-	const perSecond = sends / (elapsed / 1000);
-	assert.ok(perSecond <= 4.2, `expected ≤4/s, measured ${perSecond.toFixed(2)}/s`);
-	// 相邻帧间隔不得短于合并窗口（允许计时器抖动）
-	for (const gap of gaps) assert.ok(gap >= 200, `frame gap ${gap}ms is under the merge window`);
-	assert.ok(scheduler.stats.coalesced > 0, "bursts were merged");
+	// 1.1 s at 250 ms/window + the immediate first frame
+	assert.ok(
+		sessions[0].updates.length <= 6,
+		`expected ≤6 frames, delivered ${sessions[0].updates.length}`,
+	);
+	assert.ok(sessions[0].updates.length >= 3, "the window still produced frames");
+});
+
+test("Re-opening after a dismiss resumes frame delivery", async () => {
+	// 回归：调度器随 session 创建、随 teardown 停止。若复用已 stop 的调度器，
+	// 关掉 tab 再连回来的面板会永远停在 open() 时的第一棵树。
+	const { sdk, sessions } = fakeSdk();
+	const runtime = createTelegramPanelRuntime({
+		source: source(baseState()),
+		actions: { connect: () => undefined, disconnect: () => undefined, refresh: () => undefined },
+		sdk,
+		pollIntervalMs: 0,
+		frameIntervalMs: 5,
+	});
+
+	await runtime.open();
+	await until(() => sessions[0].updates.length > 0, 500);
+	sessions[0].resolveClosed({ reason: "dismissed" });
+	await until(() => !runtime.isOpen);
+
+	assert.equal(await runtime.open(), true, "the panel re-opens on the same slot");
+	await until(() => sessions[1].updates.length > 0, 500);
+	runtime.dispose();
 });
 
 // --- resident lifecycle ---
 
 /**
  * Fake SDK surface. The runtime takes the SDK by injection rather than importing
- * it, so the lifecycle is testable without a desktop host (and without dragging
- * `.js`-suffixed SDK source through `--experimental-strip-types`).
+ * it, because `@pidesk/view-sdk` is not on a registry yet — production resolves it
+ * lazily in `desktop-panel-sdk.ts` and treats a failed load as "no Host". The
+ * frame scheduler handed out below is the **real** SDK one: the panel's job is
+ * wiring, so that is what these tests cover.
  */
 type OpenPanelOptions = {
 	panelId: string;
@@ -763,16 +622,16 @@ function fakeSdk(tableCapable = false): {
 	sdk: TelegramPanelSdk;
 	opens: OpenPanelOptions[];
 	sessions: FakeSession[];
-	capabilityProbes: string[];
+	tableProbes: number;
 } {
 	const opens: OpenPanelOptions[] = [];
 	const sessions: FakeSession[] = [];
-	const capabilityProbes: string[] = [];
+	const probes = { table: 0 };
 
 	const sdk: TelegramPanelSdk = {
 		connect: () => ({ dispose: () => undefined }),
-		async supportsCapability(_client, capability) {
-			capabilityProbes.push(capability);
+		async supportsTable() {
+			probes.table += 1;
 			return tableCapable;
 		},
 		async openPanel(_client, options) {
@@ -795,6 +654,7 @@ function fakeSdk(tableCapable = false): {
 						record.closed = true;
 					},
 					closed: closedPromise,
+					createFrameScheduler: createViewFrameScheduler,
 				},
 			};
 			sessions.push(record);
@@ -802,7 +662,15 @@ function fakeSdk(tableCapable = false): {
 		},
 	};
 
-	return { sdk, opens, sessions, capabilityProbes };
+	return {
+		sdk,
+		opens,
+		sessions,
+		/** Read after `open()`: the gate is asked once per open, never per frame. */
+		get tableProbes() {
+			return probes.table;
+		},
+	};
 }
 
 test("Panel runtime does nothing without an SDK (TUI fallback)", async () => {
@@ -870,7 +738,8 @@ test("Panel runtime pushes a first frame before the merge window elapses", async
 	assert.equal(await runtime.open(), true);
 	await until(() => sessions[0].updates.length > 0, 500);
 	assert.equal(sessions[0].updates.length, 1, "exactly one first frame, sent immediately");
-	assert.ok(runtime.stats.projected > 0, "the first frame carried a real projection");
+	const first = sessions[0].updates[0]?.root as unknown as AnyNode;
+	assert.equal(first.children?.length, 4, "the first frame carried a real projection");
 	runtime.dispose();
 });
 
@@ -963,7 +832,7 @@ test("Panel runtime dispose() tears down the session and the poll timer", async 
 	});
 
 	await runtime.open();
-	assert.ok(runtime.stats.projected > 0, "an initial frame was projected");
+	await until(() => sessions[0].updates.length > 0, 500);
 	// 计时器仍在推进时 dispose 必须干净退出，不留悬挂 timer / 悬挂 Promise
 	runtime.dispose();
 	await delay(30);
@@ -982,7 +851,8 @@ const QUEUE_AND_THREADS = source(
 );
 
 test("Panel runtime asks the Host about table support before projecting", async () => {
-	const { sdk, opens, capabilityProbes } = fakeSdk(true);
+	const fake = fakeSdk(true);
+	const { sdk, opens } = fake;
 	const runtime = createTelegramPanelRuntime({
 		source: QUEUE_AND_THREADS,
 		actions: { connect: () => undefined, disconnect: () => undefined, refresh: () => undefined },
@@ -991,13 +861,14 @@ test("Panel runtime asks the Host about table support before projecting", async 
 	});
 
 	assert.equal(await runtime.open(), true);
-	assert.deepEqual(capabilityProbes, [VIEW_TABLE_CAPABILITY], "probed once per open");
+	assert.equal(fake.tableProbes, 1, "asked once per open, and only the SDK knows what that asks");
 	assert.ok(findTable(opens[0].root as AnyNode), "advertised host receives tables");
 	runtime.dispose();
 });
 
 test("Panel frames keep one capability decision across open and updates", async () => {
-	const { sdk, opens, sessions } = fakeSdk(true);
+	const fake = fakeSdk(true);
+	const { sdk, opens, sessions } = fake;
 	const runtime = createTelegramPanelRuntime({
 		source: QUEUE_AND_THREADS,
 		actions: { connect: () => undefined, disconnect: () => undefined, refresh: () => undefined },
@@ -1008,10 +879,17 @@ test("Panel frames keep one capability decision across open and updates", async 
 
 	await runtime.open();
 	await until(() => sessions[0].updates.length > 0);
+	for (let i = 0; i < 5; i += 1) {
+		runtime.refresh();
+		await delay(12);
+	}
+
+	assert.ok(sessions[0].updates.length > 1, "several frames went out, not just the first");
 	assert.ok(findTable(opens[0].root as AnyNode));
 	for (const frame of sessions[0].updates) {
 		assert.ok(findTable(frame.root as AnyNode), "every frame keeps the table decision");
 	}
+	assert.equal(fake.tableProbes, 1, "an open-time decision, not a per-frame probe");
 	runtime.dispose();
 });
 

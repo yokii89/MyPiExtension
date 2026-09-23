@@ -1,20 +1,24 @@
 /**
- * PiDesk desktop panel for the Telegram bridge — projection and frame budget
+ * PiDesk desktop panel for the Telegram bridge — pure projection
  * Zones: telegram, desktop
- * Read-only projection of bridge state onto the right-hand ContextSidebar tab,
- * plus the frame budget that keeps it fresh (docs/design/19 §4).
+ * Read-only projection of bridge state onto the right-hand ContextSidebar tab
+ * (docs/design/19 §4).
  *
  * Deliberately **SDK-type-only**: nothing here imports runtime code from
- * `@pidesk/view-sdk`, so the module loads under `node --experimental-strip-types`
- * (the SDK ships `.js`-suffixed source imports that only a bundler can rewrite).
+ * `@pidesk/view-sdk`. The package is not on a registry yet, so `pi install
+ * npm:@llblab/pi-telegram` yields a copy whose SDK import cannot resolve; only
+ * `desktop-panel-sdk.ts` may reach it, and only lazily, so an unresolvable SDK
+ * degrades to "no desktop host" instead of killing the whole bridge.
  * The resident lifecycle that actually opens the panel lives in the adapter
  * added by the entrypoint wiring.
  *
  * Projection is pure — it reads only state the TUI already holds (§4.2), so the
- * panel can never disagree with `/telegram-status`.
+ * panel can never disagree with `/telegram-status`. Budget accounting and frame
+ * coalescing are not projected here: `measureViewTree` / `createViewFrameScheduler`
+ * in the SDK own them (docs/design/20 O3, O4).
  */
 
-import type { ViewAction, ViewHostCapability, ViewNode, ViewTableColumn } from "@pidesk/view-sdk";
+import type { ViewAction, ViewNode, ViewTableColumn } from "@pidesk/view-sdk";
 import type * as Status from "./status.ts";
 import type * as Threads from "./threads.ts";
 
@@ -25,14 +29,6 @@ export const TELEGRAM_PANEL_ID = "telegram-bridge";
 
 /** Panel title shown on the ContextSidebar tab. */
 export const TELEGRAM_PANEL_TITLE = "Telegram";
-
-/**
- * Host capability gate for the `table` node (docs/design/19 §7.1).
- * An older Host renders `unknown` placeholders, which is fine for diagnostics
- * but must not carry the queue/thread lists — so the projection keeps a
- * `row`-based fallback path instead of assuming the capability exists.
- */
-export const VIEW_TABLE_CAPABILITY = "view-table" satisfies ViewHostCapability;
 
 /** Actions the panel sends back (declared as `kind: "event"` so the view stays open). */
 export const TELEGRAM_PANEL_ACTIONS = {
@@ -71,11 +67,14 @@ export interface TelegramPanelSource {
 	listQueuedItems: () => Array<{ queueLane: Status.TelegramStatusQueueLane; summary: string }>;
 }
 
+/**
+ * The panel tree plus its action rows. No node count: the tree's budget weight is
+ * the SDK's `measureViewTree` (Host accounting, not an approximation), and the
+ * client pre-flights every outbound frame — docs/design/20 O3.
+ */
 export interface TelegramPanelProjection {
 	root: ViewNode;
 	actions: ViewAction[];
-	/** Total ViewNode count — asserted against `VIEW_LIMITS.maxNodes` (512). */
-	nodeCount: number;
 }
 
 const LANE_ORDER: Status.TelegramStatusQueueLane[] = ["control", "priority", "default"];
@@ -88,31 +87,6 @@ const LANE_LABEL: Record<Status.TelegramStatusQueueLane, string> = {
 
 function text(content: string, variant?: "body" | "caption" | "heading"): ViewNode {
 	return variant === undefined ? { type: "text", content } : { type: "text", content, variant };
-}
-
-/** Count nodes recursively — the doc's budget estimate needs a real number. */
-export function countNodes(node: ViewNode): number {
-	switch (node.type) {
-		case "column":
-		case "row":
-		case "card": {
-			let total = 1;
-			for (const child of node.children) total += countNodes(child);
-			return total;
-		}
-		case "tabs": {
-			let total = 1;
-			for (const tab of node.tabs) {
-				for (const child of tab.children) total += countNodes(child);
-			}
-			return total;
-		}
-		case "table":
-			// Host 预算口径（docs/design/19 §3.2.1）：一行计 1 个节点，单元格不单独计
-			return 1 + node.rows.length;
-		default:
-			return 1;
-	}
 }
 
 /** `—` when unset, so rows never collapse to an empty line. */
@@ -347,9 +321,6 @@ function buildEventsCard(state: Status.TelegramBridgeStatusLineState, nowMs: num
  * `tableCapable` comes from the Host `hello` advertisement (§7.1): without it the
  * queue and thread lists fall back to `row`/`text` composition, which reads worse
  * but never lands as an `unknown` placeholder.
- *
- * `nodeCount` reports the real figure so the `table` decision rests on data,
- * not guesswork (design §6 顺序理由).
  */
 export function projectTelegramPanel(
 	source: TelegramPanelSource,
@@ -366,207 +337,5 @@ export function projectTelegramPanel(
 			buildEventsCard(state, nowMs),
 		],
 	};
-	return { root, actions: buildPanelActions(state), nodeCount: countNodes(root) };
-}
-
-// --- Frame budget (design §4.3) ---
-
-/** Steady-state ceiling: 1000 / 250 = 4 updates per second. */
-export const DEFAULT_FRAME_INTERVAL_MS = 250;
-
-export interface FrameSchedulerOptions {
-	/** Deliver one coalesced frame. May be async; overlap is serialized. */
-	send: () => Promise<void> | void;
-	/** Minimum gap between two deliveries. Default 250ms (≤4/s). */
-	intervalMs?: number;
-	/** Timer factory (tests inject their own). */
-	setTimer?: (handler: () => void, ms: number) => unknown;
-	clearTimer?: (handle: unknown) => void;
-}
-
-export interface FrameScheduler {
-	/**
-	 * Mark state dirty. The first call in an idle window schedules a delivery;
-	 * further calls inside the window are absorbed — the frame we send always
-	 * reflects the *latest* state because `send` re-reads it.
-	 */
-	markDirty(): void;
-	/**
-	 * Deliver any pending frame immediately and await it. Call before sending an
-	 * action so the host never acts on stale state (§4.3 「动作边界不得丢」).
-	 * A no-op when nothing is dirty.
-	 */
-	flush(): Promise<void>;
-	/**
-	 * Deliver a frame immediately **even when nothing is dirty**, bypassing the
-	 * merge window. The host keeps the tree from `open()`, so this is what makes
-	 * a freshly opened panel render at once instead of waiting up to
-	 * `intervalMs` for the first poll tick (§4.4).
-	 */
-	flushNow(): Promise<void>;
-	/**
-	 * Cancel timers, settle waiters, and abandon any in-flight delivery.
-	 * Idempotent. A slow `send` still running when `stop()` is called has its
-	 * result discarded — it is never left as a dangling promise (§9).
-	 */
-	stop(): void;
-	/** Diagnostics: frames requested vs. actually delivered. */
-	readonly stats: { requested: number; delivered: number; coalesced: number };
-}
-
-export function createFrameScheduler(options: FrameSchedulerOptions): FrameScheduler {
-	const intervalMs = options.intervalMs ?? DEFAULT_FRAME_INTERVAL_MS;
-	const setTimer = options.setTimer ?? ((handler, ms) => setTimeout(handler, ms));
-	const clearTimer =
-		options.clearTimer ??
-		((handle) => {
-			clearTimeout(handle as ReturnType<typeof setTimeout>);
-		});
-
-	let stopped = false;
-	/** A frame is pending but its timer has not fired yet. */
-	let scheduled = false;
-	/** The sender is mid-flight; we owe it another pass once it resolves. */
-	let inFlight = false;
-	/** State changed while a frame was in flight (or while scheduled). */
-	let dirty = false;
-	let timer: unknown = null;
-	let waiters: Array<() => void> = [];
-
-	/** Resolves on stop; `deliver()` races against it so a slow `send` cannot pin a promise. */
-	let signalStop!: () => void;
-	const stopSignal = new Promise<void>((resolve) => {
-		signalStop = resolve;
-	});
-
-	const stats = { requested: 0, delivered: 0, coalesced: 0 };
-
-	function settleWaiters(): void {
-		const pending = waiters;
-		waiters = [];
-		for (const resolve of pending) resolve();
-	}
-
-	async function deliver(): Promise<void> {
-		if (stopped) return;
-		inFlight = true;
-		dirty = false;
-		// `send` 可能同步抛出（例如 render 阶段抛错），必须先包进 Promise 再挂 catch，
-		// 否则同步异常会逃逸成 unhandled error。
-		const raced = new Promise<"sent" | "failed">((resolve) => {
-			try {
-				resolve(
-					Promise.resolve(options.send()).then(
-						() => "sent" as const,
-						() => "failed" as const,
-					),
-				);
-			} catch {
-				resolve("failed");
-			}
-		});
-		const outcome = await Promise.race([raced, stopSignal.then(() => "stopped" as const)]);
-		inFlight = false;
-
-		if (outcome === "sent") {
-			stats.delivered += 1;
-		} else if (outcome === "failed") {
-			// 渲染失败不得打断轮询；下一帧会以最新状态重试
-			dirty = true;
-		}
-
-		if (stopped) {
-			settleWaiters();
-			return;
-		}
-		if (dirty) {
-			// Backpressure: state changed while in flight — send one more frame so the
-			// host converges on the final state. Never dropped.
-			//
-			// Waiters must still be released: `flush()` awaited *this* delivery and the
-			// follow-up frame already carries the latest state, so the action boundary
-			// is safe. Parking them here would deadlock `flush()`.
-			schedule();
-		}
-		settleWaiters();
-	}
-
-	function fire(): void {
-		timer = null;
-		scheduled = false;
-		void deliver();
-	}
-
-	function schedule(): void {
-		if (stopped) return;
-		if (inFlight || scheduled) return;
-		scheduled = true;
-		timer = setTimer(fire, intervalMs);
-		// 不阻止进程退出（pi 会话结束时 timer 不应钉住事件循环）
-		(timer as { unref?: () => void } | null)?.unref?.();
-	}
-
-	/** Cancel a pending (not yet fired) frame so the caller can deliver it now. */
-	function clearPending(): void {
-		if (timer !== null) {
-			clearTimer(timer);
-			timer = null;
-		}
-		scheduled = false;
-	}
-
-	return {
-		markDirty() {
-			if (stopped) return;
-			stats.requested += 1;
-			if (scheduled || inFlight) {
-				// Absorbed into the pending frame — `send` re-reads state, so no data loss.
-				dirty = true;
-				stats.coalesced += 1;
-				return;
-			}
-			dirty = true;
-			schedule();
-		},
-
-		async flush() {
-			if (stopped) return;
-			clearPending();
-			if (inFlight) {
-				// A frame is already on the wire; wait for it, then converge.
-				await new Promise<void>((resolve) => waiters.push(resolve));
-				if (!dirty || stopped) return;
-			}
-			if (!dirty) return;
-			await deliver();
-		},
-
-		async flushNow() {
-			if (stopped) return;
-			clearPending();
-			if (inFlight) {
-				// Wait out the in-flight frame, then force a fresh one regardless of
-				// whether anything was marked dirty in the meantime.
-				await new Promise<void>((resolve) => waiters.push(resolve));
-				if (stopped) return;
-			}
-			dirty = true;
-			await deliver();
-		},
-
-		stop() {
-			if (stopped) return;
-			stopped = true;
-			if (timer !== null) {
-				clearTimer(timer);
-				timer = null;
-			}
-			scheduled = false;
-			// 先放行挂起的 send（若它 await 外部 gate），再结算 waiter
-			signalStop();
-			settleWaiters();
-		},
-
-		stats,
-	};
+	return { root, actions: buildPanelActions(state) };
 }

@@ -4,36 +4,43 @@
  * The only place that reaches `@pidesk/view-sdk` at runtime — and it does so
  * lazily, one call at a time.
  *
- * The SDK ships TypeScript source whose internal relative imports are
- * `.js`-suffixed, so resolving it needs a bundler (pi's extension loader, Vite).
- * A static import here would make `index.ts` unloadable under
- * `node --experimental-strip-types`, which is how this package runs its own
- * suite. Resolving on demand keeps the entrypoint importable, and a failed load
- * is treated exactly like "no Host": soft `null`, TUI path preserved
- * (docs/design/19 §4.5).
+ * Why lazy: the package is **not on a registry** yet (docs/design/20 O6), so an
+ * install of `@llblab/pi-telegram` elsewhere has a dependency that cannot
+ * resolve. A failed load is treated exactly like "no Host" — soft `null`, TUI
+ * path preserved (docs/design/19 §4.5) — which a static import could not do: it
+ * would take the whole bridge down at extension load.
+ *
+ * Everything the lifecycle needs from the SDK is handed out here (capability
+ * gate, frame coalescer, panel session) so no other module in this package
+ * imports SDK runtime code, and no other module re-implements what the SDK
+ * already decides (准则 §7.1, §9).
  */
 
 import type {
 	connectDesktopView,
+	createViewFrameScheduler,
 	DesktopViewClient,
 	LiveViewSession,
 	openPanel,
 	resolveContributionKey,
+	supportsTable,
 } from "@pidesk/view-sdk";
-import type { TelegramPanelClient, TelegramPanelSdk } from "./desktop-panel.ts";
+import type { TelegramPanelClient, TelegramPanelSdk, TelegramPanelSession } from "./desktop-panel.ts";
 
-/** Just the two entry points this adapter needs, typed off the real exports. */
+/** Just the entry points this adapter needs, typed off the real exports. */
 interface ViewSdkSurface {
 	connectDesktopView: typeof connectDesktopView;
 	openPanel: typeof openPanel;
 	resolveContributionKey: typeof resolveContributionKey;
+	supportsTable: typeof supportsTable;
+	createViewFrameScheduler: typeof createViewFrameScheduler;
 }
 
 async function loadViewSdk(): Promise<ViewSdkSurface | null> {
 	try {
 		return await import("@pidesk/view-sdk");
 	} catch {
-		// 解析不了 SDK 源码 = 没有可用的桌面宿主，按无 Host 软失败处理
+		// 解析不了 SDK（未发布 / 未构建）= 没有可用的桌面宿主，按无 Host 软失败处理
 		return null;
 	}
 }
@@ -47,10 +54,13 @@ export function createTelegramPanelSdk(): TelegramPanelSdk {
 			return client as TelegramPanelClient | null;
 		},
 
-		async supportsCapability(client, capability) {
-			// hello 缺失（无宿主 / 握手超时）按不支持处理：回落 row 组合，不猜能力
-			const hello = await (client as DesktopViewClient).ensureConnected();
-			return (hello?.capabilities ?? []).some((entry) => entry === capability);
+		async supportsTable(client) {
+			const sdk = await loadViewSdk();
+			if (!sdk) return false;
+			const target = client as DesktopViewClient;
+			// hello 落地后才能判定；缺失（无宿主 / 握手超时）按不支持处理，不猜能力
+			await target.ensureConnected();
+			return sdk.supportsTable(target);
 		},
 
 		async openPanel(client, options) {
@@ -79,12 +89,15 @@ export function createTelegramPanelSdk(): TelegramPanelSdk {
 			if (!session) return null;
 			// LiveViewSession.update 收 ViewNode | ViewUpdatePayload；投影层给的是
 			// { root, actions }，形状一致，此处只做窄化。
-			return {
+			const wrapper: TelegramPanelSession = {
 				update: ({ root, actions }) =>
 					session.update({ root, actions } as Parameters<typeof session.update>[0]),
 				close: () => session.close(),
 				closed: session.closed as Promise<{ reason?: string } | null>,
+				// 合并窗口是 SDK 的语义（docs/design/20 O4）：扩展只决定何时标脏。
+				createFrameScheduler: (schedulerOptions) => sdk.createViewFrameScheduler(schedulerOptions),
 			};
+			return wrapper;
 		},
 	};
 }

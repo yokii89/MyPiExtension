@@ -4,25 +4,27 @@
  * Resident lifecycle of docs/design/19 §4.4: open on connect, poll on a frame
  * budget, tear down on dismiss / dispose.
  *
- * **The SDK is injected, not imported.** `@pidesk/view-sdk` ships `.js`-suffixed
- * source imports that only a bundler can rewrite, so a static import would make
- * this module unloadable under `node --experimental-strip-types`. Callers pass
- * the real functions from `@pidesk/view-sdk` (see `desktop-panel-sdk.ts` for the
- * production wiring), which keeps this module unit-testable with fakes.
+ * **The SDK is injected, not imported.** `@pidesk/view-sdk` is not on a registry
+ * yet, so every reach into it lives in `desktop-panel-sdk.ts` and is soft-failing;
+ * a static import here would take the whole bridge down with it when the package
+ * cannot resolve. Callers pass the real functions from `@pidesk/view-sdk`, which
+ * also keeps this module unit-testable with fakes.
+ *
+ * This module owns the refresh cadence over bridge state and nothing else: the
+ * merge window comes from the SDK's `createViewFrameScheduler` and the `view-table`
+ * gate from its `supportsTable` (准则 §9, docs/design/20 O3/O4).
  *
  * Headless pi gets `open() === false` and callers keep the TUI path (§4.5).
  */
 
+import type { ViewFrameScheduler } from "@pidesk/view-sdk";
 import {
-	createFrameScheduler,
-	type FrameScheduler,
 	isTelegramPanelAction,
 	projectTelegramPanel,
 	TELEGRAM_PANEL_ID,
 	TELEGRAM_PANEL_TITLE,
 	type TelegramPanelAction,
 	type TelegramPanelSource,
-	VIEW_TABLE_CAPABILITY,
 } from "./desktop-view.ts";
 
 /** Panel refresh cadence. Slower than the frame budget — state is pull-only. */
@@ -32,16 +34,17 @@ export const PANEL_POLL_INTERVAL_MS = 1000;
  * The slice of `@pidesk/view-sdk` this runtime needs.
  * Every member is asynchronous and soft-failing: `connect` resolves `null` when
  * no Host is present, `openPanel` resolves `null` when the Host is too old, and
- * `supportsCapability` answers `false` rather than guessing.
+ * `supportsTable` answers `false` rather than guessing.
  */
 export interface TelegramPanelSdk {
 	connect: () => TelegramPanelClient | null | Promise<TelegramPanelClient | null>;
 	/**
-	 * Host `hello` capability probe. Resolves false when the Host is older than
-	 * the advertisement or the handshake never landed — the projection then keeps
-	 * its `row`-based fallback instead of shipping a node the Host cannot render.
+	 * Host `hello` gate for `table` nodes (docs/design/19 §7.1). Resolves false when
+	 * the Host is older than the advertisement or the handshake never landed — the
+	 * projection then keeps its `row`-based fallback instead of shipping a node the
+	 * Host cannot render. The capability name stays inside the SDK.
 	 */
-	supportsCapability: (client: TelegramPanelClient, capability: string) => Promise<boolean>;
+	supportsTable: (client: TelegramPanelClient) => Promise<boolean>;
 	openPanel: (
 		client: TelegramPanelClient,
 		options: {
@@ -64,6 +67,16 @@ export interface TelegramPanelSession {
 	update: (payload: { root: unknown; actions: unknown }) => void;
 	close: () => void;
 	closed: Promise<{ reason?: string } | null>;
+	/**
+	 * The SDK's frame coalescer for this panel (§4.3): the merge window, the
+	 * action-boundary flush and the in-flight backpressure are SDK semantics, and
+	 * the adapter hands out its factory because it is the one module that resolved
+	 * the SDK. Lives and dies with the session that owns it.
+	 */
+	createFrameScheduler: (options: {
+		intervalMs?: number;
+		send: () => Promise<void> | void;
+	}) => ViewFrameScheduler;
 }
 
 /**
@@ -106,15 +119,15 @@ export interface TelegramPanelRuntime {
 	refresh(): void;
 	dispose(): void;
 	readonly isOpen: boolean;
-	readonly stats: { frames: FrameScheduler["stats"]; projected: number };
 }
 
 /**
  * Own a resident Telegram panel for one pi session.
  *
  * - `open()` opens / re-opens the panel; the same `panelId` replaces in place.
- * - polling keeps the projection fresh, coalesced to ≤4 frames/s.
- * - dismissing the tab closes the view only — the bridge keeps running.
+ * - polling keeps the projection fresh, coalesced by the SDK frame scheduler.
+ * - dismissing the tab closes the view only — the bridge keeps running, and a
+ *   later `open()` gets a fresh scheduler (a stopped one is never revived).
  * - `dispose()` clears the poll timer, the frame scheduler, and the session.
  */
 export function createTelegramPanelRuntime<TContext = unknown>(
@@ -125,23 +138,21 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 	const ownsClient = options.client === undefined;
 	let client: TelegramPanelClient | null = options.client ?? null;
 	let session: TelegramPanelSession | null = null;
+	/** Owned by the SDK, created with the session it feeds and stopped with it. */
+	let scheduler: ViewFrameScheduler | null = null;
 	let pollTimer: ReturnType<typeof setInterval> | null = null;
 	let disposed = false;
 	/** Serializes overlapping open() calls (action spam / reconnect races). */
 	let opening: Promise<boolean> | null = null;
-	let lastProjected = 0;
 	/** Refreshed per open from the Host `hello`; decides table vs. row composition. */
 	let tableCapable = false;
 
-	const scheduler = createFrameScheduler({
-		intervalMs: options.frameIntervalMs,
-		send: async () => {
-			if (!session) return;
-			const projection = projectTelegramPanel(options.source, Date.now(), tableCapable);
-			lastProjected = projection.nodeCount;
-			session.update({ root: projection.root, actions: projection.actions });
-		},
-	});
+	/** Re-reads live bridge state: the scheduler never buffers a tree, so a burst of marks still ships the newest panel. */
+	function sendFrame(): void {
+		if (!session) return;
+		const projection = projectTelegramPanel(options.source, Date.now(), tableCapable);
+		session.update({ root: projection.root, actions: projection.actions });
+	}
 
 	async function ensureClient(): Promise<TelegramPanelClient | null> {
 		if (client) return client;
@@ -158,7 +169,7 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 
 	function pushFrame(): void {
 		if (disposed) return;
-		scheduler.markDirty();
+		scheduler?.markDirty();
 	}
 
 	function startPolling(): void {
@@ -175,7 +186,7 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 
 	async function handleAction(actionId: TelegramPanelAction): Promise<void> {
 		// §4.3 动作边界不得丢：动作前先提交未发送的本地状态
-		await scheduler.flush();
+		await scheduler?.flush();
 		try {
 			if (actionId === "tg:connect") {
 				// 面板动作绑定当前会话：没有活上下文时拒绝，绝不拿旧 ctx 重放
@@ -211,7 +222,7 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 		const target = await ensureClient();
 		if (!target) return false;
 
-		tableCapable = await sdk.supportsCapability(target, VIEW_TABLE_CAPABILITY);
+		tableCapable = await sdk.supportsTable(target);
 		const initial = projectTelegramPanel(options.source, Date.now(), tableCapable);
 		const opened = await sdk.openPanel(target, {
 			panelId: TELEGRAM_PANEL_ID,
@@ -230,15 +241,22 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 		}
 
 		session = opened;
+		scheduler = opened.createFrameScheduler({
+			intervalMs: options.frameIntervalMs,
+			send: sendFrame,
+		});
 		startPolling();
 		// 首帧必须立刻推：宿主保留的是 open() 时的树，节流窗口内不会有第二次推送，
 		// 否则面板要等一个 poll 周期才有内容（§4.4）。
 		void scheduler.flushNow();
 		void opened.closed.then((payload) => {
 			if (session !== opened) return;
-			session = null;
+			// The Host already tore the view down: stop observing it, but never
+			// `close()` a closed view (E6).
 			stopPolling();
-			scheduler.stop();
+			scheduler?.stop();
+			scheduler = null;
+			session = null;
 			const reason = payload?.reason;
 			if (reason === "replaced" || reason === "session") {
 				// replaced: 由新 owner 占用，不重连（§9 防无限互相抢占）
@@ -251,7 +269,8 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 
 	function closePanel(): void {
 		stopPolling();
-		scheduler.stop();
+		scheduler?.stop();
+		scheduler = null;
 		const current = session;
 		session = null;
 		current?.close();
@@ -287,10 +306,6 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 
 		get isOpen() {
 			return session !== null;
-		},
-
-		get stats() {
-			return { frames: scheduler.stats, projected: lastProjected };
 		},
 	};
 }
