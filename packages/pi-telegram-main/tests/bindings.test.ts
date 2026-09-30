@@ -446,12 +446,7 @@ test("Lifecycle binding delegates shutdown to composed session runtime", async (
 	// 会话替换后重新挂面板：Catalog 冷态入口不依赖 bridge 是否在轮询（§10.1）；
 	// 未连接时面板显示断开态，无 Host 时 open() 软失败。
 	await getRequiredBindingHandler(harness.handlers, "session_start")({}, {} as ExtensionContext);
-	assert.deepEqual(events, [
-		"desktop-panel:dispose",
-		"composed-shutdown",
-		"session-start",
-		"desktop-panel:open",
-	]);
+	assert.deepEqual(events, ["desktop-panel:dispose", "composed-shutdown", "session-start", "desktop-panel:open"]);
 });
 
 test("Lifecycle binding routes native typing, previews, and normalized activity", async () => {

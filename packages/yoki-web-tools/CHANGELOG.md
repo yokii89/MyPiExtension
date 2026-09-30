@@ -1,443 +1,387 @@
-# Pi Web Access - Changelog
+# Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to `@yoki/yoki-web-tools` are documented here.
+
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Removed
-- Removed YouTube video understanding, local video analysis, and frame extraction (`timestamp` / `frames`) from `fetch_content`.
-- Removed `youtube-extract.ts`, `video-extract.ts`, and video-only helpers (`queryGeminiApiWithVideo`, Gemini Web file upload, ffmpeg/yt-dlp utilities).
-- Dropped `fetch_content` parameters `timestamp`, `frames`, and `model`. `prompt` is retained for Parallel extract `objective`.
-- Legacy `youtube` / `video` keys in `web-search.json` are ignored.
+## [1.21.0] - 2026-09-30
 
-## [0.13.0] - 2026-06-25
+### Changed
 
-### Added
-- Added `ssrf.allowRanges` config to exempt CIDR ranges (e.g. `198.18.0.0/15`) from the SSRF guard, so `fetch_content`/`web_search` work on hosts whose network proxy runs in TUN + fake-IP mode (Surge, Clash, Mihomo, Stash, ...) where public domains resolve into a synthetic reserved range. Off by default. Thanks @TianZuo555 for reporting #101 and PR #102.
-
-### Fixed
-- Hardened `ssrf.allowRanges` validation to reject all-address `/0` CIDRs and non-string entries.
-
-## [0.12.0] - 2026-06-24
-
-### Added
-- Added `webSearch.enabled` config to disable `web_search` tool registration. Thanks @webwarrior-ws for PR #38 and @knocte for reporting #22.
-- Added `workflow: "auto-summary"` for `web_search` to generate a summary without opening the browser curator. Thanks @Ilm-Alan for PR #57 and @baflow for reporting #32.
-- Added Tavily Search API provider support with `TAVILY_API_KEY` / `tavilyApiKey`, domain filters, recency filters, and auto-provider fallback integration.
-- Added Parallel search provider support, auto-provider fallback integration, and Parallel `fetch_content` extraction fallback.
-- Resolved `web-search.json` from `PI_CODING_AGENT_DIR`, then `XDG_CONFIG_HOME/pi`, before falling back to `~/.pi`.
-- Added `GOOGLE_GEMINI_BASE_URL` / `geminiBaseUrl` for routing Gemini generate-content calls through compatible gateways, plus `CLOUDFLARE_API_KEY` / `cloudflareApiKey` authentication for Cloudflare AI Gateway. Thanks @meatballhat-cf for PR #76 and @tynril for reporting #74.
+- **Replaced the previous `yoki-web-tools` implementation** with the pluggable-provider architecture from `rpiv-web-tools` 2.11.0. The old single-file tool surface (Gemini/OpenAI search, curator, PDF/RSC extract, chrome cookies, parallel helpers, `skills/librarian`) is removed. New surface: `web_search` + `web_fetch` over ten backends (Brave, Tavily, Serper, Exa, You.com, Jina, Firecrawl, Perplexity, SearXNG, Ollama) with `/web-tools` configuration and an opt-in GitHub URL interceptor.
+- Package renamed to `@yoki/yoki-web-tools`; config path is now `~/.config/yoki-web-tools/config.json` (was `~/.config/rpiv-web-tools/config.json` in the upstream package).
+- Shared config I/O now comes from `@yoki/yoki-config` (upstream used `@juicesharp/rpiv-config`).
+- `GuidanceFields` / `GuidanceFieldsSchema` gained `description?: string` in `@yoki/yoki-config`, matching the upstream schema so per-field salvage drops a wrong-typed `description` leaf instead of passing it through.
 
 ### Removed
-- Removed the deprecated `code_search` tool that duplicated the Exa search provider from `web_search`. Thanks @picasso250 for PR #62 and reporting #61.
 
-### Fixed
-- Kept curator sessions alive when browser auto-open fails and surfaced a copyable curator URL for Docker, WSL, and headless environments. Thanks @rca, @runningman84, and @k0valik for reporting #92, #93, and #55.
-- Updated `@mozilla/readability` to `^0.6.0` for GHSA-3p6v-hrg8-8qj7. Thanks @omar-elmountassir for reporting #86, and @henriquebastos and @av1155 for PRs #35 and #68.
-- Limited curator summary model selection to Pi `enabledModels` when configured, and fall back to a deterministic no-billing summary instead of silently calling unrelated catalog models. Thanks @Horace1423 for reporting #73.
-- Let configured Exa API keys use Exa's own account limits instead of blocking at the legacy local 1,000-request counter. Thanks @totoDoP for reporting #80.
-- Supported parallel `web_search` curator tool calls with per-call browser and cancellation state.
-- Prevented curator sessions from hanging after searches finish when no browser connects, and finalized connected idle sessions once the curator timeout elapses.
-- Added explicit `role: "user"` fields to Gemini generate-content requests for Vertex AI-backed proxy compatibility. Thanks @meatballhat-cf for PR #76 and @tynril for reporting #74.
+- `skills/librarian` — no longer part of this package.
+- Legacy tool modules and their `node --test` suite under `test/`.
 
-## [0.11.0] - 2026-06-24
+> History below this line is inherited from `@juicesharp/rpiv-web-tools` and is kept for provenance. Version numbers refer to the upstream package until 1.21.0.
+
+## [2.11.0] - 2026-09-21
+
+## [2.10.1] - 2026-09-13
+
+## [2.10.0] - 2026-09-12
+
+## [2.9.0] - 2026-09-01
+
+## [2.8.0] - 2026-08-29
+
+## [2.7.1] - 2026-08-24
+
+## [2.7.0] - 2026-08-21
+
+## [2.6.4] - 2026-08-20
+
+## [2.6.3] - 2026-08-20
+
+## [2.6.2] - 2026-08-18
+
+## [2.6.1] - 2026-08-17
 
 ### Added
-- Added OpenAI Responses API web search with Codex subscription auth, OpenAI API key auth, required web-search tool use, model-registry header forwarding, and source extraction from citations and web-search sources.
-- Added Brave Search API provider with `BRAVE_API_KEY` / `braveApiKey`, freshness mapping, and domain include/exclude handling.
-- Added OpenAI and Brave to `auto` provider routing, explicit `provider` selection, curator provider buttons, provider tags, and provider availability checks.
+
+- Package card cover on pi.dev: `package.json` now declares `pi.image` pointing at the package's `docs/cover.png`.
 
 ### Changed
-- Updated extension imports for Pi 0.80.x, including the `@earendil-works` package namespace, `.ts` local module specifiers, and the `@earendil-works/pi-ai/compat` entrypoint for legacy model helpers.
-- Declared Pi-bundled packages as peer dependencies so Pi can provide its runtime aliases when loading the extension.
+
+- `readConfig` now degrades per field on a schema violation instead of returning an empty config: only the offending paths are dropped (schema-driven via `Value.Errors`), so one wrong-typed leaf — e.g. `guidance.web_search.description` after its enrollment in the shared `GuidanceFieldsSchema` — no longer wipes provider, API keys, base URLs, interceptors and guidance for the session (or on disk via the next `/web-tools` save). An empty config remains the floor when nothing salvageable is left; unknown-key pass-through is unchanged.
+
+## [2.6.0] - 2026-08-15
+
+## [2.5.2] - 2026-08-14
+
+## [2.5.1] - 2026-08-14
+
+## [2.5.0] - 2026-08-13
+
+## [2.4.0] - 2026-08-03
+
+## [2.3.1] - 2026-07-31
+
+## [2.3.0] - 2026-07-31
+
+## [2.2.0] - 2026-07-29
+
+## [2.1.0] - 2026-07-23
+
+### Changed
+- README rewritten to follow the documentation standard shared across all packages.
+- npm tarball now includes the versioned `docs/` reference and no longer ships cover or screenshot art.
+
+## [2.0.0] - 2026-07-21
+
+### Added
+- Add optional `provider` parameter to `web_search` to target a different search backend for a single call without changing the saved provider.
+- Add `WEB_SEARCH_PROVIDER` environment variable to pin the active search provider; a per-call override still takes precedence, and unknown names fail only when a search actually runs.
+- Read configuration from `XDG_CONFIG_HOME` when set, falling back to the legacy `~/.config` location only when no config file exists at the new path.
 
 ### Fixed
-- Aligned custom message display values and widget clearing with the current Pi extension API types.
-- Surfaced real YouTube Gemini API failures instead of replacing them with the generic Chrome/API-key guidance.
-- Kept Brave snippets out of `inlineContent` so `includeContent` searches still fetch full page content through the background extraction pipeline.
-- Prevented constrained auto searches from silently losing recency/count constraints by preferring Exa/Brave over OpenAI when OpenAI cannot enforce them strictly.
+- Raise the Exa fetch character limit to match the live API, so `web_fetch` now detects truncation and saves the full content to a recoverable temp file.
+- Register tools correctly under installers that do not materialize peer dependencies.
+- Exclude test files from the published package so standalone installs no longer fail on a missing private test dependency.
+
+## [1.20.0] - 2026-06-15
+
+### Fixed
+- Jina search now handles the Search API returning `data` as a direct array (not just a `{ data: [...] }` envelope), so `web_search` no longer yields zero results against that response shape (#73).
+
+## [1.19.1] - 2026-06-10
+
+## [1.19.0] - 2026-06-09
+
+## [1.18.2] - 2026-06-04
+
+## [1.18.1] - 2026-06-04
+
+## [1.18.0] - 2026-06-04
+
+### Changed
+- Drop Notes column from the providers table in the README.
+
+## [1.17.1] - 2026-06-01
+
+### Added
+- **You.com search+fetch provider** — new `FullProvider` backed by You.com's Search API (`POST /v1/search`) and Contents API (`POST /v1/contents`). Returns native markdown with `contentType: "text/markdown"`. Configure via `YOUCOM_API_KEY` env var or `apiKeys.youcom` in `~/.config/yoki-web-tools/config.json`. `web_fetch` uses the Contents API for clean markdown extraction (same path as Jina/Firecrawl).
+- **Perplexity search provider** — search-only `SearchProvider` posting to `POST https://api.perplexity.ai/search` with `Authorization: Bearer $PERPLEXITY_API_KEY`. Configure via env var or `/web-tools` (paste the key from [docs.perplexity.ai](https://docs.perplexity.ai/)). `web_fetch` falls through to the shared raw-HTTP + htmlToText pipeline (same path as Brave/Serper/SearXNG). $5/1K requests, 50 RPS tier-independent rate limit. See README provider table.
+
+## [1.17.0] - 2026-06-01
+
+## [1.16.1] - 2026-05-30
+
+## [1.16.0] - 2026-05-30
+
+## [1.15.0] - 2026-05-28
+
+### Added
+- **GitHub URL interceptor** — `web_fetch` can route github.com URLs through `gh` / `git` for full repository content (file tree, README, file contents) instead of the rendered HTML page. **Off by default** to preserve existing behavior. Opt in via `"interceptors": { "github": true }` in `~/.config/yoki-web-tools/config.json` (end-user) or `registerWebTools(pi, { interceptors: { github: true } })` (consumer extensions). Power-user object form available for tuning `maxRepoSizeMB` (default 350), `cloneTimeoutSeconds` (default 30), and `clonePath` (default `$TMPDIR/pi-github-repos`). See README §GitHub URL interceptor.
+- `/web-tools --show` now reports URL interceptor state at the bottom of its output (enabled/disabled, masked `GITHUB_TOKEN`, `clonePath`, threshold).
+- Programmatic `RegisterOptions` parameter: `registerWebTools(pi, { interceptors?: { github?: boolean } })`.
+- New exports: `GitHubInterceptor`, `parseGitHubUrl`, `GitHubUrlInfo`, `GITHUB_TOKEN_ENV_VAR`, `resolveGitHubOptions`, `UrlInterceptor`, `FetchProvider`, `FullProvider`, `ProviderRole`.
+
+### Changed
+- **Provider role split.** `SearchProvider` is now search-only (no `fetch()` method). Providers with native fetch endpoints — Tavily, Exa, Jina, Firecrawl, Ollama — implement the new `FullProvider = SearchProvider & FetchProvider`; search-only providers — Brave, Serper, SearXNG — implement `SearchProvider`. `ProviderMeta.roles: ReadonlyArray<"search" | "fetch">` makes capability explicit.
+- `web_fetch` dispatch is now three-way: URL interceptor chain → provider's native `fetch()` when present → shared `fetchViaGenericHtml` fallback. Brave/Serper/SearXNG previously each carried their own `fetch()` method that wrapped the shared pipeline; same observable behavior, single helper now.
+- `createSearchProvider(name, creds)` return type widened from `SearchProvider` to `SearchProvider | FullProvider`. Narrow with `"fetch" in provider`.
+- Config schema gained a top-level `interceptors` key. Existing config files keep working unchanged.
 
 ### Removed
-- Removed the committed `package-lock.json` from the extension package and ignored future lockfiles.
+- Per-provider `fetch()` methods on `BraveProvider`, `SerperProvider`, and `SearxngProvider`. The shared `fetchViaGenericHtml` helper in `providers/fetch-helpers.ts` is invoked by the orchestrator's fallback branch.
 
-## [0.10.7] - 2026-05-02
+### Breaking / Upgrade Notes
+- Consumers that imported `SearchProvider` and called `.fetch()` on it will get a TypeScript error. Migrate the type to `FullProvider` (Tavily/Exa/Jina/Firecrawl/Ollama users) or narrow generic code with `"fetch" in provider`.
+- Consumers that called `new BraveProvider(key).fetch(...)`, `new SerperProvider(key).fetch(...)`, or `new SearxngProvider(...).fetch(...)` directly should use `fetchViaGenericHtml(url, raw, signal)` from `providers/fetch-helpers.ts` instead.
+- No config migration required for existing users — released `provider` / `apiKeys` / `baseUrls` / `apiKey` (legacy) / `guidance` keys all behave unchanged.
+
+## [1.14.7] - 2026-05-28
+
+## [1.14.6] - 2026-05-28
+
+## [1.14.5] - 2026-05-28
+
+## [1.14.4] - 2026-05-28
+
+## [1.14.3] - 2026-05-28
+
+## [1.14.2] - 2026-05-28
+
+## [1.14.1] - 2026-05-28
+
+## [1.14.0] - 2026-05-28
 
 ### Added
-- Added `summaryModel` config for choosing the default curator summary draft model from `~/.pi/web-search.json`.
-
-### Fixed
-- Made Gemini Web browser-cookie access opt-in via `allowBrowserCookies` or `PI_ALLOW_BROWSER_COOKIES=1`, preventing surprise macOS Keychain prompts during provider checks.
-- Restored `code_search` after Exa removed the `get_code_context_exa` MCP tool by falling back to `web_search_exa` with code-focused queries.
-- Migrated extension tool schemas from `@sinclair/typebox` to Pi's bundled `typebox` 1.x import path.
-
-## [0.10.6] - 2026-04-04
+- Ollama search provider supporting both local instances and cloud (ollama.com), with configurable base URL and optional API key.
 
 ### Changed
-- Added `promptSnippet` metadata for `web_search`, `code_search`, `fetch_content`, and `get_search_content` so Pi 0.59+ includes these tools in the default prompt tool section and improves discoverability of research/fetch flows.
+- `/web-search-config` command renamed to `/web-tools`.
+- Cover artwork redesigned with all eight provider logos.
 
-## [0.10.5] - 2026-04-03
+## [1.13.0] - 2026-05-25
 
-### Fixed
-- Forward dynamic request `headers` from `ctx.modelRegistry.getApiKeyAndHeaders()` into `complete()` for query rewriting and summary generation, finishing the pi 0.63+ auth migration for providers that require per-request headers.
-- Removed legacy `session_switch`/`session_fork` lifecycle listeners and rely on immutable-session `session_start` reinitialization.
-
-## [0.10.4] - 2026-03-27
+## [1.12.0] - 2026-05-21
 
 ### Added
-- **Workflow-based curator hard cutover (`workflow`).** Replaced `curate` with `workflow: "none" | "summary-review"`, added summary-review approval flow with `POST /summarize`, made summary text the primary returned output while retaining raw curated evidence in `details`, and switched timeout handling to submit-first with deterministic summary fallback when no approved draft exists.
-- **Auto-open curator for all `web_search` runs (single + multi query).** Searches now open the curator window immediately and stream results live for review workflows; the old countdown/auto-condense fallback path was removed.
-- **Exa.ai search provider.** Neural/semantic search available alongside Perplexity and Gemini. 1,000 free requests/month. Set `EXA_API_KEY` env var or `exaApiKey` in `~/.pi/web-search.json`, or select explicitly with `provider: "exa"`. Includes built-in content extraction — when `includeContent` is true, full page text comes back with search results instead of requiring a separate background fetch. Monthly usage tracked in `~/.pi/exa-usage.json` with a warning at 80%.
-- **Exa MCP fallback.** When no Exa API key is configured, search routes through `mcp.exa.ai` with zero setup. Supports basic search and `includeContent` but not domain/recency filtering (falls through to Gemini for those).
-- **`code_search` tool.** Code/documentation search via Exa MCP (`get_code_context_exa`). No API key required. Returns code examples, docs, and API references from GitHub, Stack Overflow, and official documentation.
-- **Glimpse native curator window.** On macOS with Glimpse installed, the search curator opens in a native WKWebView window instead of a browser tab. Faster launch, closer integration. Falls back to browser automatically when Glimpse is unavailable.
-- **Curator provider UX rewrite.** Replaced the provider dropdown with provider buttons (hidden when unavailable), made provider re-search additive, added provider badges on all cards (including errors), and switched button states to coverage-based logic keyed by logical query slots so duplicate query text is handled correctly.
-- **Per-card provider re-search.** Completed result cards now show "Also try" chips for other available providers. Clicking one searches the same query with that provider and adds a new card below, keeping both results for comparison.
-- **Query rewrite with magic wand.** The "Add a search" input now has a ✨ button that rewrites the entered query using a fast LLM (haiku/flash) to make it more specific and effective. The improved query replaces the input text for review before searching.
-- **Summary model chooser redesign.** Summary review now follows a provider-first flow: provider dropdown first, then provider-scoped model dropdown.
-- **Active summary-generation loading state.** Summary review now shows a dedicated animated in-progress panel while `/summarize` is running (panel sweep, pulse + shimmer placeholders, staged copy updates, and active model label) instead of only a static disabled textarea.
-- **Model/provider guard retry for summary generation.** If a selected summary model fails with model/provider configuration errors, curator now retries once with Auto model selection before surfacing a terminal error.
-- **Feedback input for summary regeneration.** Optional text field in the summary review panel for providing instructions when regenerating a summary. Only the Regenerate button passes feedback to the prompt; auto-generation and the initial Generate button do not. Feedback is cleared on success and persisted on error for retry.
-- **`/curator` command.** Toggle or configure the curator workflow at runtime: `/curator on`, `/curator off`, `/curator summary-review`, or `/curator` to toggle. Persists to `~/.pi/web-search.json` and takes effect on the next `web_search` call.
-- **Config-based workflow default.** Added `workflow` field to `~/.pi/web-search.json` for persistent curator preference. Per-call `workflow` parameter on `web_search` takes priority, then config, then the built-in default (`summary-review` with UI, `none` without).
-- **"Send selected results without summary" button.** New secondary button in the curator that submits curated results directly without generating or approving a summary. Works from any stage when results are selected. Output uses the raw curated results format with per-query detail.
-- **Summary preview modal.** Preview button in the summary actions opens a full-page modal with the summary rendered as formatted markdown. Includes Approve and Regenerate actions with an inline model selector for switching models without leaving the preview.
-- **"Also try" provider chips on searching cards.** Provider re-search chips now appear on cards still in-flight, not just completed ones, so alternative-provider searches can be kicked off in parallel without waiting.
-- **Live search progress in heading.** Hero heading shows "2 of 4 Searches Complete" while searches are running, with status line showing "2 completed, 2 searching". Reverts to "N Searches Complete" when all finish.
-- **Summary subtitle with selection count.** Subtitle now shows "Summary of N selected results" and reacts to selection changes ("Selection changed — regenerating summary…").
-- **Summary model selector relocated.** Moved the provider/model dropdowns from the hero area into the summary panel header, next to the title, so the model choice is adjacent to the summary it controls.
-- **Improved collapsed TUI preview.** Collapsed search result cards now show adaptive content: summary text when available, curated query titles with source counts when results were sent without summary, or a fallback text line otherwise. Line count hint matching pi's built-in pattern: `... (X more lines, Y total, ctrl+o to expand)`.
-- **Inline annotation feedback in preview modal.** Select any text in the rendered summary preview to get a popover with a quoted excerpt and a feedback textarea. Regenerate from the popover to send targeted feedback like `Regarding: "<selected text>" — <your note>`. Supports Cmd/Ctrl+Enter to submit and Escape to dismiss.
-- **Concurrent add-search and alt-chip searches.** The "Add a search" input and "Also try" provider chips are no longer locked while other searches are in-flight. Multiple searches can run in parallel.
-- **Batch provider search shows searching cards immediately.** Clicking a provider button now creates placeholder cards with loading animations upfront instead of waiting for results to arrive.
+- New `searxng` search provider for self-hosted [SearXNG](https://docs.searxng.org/) instances. Configure via `SEARXNG_URL` env var or `baseUrls.searxng` in `~/.config/yoki-web-tools/config.json` (defaults to `http://localhost:8080`); optional `SEARXNG_API_KEY` / `apiKeys.searxng` for instances behind a Bearer-auth proxy. `/web-search-config` prompts for the URL first, then the optional key. `web_fetch` reuses the shared HTTP + htmlToText pipeline (same path as Brave/Serper). A `403` response from the instance attaches an actionable hint that `json` likely needs to be enabled under `search.formats` in `settings.yml`.
 
 ### Changed
-- Exa search now always requests text content from both direct API and MCP paths (3000 chars default, 50000 with `includeContent`) instead of requesting highlights only. Ensures consistent answer quality regardless of whether Exa returns highlight snippets.
-- Adapted model registry calls to pi SDK changes: `getApiKey()` → `getApiKeyAndHeaders()` in `index.ts` and `summary-review.ts`, and `getAvailable()` from async to sync.
-- Hoisted dynamic `await import()` calls to static top-level imports in `gemini-web.ts`, `video-extract.ts`, and `youtube-extract.ts`.
-- Removed legacy `session_switch`/`session_fork` lifecycle listeners and rely on immutable-session `session_start` reinitialization.
-
-### Removed
-- **`result-review` workflow.** Hard cutover — only `"none"` and `"summary-review"` remain. Removed from `WebSearchWorkflow` type, `resolveWorkflow()`, tool schema, `/websearch` command, and `/curator` command.
+- **Breaking (provider factory):** `createSearchProvider(name, apiKey: string)` is now `createSearchProvider(name, creds: ProviderCredentials)` where `ProviderCredentials = { apiKey?: string; baseUrl?: string }`. The six hosted providers still receive their key transparently via `creds.apiKey`; direct downstream callers must update to the options-bag form. SearXNG uses the new `baseUrl` slot.
+- README clarifies that the SSRF guard applies to URLs `web_fetch` retrieves, not to the SearXNG search endpoint (which intentionally supports loopback for self-hosted instances).
+- README adds a Docker recipe for running SearXNG locally with persistent settings.
 
 ### Fixed
-- Summary generation no longer hard-fails on empty model payloads (`content parts: none`): empty-response failures now fall back to deterministic summary output with explicit fallback metadata (`fallbackReason: "summary-model-empty-response"`) instead of surfacing a terminal UI error.
-- Deterministic fallback summaries now strip trailing `Source:`/`Sources:` boilerplate from provider answer text before building query previews, preventing noisy source-list dumps from replacing actual summary prose. Fixed regex matching so `Source:` tokens at the start of provider answers are correctly detected and removed.
-- Curator now allows provider switching and add-search actions while summary generation is running. User-initiated search mutations supersede the in-flight summary request client-side and return the UI to results mode so searching can continue without waiting for draft completion.
-- Curator client now handles non-2xx server responses consistently across `/provider`, `/search`, `/submit`, `/cancel`, and heartbeat requests, and no longer leaves timeout/heartbeat POST promises unhandled.
-- Prevented duplicate completion counting when the same result card is updated more than once.
-- Fixed background fetch abort detection to avoid crashing on non-`Error` rejection values.
-- Fixed YouTube detection for protocol-less links (`youtu.be/...`) by allowing regex fallback after URL-parse failures.
-- Fixed README probing in GitHub clone mode to continue scanning alternate README filenames when one candidate is unreadable.
-- Removed dead `search-filter.ts` code path and its stale README file-table entry.
-- Gemini provider routing now preserves provider failure context in explicit/final Gemini paths instead of silently collapsing errors to `null`.
-- Hardened auto-provider fallback diagnostics: when Exa/Perplexity/Gemini are available but fail at runtime, the thrown error now includes all provider-specific failure reasons instead of dropping context.
-- Prevented queued SSE event loss in curator reconnect flows by preserving unsent buffered messages when an SSE flush write fails.
-- Hardened curator server provider validation (`/provider`, `/search`) so invalid/unavailable provider names are rejected explicitly instead of mutating session state.
-- Fixed `file://` local-video path handling to decode URL-escaped paths and treat malformed file URLs as invalid inputs instead of throwing.
-- Prevented path-escape reads in GitHub clone rendering by constraining blob/tree paths to remain within the cloned repository root.
-- Prevented symlink-escape traversal in clone tree/list rendering (`buildTree` / `buildDirListing`) by skipping entries that resolve outside the repository root.
-- Config parse errors from YouTube/video/Gemini fallback paths are now surfaced explicitly to users instead of silently collapsing to generic fallback messages.
-- Fixed provider switching during streaming curator searches (`web_search` + `/websearch`) so remaining queued searches use the latest selected provider instead of the initial one.
-- Fixed `fetch_content` timestamp behavior to fail explicitly on invalid timestamp formats and non-video/non-YouTube targets instead of silently ignoring `timestamp` and falling through to generic extraction.
-- Removed `Promise.withResolvers` from `web_search` curation flow for broader Node compatibility (no ES2024 runtime requirement).
-- Hardened PDF metadata handling (`pdf-extract.ts`) with typed metadata guards and safe `maxPages` clamping.
-- Normalized configured/default provider values in `index.ts` and `gemini-search.ts` (including case-insensitive values) so invalid provider strings no longer leak into curator state and now safely fall back to `auto` resolution.
-- Hardened config string/number normalization (`index.ts`, `gemini-search.ts`, `gemini-web.ts`, `youtube-extract.ts`, `video-extract.ts`): whitespace-only model/profile/provider values now safely fall back to defaults, and invalid/non-positive video `maxSizeMB` no longer disables local video detection accidentally.
-- Hardened API key/config handling (`gemini-api.ts`, `perplexity.ts`, `exa.ts`, `github-extract.ts`): whitespace/invalid key values are no longer treated as configured credentials, and invalid GitHub clone config booleans/numbers/paths now safely fall back to defaults instead of causing silent misconfiguration.
-- Fixed mid-flight abort behavior in extraction fallbacks (`extract.ts`, `github-extract.ts`): aborted YouTube/local-video/GitHub extraction no longer degrades into misleading fallback guidance and now returns explicit `Aborted` results instead of continuing with fallback network work.
-- Fixed abort lifecycle consistency in GitHub clone extraction (`github-extract.ts`): aborted clone attempts now correctly close activity entries as aborted and avoid persisting failed-abort clone cache entries that could force stale API-only fallback on later requests.
-- Fixed activity-monitor lifecycle for shared-clone races (`github-extract.ts`): callers that race onto an already-started clone now properly close their own activity entry (success/error/aborted) instead of leaving stale pending entries.
-- Fixed oversized-repo activity status accuracy (`github-extract.ts`): API fallback paths now mark activity success only when API fetch succeeds and correctly log an error when API fallback is unavailable instead of reporting false-positive success.
-- Fixed clone-failure fallback telemetry (`github-extract.ts`): when clone fails but API fallback succeeds, activity now reports success instead of remaining an error, and aborted clone-failure paths now short-circuit without extra fallback fetches.
-- Fixed GitHub URL host matching (`github-extract.ts`) so `https://www.github.com/...` URLs are recognized as clone/API candidates instead of silently falling through to generic HTTP extraction.
-- Hardened curator markdown rendering (`curator-page.ts`) against HTML/script injection by escaping provider answer text before markdown rendering, preserving markdown formatting while blocking raw HTML execution in the UI.
-- Closed additional curator link-safety gaps (`curator-page.ts`): sanitized markdown-rendered `href`/`src` protocols and source-link URLs to block `javascript:`/non-http schemes, enforced safe link attrs (`noopener noreferrer`), and stripped inline event-handler attributes from rendered markdown DOM.
-- Hardened inline script data serialization in curator page generation (`curator-page.ts`) by escaping Unicode line/paragraph separators (`U+2028`, `U+2029`) in `safeInlineJSON`, preventing malformed script blocks or injection edge cases from unescaped JSON payloads.
-- Fixed abort telemetry misclassification in media extractors (`youtube-extract.ts`, `video-extract.ts`): canceled extractions now log activity as aborted (`status: 0`) instead of incorrectly reporting `all ... paths failed` errors after abort races.
-- Fixed GitHub URL path decoding in clone/API extraction (`github-extract.ts`): percent-encoded path segments (for example `%20`) are now decoded before blob/tree resolution, so URLs that point to files/directories with encoded characters no longer fall through to incorrect "path not found" output.
-- Fixed error-signal downgrade in local-video API fallback (`video-extract.ts`): `tryVideoGeminiApi` now rethrows config parse failures (`Failed to parse ~/.pi/web-search.json`) instead of swallowing them as `null`, preserving actionable root-cause errors.
-- Fixed provider config type hardening in search routing (`index.ts`): `normalizeProviderInput` now guards non-string config values before trimming so malformed `provider` entries in `~/.pi/web-search.json` no longer crash runtime provider resolution with `value.trim is not a function`.
-- Simplified provider typing flow in curator/search orchestration (`index.ts`): narrowed `resolveProvider` and `PendingCurate.defaultProvider` to resolved provider types, normalized incoming provider strings at callback boundaries, and removed redundant `as SearchProvider | undefined` casts while preserving search behavior.
-- Improved curator loading experience in `curator-page.ts`: added animated skeleton loading panel in the content area while searches are in-flight, upgraded searching card visuals with shimmer/active-state styling, and wired loading visibility to real search state transitions (including add-search, done, submit/cancel, and timeout paths).
-- Updated curator session timeout defaults in `index.ts`: curator now starts at 20 seconds by default (down from 60) and can be configured via `curatorTimeoutSeconds` in `~/.pi/web-search.json` (capped at 600 seconds).
-- Hardened `/websearch` startup error handling in `index.ts`: config/provider bootstrap now runs behind explicit error handling so malformed `~/.pi/web-search.json` no longer throws uncaught command errors before the existing server-start try/catch; users now receive a direct UI error with parse context.
-- Hardened extension bootstrap config handling in `index.ts`: shortcut initialization now uses guarded config loading, logging parse errors and falling back to default shortcuts instead of crashing extension registration on malformed `~/.pi/web-search.json`.
-- Simplified curator-timeout config plumbing in `index.ts` by removing an unused `getCuratorTimeoutSeconds(config)` parameter path and keeping a single config-read code path.
-- Simplified curator bootstrap wiring in `index.ts` by extracting shared provider/timeout setup (`ProviderAvailability`, `CuratorBootstrap`, `getProviderAvailability`, `loadCuratorBootstrap`) and removing duplicated availability assembly across `web_search` and `/websearch` flows.
-- Hardened SSE event parsing in curator client (`curator-page.ts`): malformed JSON payloads from SSE `data:` lines now surface as user-visible errors instead of crashing the page via uncaught `JSON.parse` exceptions.
-- Fixed "Send results" producing a deterministic summary instead of raw curated results. The submit payload now uses a `rawResults` flag to distinguish explicit "Send results" clicks from timeout-via-submit, which correctly falls back to a deterministic summary.
-- Exa search results with no highlight snippets now fall back to `item.text` (truncated to 1000 chars) instead of producing empty answers. Empty snippets are also skipped during MCP answer assembly.
-- Exa MCP result parsing now handles `Highlights:` response blocks in addition to `Text:` blocks, and strips trailing `---` separators from parsed content.
-- Fixed stale heading count after a user-added search fails and its card is removed. `updateSummaryText()` is now called in all card-removal error paths.
-- Fixed heading not reflecting new in-progress searches immediately. Adding a search via "Also try" or "Add a search" now updates the heading to show the new total (e.g., "4 of 5 Searches Complete") right away instead of waiting for completion.
+- Harden SearXNG provider against misconfigured URLs: reject non-HTTP schemes at construction, strip multiple trailing slashes, and surface a dedicated `401` hint for auth-proxy rejections.
 
-## [0.10.3] - 2026-03-12
+### Breaking / Upgrade Notes
+- `createSearchProvider(name, apiKey)` callers must update to `createSearchProvider(name, { apiKey, baseUrl })`.
 
-### Added
-- `/google-account` command to report the active Google account currently authenticated for Gemini Web.
-- `chromeProfile` config support for targeting a non-default Chromium profile when reading Gemini Web cookies.
-- `searchModel` config support for overriding the Gemini API model used by `web_search`.
+## [1.11.0] - 2026-05-20
 
 ### Changed
-- Chromium cookie extraction now tries Helium, Chrome, and Arc on macOS, plus Chromium and Chrome on Linux, with profile-aware cookie paths and per-platform key handling.
-- Gemini Web availability checks now pass required cookie names into cookie extraction and can look up the active signed-in Google account without changing existing `isGeminiWebAvailable()` callers.
-- README documentation now covers macOS/Linux cookie extraction limits, the new config fields, the `/google-account` command, and the expanded `chrome-cookies.ts` role.
+- Relocate npm + MIT badges from the cover area to the License section in README.
 
-## [0.10.2] - 2026-02-18
-
-### Added
-- **Interactive search curation.** Press Ctrl+Shift+S during or after a multi-query search to open a browser-based review UI. Results stream in live via SSE. Pick which queries to keep, add new searches on the fly, switch providers — then submit to send only the curated results to the agent.
-- **Auto-condense pipeline.** When the countdown expires without manual curation, a single LLM call (Claude Haiku by default) condenses all search results into a deduplicated briefing organized by topic. Preprocessing enriches the prompt with URL overlap, answer similarity, and source quality analysis. Configure via `"autoFilter"` in `~/.pi/web-search.json`. Full uncondensed results stored and retrievable via `get_search_content`.
-- **Configurable keyboard shortcuts.** Both shortcuts (curate: Ctrl+Shift+S, activity monitor: Ctrl+Shift+W) can be remapped via `"shortcuts"` in `~/.pi/web-search.json`. Changes take effect on restart.
-- **`/websearch` command** — opens the curator directly from pi without an agent round-trip. Accepts optional comma-separated queries or opens empty.
-- **Task-aware condensation.** Optional `context` parameter on `web_search` — a brief description of the user's task. The condenser uses it to focus the briefing on what matters.
-- **Provider selection** — global dropdown in the curator UI to switch between Perplexity and Gemini. Persists to `~/.pi/web-search.json`.
-- **Live condense status in countdown.** Shows "condensing..." while the LLM is working, then "N searches condensed" once complete.
-- Markdown rendering in curator result cards via marked.js.
-- Query-level result cards with expandable answers and source lists. Check/uncheck to include or exclude.
-- SSE streaming with keepalive, socket health checks, and buffered delivery.
-- Idle-based timer (60s default, adjustable). Timeout sends all results as safe default.
-- Keyboard shortcuts: Enter (submit), Escape (skip), A (toggle all).
-- Dark/light theme via `prefers-color-scheme` with teal accent palette.
+## [1.10.2] - 2026-05-20
 
 ### Changed
-- **Curate enabled by default.** Multi-query searches show a 10-second review window; single queries send immediately. Pass `curate: false` to opt out.
-- **Curate shortcut opens browser immediately, even mid-search.** Remaining results stream in live via SSE.
-- **Tool descriptions encourage multi-query research.** The `queries` param explains how to vary phrasing and scope across 2-4 queries, with good/bad examples.
-- **Curated results instruct the LLM.** Tool output prefixed with an instruction telling the LLM to use curated results as-is.
-- Expanded view shows full answer text per query with source titles and domains.
-- Non-curated `web_search` calls now respect the saved provider preference.
-- Config helpers generalized from `loadSavedProvider`/`saveProvider` to `loadConfig`/`saveConfig`.
+- Refresh npm cover (`docs/cover.{svg,png}`): align with the unified card layout used across the `@<GITHUB_OWNER>/rpiv-*` family and add a provider chip strip surfacing all six backends (Brave active, plus Tavily, Serper, Exa, Jina, Firecrawl) with the `/web-search-config` hint.
+
+## [1.10.1] - 2026-05-19
+
+## [1.10.0] - 2026-05-19
+
+## [1.9.2] - 2026-05-19
+
+## [1.9.1] - 2026-05-19
+
+## [1.9.0] - 2026-05-18
+
+## [1.8.3] - 2026-05-18
+
+## [1.8.2] - 2026-05-17
+
+## [1.8.1] - 2026-05-17
 
 ### Fixed
-- Curated `onSubmit` passed the original full query list instead of the filtered list, inflating `queryCount`.
-- Collapsed curated status mixed source URL counts with query counts.
+- `/web-search-config` now persists settings to disk before applying them in memory, preventing silent reverts on write failure.
 
-### New files
-- `curator-server.ts` — ephemeral HTTP server with SSE streaming, state machine, heartbeat watchdog, and token auth.
-- `curator-page.ts` — HTML/CSS/JS for the curator UI with markdown rendering and overlay transitions.
-- `search-filter.ts` — auto-condense pipeline: preprocessing, LLM condensation via pi's model registry, and post-processing (citation verification, source list completion).
-
-## [0.7.3] - 2026-02-05
+## [1.8.0] - 2026-05-16
 
 ### Added
-- Jina Reader fallback for JS-rendered pages. When Readability returns insufficient content (cookie notices, consent walls, SPA shells), the extraction chain now tries Jina Reader (`r.jina.ai`) before falling back to Gemini. Jina handles JavaScript rendering server-side and returns clean markdown. No API key required.
-- JS-render detection heuristic (`isLikelyJSRendered`) produces more specific error messages when pages appear to load content dynamically.
-- Actionable guidance when all extraction methods fail, listing steps to configure Gemini API or use `web_search` instead.
+- Multi-provider web search with support for Tavily, Exa, Jina, and Firecrawl alongside Brave and Serper.
+- `/web-search-config` shows the active provider first with a ✓ marker, marks configured providers, and preserves existing API keys on empty input.
 
 ### Changed
-- HTTP fetch headers now mimic Chrome (realistic `User-Agent`, `Sec-Fetch-*`, `Accept-Language`) instead of the default Node.js user agent. Reduces blocks from bot-detection systems.
-- Short Readability output (< 500 chars) is now treated as a content failure, triggering the fallback chain. Previously, a 266-char cookie notice was returned as "successful" content.
-- Extraction fallback order is now: HTTP+Readability → RSC → Jina Reader → Gemini URL Context → Gemini Web → error with guidance.
+- Update README and npm metadata to document the six-provider search architecture.
 
 ### Fixed
-- `parseTimestamp` now rejects negative values in colon-separated format (`-1:30`, `1:-30`). Previously only the numeric path (`-90`) rejected negatives, while the colon path computed and returned negative seconds.
+- `/web-search-config` notifications and input titles now display clean provider labels.
+- Reject loopback and private-network URLs to prevent SSRF via Brave/Serper raw fetch.
+- Handle empty response bodies from Jina fetch correctly.
 
-## [0.7.2] - 2026-02-03
+## [1.7.0] - 2026-05-15
+
+## [1.6.1] - 2026-05-14
+
+## [1.6.0] - 2026-05-14
+
+## [1.5.2] - 2026-05-13
 
 ### Added
-- `model` parameter on `fetch_content` to override the Gemini model per-request (e.g. `model: "gemini-2.5-flash"`)
-- Collapsed TUI results now show a 200-char text preview instead of just the status line
-- LICENSE file (MIT)
+- Per-tool guidance overrides for `web_search` and `web_fetch` via `~/.config/yoki-web-tools/config.json`.
 
 ### Changed
-- Default Gemini model updated from `gemini-2.5-flash` to `gemini-3-flash-preview` across all API, search, URL context, YouTube, and video paths. Gemini Web gracefully falls back to `gemini-2.5-flash` when the model header isn't available.
-- README rewritten: added tagline, badges, "Why" section, Quick Start, corrected "How It Works" routing order, fixed inaccurate env var precedence claim, added missing `/v/` YouTube format, restored `/search` command docs, collapsible Files table
+- README documents the nested guidance shape and `web_fetch` reach.
 
-### Fixed
-- `PERPLEXITY_API_KEY` env var now takes precedence over config file value, matching `GEMINI_API_KEY` behavior and README documentation (was reversed)
-- `package.json` now includes `repository`, `homepage`, `bugs`, and `description` fields (repo link was missing from pi packages site)
+## [1.5.1] - 2026-05-13
 
-## [0.7.0] - 2026-02-03
+## [1.5.0] - 2026-05-12
 
-### Added
-- **Multi-provider web search**: `web_search` now supports Perplexity, Gemini API (with Google Search grounding), and Gemini Web (cookie auth) as search providers. New `provider` parameter (`auto`, `perplexity`, `gemini`) controls selection. In `auto` mode (default): Perplexity → Gemini API → Gemini Web. Backwards-compatible — existing Perplexity users see no change.
-- **Gemini API grounded search**: Structured citations via `groundingMetadata` with source URIs and text-to-source mappings. Google proxy URLs are resolved via HEAD redirects. Configured via `GEMINI_API_KEY` or `geminiApiKey` in config.
-- **Gemini Web search**: Zero-config web search for users signed into Google in Chrome. Prompt instructs Gemini to cite sources; URLs extracted from markdown response.
-- **Gemini extraction fallback**: When `fetch_content` fails (HTTP 403/429, Readability fails, network errors), automatically retries via Gemini URL Context API then Gemini Web extraction. Each has an independent 60s timeout. Handles SPAs, JS-heavy pages, and anti-bot protections.
-- **Local video file analysis**: `fetch_content` accepts file paths to video files (MP4, MOV, WebM, AVI, etc.). Detected by path prefix (`/`, `./`, `../`, `file://`), validated by extension and 50MB limit. Two-tier fallback: Gemini API (resumable upload via Files API with proper MIME types, poll-until-active and cleanup) → Gemini Web (free, cookie auth).
-- **Video prompt parameter**: `fetch_content` gains optional `prompt` parameter for asking specific questions about video content. Threads through YouTube and local video extraction. Without prompt, uses default extraction (transcript + visual descriptions).
-- **Video thumbnails**: YouTube results include the video thumbnail (fetched from `img.youtube.com`). Local video results include a frame extracted via ffmpeg (at ~1 second). Returned as image content parts alongside text — the agent sees the thumbnail as vision context.
-- **Configurable frame extraction**: `frames` parameter (1-12) on `fetch_content` for pulling visual frames from YouTube or local video. Works in five modes: frames alone (sample across entire video), single timestamp (one frame), single+frames (N frames at 5s intervals), range (default 6 frames), range+frames (N frames across the range). Endpoint-inclusive distribution with 5-second minimum spacing.
-- **Video duration in responses**: Frame extraction results include the video duration for context.
-- `searchProvider` config option in `~/.pi/web-search.json` for global provider default
-- `video` config section: `enabled`, `preferredModel`, `maxSizeMB`
+## [1.4.2] - 2026-05-11
 
-### Changed
-- `PerplexityResponse` renamed to `SearchResponse` (shared interface for all search providers)
-- Extracted HTTP pipeline from `extractContent` into `extractViaHttp` for cleaner Gemini fallback orchestration
-- `getApiKey()`, `API_BASE`, `DEFAULT_MODEL` exported from `gemini-api.ts` for use by search and URL Context modules
-- `isPerplexityAvailable()` added to `perplexity.ts` as non-throwing API key check
-- Content-type routing in `extract.ts`: only `text/html` and `application/xhtml+xml` go through Readability; all other text types (`text/markdown`, `application/json`, `text/csv`, etc.) returned directly. Fixes the OpenAI cookbook `.md` URL that returned "Untitled (30 chars)".
-- Title extraction for non-HTML content: `extractTextTitle()` pulls from markdown `#`/`##` headings, falls back to URL filename
-- Combined `yt-dlp --print duration -g` call fetches stream URL and duration in a single invocation, reused across all frame extraction paths via `streamInfo` passthrough
-- Shared helpers in `utils.ts` (`formatSeconds`, error mapping) eliminate circular imports and duplication across youtube-extract.ts and video-extract.ts
+## [1.4.1] - 2026-05-11
 
-### Fixed
-- `fetch_content` TUI rendered `undefined/undefined URLs` during progress updates (renderResult didn't handle `isPartial`, now shows a progress bar like `web_search` does)
-- RSC extractor produced malformed markdown for `<pre><code>` blocks (backticks inside fenced code blocks) -- extremely common on Next.js documentation pages
-- Multi-URL fetch failures rendered in green "success" color even when 0 URLs succeeded (now red)
-- `web_search` queries parameter described as "parallel" in schema but execution is sequential (changed to "batch"; `urls` correctly remains "parallel")
-- Proper error propagation for frame extraction: missing binaries (yt-dlp, ffmpeg, ffprobe), private/age-restricted/region-blocked videos, expired stream URLs (403), timestamp-exceeds-duration, and timeouts all produce specific user-facing messages instead of silent nulls
-- `isTimeoutError` now detects `execFileSync` timeouts via the `killed` flag (SIGTERM from timeout was previously unrecognized)
-- Float video durations (e.g. 15913.7s from yt-dlp) no longer produce out-of-range timestamps — durations are floored before computing frame positions
-- `parseTimestamp` consistently floors results across both bare-number ("90.5" → 90) and colon ("1:30.5" → 90) paths — previously the colon path returned floats
-- YouTube thumbnail assignment no longer sets `null` on the optional `thumbnail` field when fetch fails (was a type mismatch; now only assigned on success)
+## [1.4.0] - 2026-05-10
 
-### New files
-- `gemini-search.ts` -- search routing + Gemini Web/API search providers with grounding
-- `gemini-url-context.ts` -- URL Context API extraction + Gemini Web extraction fallback
-- `video-extract.ts` -- local video file detection, Gemini Web/API analysis with Files API upload
-- `utils.ts` -- shared formatting and error helpers for frame extraction
+## [1.3.1] - 2026-05-10
 
-## [0.6.0] - 2026-02-02
+## [1.3.0] - 2026-05-08
 
-### Added
-- YouTube video understanding in `fetch_content` via three-tier fallback chain:
-  - **Gemini Web** (primary): reads Chrome session cookies from macOS Keychain + SQLite, authenticates to gemini.google.com, sends YouTube URL via StreamGenerate endpoint. Full visual + audio understanding with timestamps. Zero config needed if signed into Google in Chrome.
-  - **Gemini API** (secondary): direct REST calls with `GEMINI_API_KEY`. YouTube URLs passed as `file_data.file_uri`. Configure via `GEMINI_API_KEY` env var or `geminiApiKey` in `~/.pi/web-search.json`.
-  - **Perplexity** (fallback): uses existing `searchWithPerplexity` for a topic summary when neither Gemini path is available. Output labeled as "Summary (via Perplexity)" so the agent knows it's not a full transcript.
-- YouTube URL detection for all common formats: `/watch?v=`, `youtu.be/`, `/shorts/`, `/live/`, `/embed/`, `/v/`, `m.youtube.com`
-- Configurable via `~/.pi/web-search.json` under `youtube` key (`enabled`, `preferredModel`)
-- Actionable error messages when extraction fails (directs user to sign into Chrome or set API key)
-- YouTube URLs no longer fall through to HTTP/Readability (which returns garbage); returns error instead
+## [1.2.1] - 2026-05-07
 
-### New files
-- `chrome-cookies.ts` -- macOS Chrome cookie extraction using Node builtins (`node:crypto`, `node:sqlite`, `child_process`)
-- `gemini-web.ts` -- Gemini Web client ported from surf's gemini-client.cjs (cookie auth, StreamGenerate, model fallback)
-- `gemini-api.ts` -- Gemini REST API client (generateContent, file upload/processing/cleanup for Phase 2)
-- `youtube-extract.ts` -- YouTube extraction orchestrator with three-tier fallback and activity logging
+## [1.2.0] - 2026-05-07
 
-## [0.5.1] - 2026-02-02
+## [1.1.5] - 2026-05-05
 
-### Added
-- Bundled `librarian` skill -- structured research workflow for open-source libraries with GitHub permalinks, combining fetch_content (cloning), web_search (recent info), and git operations (blame, log, show)
+### Documentation
+- README: documented the `web_search` and `web_fetch` tool schemas so consumers can see the parameter surface without reading the source.
 
-### Fixed
-- Session fork event handler was registered as `session_branch` (non-existent event) instead of `session_fork`, meaning forks never triggered cleanup (abort pending fetches, clear clone cache, restore session data)
-- API fallback title for tree URLs with a path (e.g. `/tree/main/src`) now includes the path (`owner/repo - src`), consistent with clone-based results
-- Removed unnecessary export on `getDefaultBranch` (only used internally by `fetchViaApi`)
+## [1.1.4] - 2026-05-03
 
-## [0.5.0] - 2026-02-01
+## [1.1.3] - 2026-05-03
 
-### Added
-- GitHub repository clone extraction for `fetch_content` -- detects GitHub code URLs, clones repos to `/tmp/pi-github-repos/`, and returns actual file contents plus local path for further exploration with `read` and `bash`
-- Lightweight API fallback for oversized repos (>350MB) and commit SHA URLs via `gh api`
-- Clone cache with concurrent request deduplication (second request awaits first's clone)
-- `forceClone` parameter on `fetch_content` to override the size threshold
-- Configurable via `~/.pi/web-search.json` under `githubClone` key (enabled, maxRepoSizeMB, cloneTimeoutSeconds, clonePath)
-- Falls back to `git clone` when `gh` CLI is unavailable (public repos only)
-- README: GitHub clone documentation with config, flow diagram, and limitations
+## [1.1.2] - 2026-05-03
+
+## [1.1.1] - 2026-05-03
+
+## [1.1.0] - 2026-05-03
+
+## [1.0.19] - 2026-05-03
+
+## [1.0.18] - 2026-05-02
+
+## [1.0.17] - 2026-05-02
+
+## [1.0.16] - 2026-05-02
+
+## [1.0.15] - 2026-05-02
+
+## [1.0.14] - 2026-05-01
 
 ### Changed
-- Refactored `extractContent`/`fetchAllContent` signatures from positional `timeoutMs` to `ExtractOptions` object
-- Blob/tree fetch titles now include file path (e.g. `owner/repo - src/index.ts`) for better disambiguation in multi-URL results and TUI
+- Cover redesigned as a macOS-style terminal-window screenshot demonstrating the extension's hero feature.
 
-### Fixed
-- README: Activity monitor keybinding corrected from `Ctrl+Shift+O` to `Ctrl+Shift+W`
+## [1.0.13] - 2026-05-01
 
-## [0.4.5] - 2026-02-01
+### Added
+- `docs/vertical-cover.{svg,png}` — portrait-orientation hero artwork (1280×800 canvas; PNG downscaled to 320×711).
 
 ### Changed
-- Added package keywords for npm discoverability
+- Cover canvas extended from 1280×640 to 1280×800 with refreshed crop marks/footer.
+- README hero swapped from `docs/cover.png` to `docs/vertical-cover.png`, rendered at `width="160"`. The `<a>` wrapper around the `<picture>` was removed so the image is no longer a clickable link to the package directory.
 
-## [0.4.4] - 2026-02-01
+## [1.0.12] - 2026-05-01
 
-### Fixed
-- Adapt execute signatures to pi v0.51.0: reorder signal, onUpdate, ctx parameters across all three tools
-
-## [0.4.3] - 2026-01-27
-
-### Fixed
-- Google API compatibility: Use `StringEnum` for `recencyFilter` to avoid unsupported `anyOf`/`const` JSON Schema patterns
-
-## [0.4.2] - 2026-01-27
-
-### Fixed
-
-- Single-URL fetches now store content for retrieval via `get_search_content` (previously only multi-URL)
-- Corrected `get_search_content` usage syntax in fetch_content help messages
+### Added
+- `docs/cover.png` — package hero (rasterized from `docs/cover.svg` via `rsvg-convert`, 1280×640).
 
 ### Changed
+- README hero: open with a `<picture>`-wrapped `cover.png` above the shield badges so pi.dev's package-card image extractor picks the friendly artwork instead of the npm version shield. Existing `docs/config.jpg` screenshot retained below the description.
 
-- Increased inline content limit from 10K to 30K chars (larger content truncated but fully retrievable)
-
-### Added
-
-- Banner image for README
-
-## [0.4.1] - 2026-01-26
+## [1.0.11] - 2026-04-30
 
 ### Changed
-- Added `pi` manifest to package.json for pi v0.50.0 package system compliance
-- Added `pi-package` keyword for npm discoverability
+- README rewritten with a user-outcome opener ("Let the model search the web and read pages") and a new `## Features` section (Brave-backed search 1–10 results, raw/text fetch modes, large-page spillover to temp file, interactive `/web-search-config` setup writing chmod 0600 config). `package.json` `description` synced.
 
-## [0.4.0] - 2026-01-19
+## [1.0.10] - 2026-04-30
 
-### Added
+## [1.0.9] - 2026-04-30
 
-- PDF extraction via `unpdf` - fetches PDFs from URLs and saves as markdown to `~/Downloads/`
-  - Extracts text, metadata (title, author), page count
-  - Supports PDFs up to 20MB (vs 5MB for HTML)
-  - Handles arxiv URLs with smart title fallback
+## [1.0.8] - 2026-04-29
 
-### Fixed
+## [1.0.7] - 2026-04-29
 
-- Plain text URL detection now uses hostname check instead of substring match
+## [1.0.6] - 2026-04-29
 
-## [0.3.0] - 2026-01-19
+## [1.0.5] - 2026-04-29
 
-### Added
+## [1.0.4] - 2026-04-28
 
-- RSC (React Server Components) content extraction for Next.js App Router pages
-  - Parses flight data from `<script>self.__next_f.push([...])</script>` tags
-  - Reconstructs markdown with headings, tables, code blocks, links
-  - Handles chunk references and nested components
-  - Falls back to RSC extraction when Readability fails
-- Content-type validation rejects binary files (images, PDFs, audio, video, zip)
-- 5MB response size limit (checked via Content-Length header) to prevent memory issues
+## [1.0.3] - 2026-04-28
 
-### Fixed
+## [1.0.2] - 2026-04-28
 
-- `fetch_content` now handles plain text URLs (raw.githubusercontent.com, gist.githubusercontent.com, any text/plain response) instead of failing with "Could not extract readable content"
+## [1.0.1] - 2026-04-28
 
-## [0.2.0] - 2026-01-11
+## [1.0.0] - 2026-04-28
 
-### Added
+## [0.13.0] - 2026-04-28
 
-- Activity monitor widget (`Ctrl+Shift+O`) showing live request/response activity
-  - Displays last 10 API calls and URL fetches with status codes and timing
-  - Shows rate limit usage and reset countdown
-  - Live updates as requests complete
-  - Auto-clears on session switch
+## [0.12.7] - 2026-04-26
+
+## [0.12.6] - 2026-04-26
+
+## [0.12.5] - 2026-04-24
+
+## [0.12.4] - 2026-04-24
+
+## [0.12.3] - 2026-04-24
+
+## [0.12.2] - 2026-04-24
+
+## [0.12.1] - 2026-04-24
+
+## [0.12.0] - 2026-04-24
+
+## [0.11.7] - 2026-04-23
+
+## [0.11.6] - 2026-04-22
+
+## [0.11.5] - 2026-04-22
+
+## [0.11.4] - 2026-04-21
+
+## [0.11.3] - 2026-04-21
+
+## [0.11.2] - 2026-04-21
+
+## [0.11.1] - 2026-04-20
+
+## [0.11.0] - 2026-04-20
+
+## [0.10.0] - 2026-04-20
+
+## [0.9.1] - 2026-04-20
+
+## [0.9.0] - 2026-04-19
+
+## [0.8.3] - 2026-04-19
+
+## [0.8.2] - 2026-04-19
+
+## [0.8.1] - 2026-04-19
+
+## [0.8.0] - 2026-04-19
+
+## [0.7.0] - 2026-04-18
+
+## [0.6.1] - 2026-04-18
+
+## [0.6.0] — 2026-04-18
 
 ### Changed
-
-- Refactored activity tracking into dedicated `activity.ts` module
-
-## [0.1.0] - 2026-01-06
-
-Initial release. Designed for pi v0.37.3.
-
-### Added
-
-- `web_search` tool - Search via Perplexity AI with synthesized answers and citations
-  - Single or batch queries (parallel execution)
-  - Recency filter (day/week/month/year)
-  - Domain filter (include or exclude)
-  - Optional async content fetching with agent notification
-- `fetch_content` tool - Fetch and extract readable content from URLs
-  - Single URL returns content directly
-  - Multiple URLs store for retrieval via `get_search_content`
-  - Concurrent fetching (3 max) with 30s timeout
-- `get_search_content` tool - Retrieve stored search results or fetched content
-  - Access by response ID, URL, query, or index
-- `/search` command - Interactive browser for stored results
-- TUI rendering with progress bars, URL lists, and expandable previews
-- Session-aware storage with 1-hour TTL
-- Rate limiting (10 req/min for Perplexity API)
-- Config file support (`~/.pi/web-search.json`)
-- Content extraction via Readability + Turndown (max 10k chars)
-- Proper session isolation - pending fetches abort on session switch
-- URL validation before fetch attempts
-- Defensive JSON parsing for API responses
+- Consolidated into the `<GITHUB_OWNER>/rpiv-mono` monorepo. Version aligned to the yoki-pi family lockstep starting point. No runtime behavior change from `0.1.2`.

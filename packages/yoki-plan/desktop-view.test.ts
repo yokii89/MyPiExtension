@@ -104,9 +104,7 @@ describe("plan-mode desktop registration", () => {
 			process.env.PIDESK_VIEW_CONTRIBUTION_KEYS = JSON.stringify({
 				"yoki-plan": "ck:user:user:npm:@yoki/yoki-plan:access-mode:yoki-plan",
 			});
-			expect(readContributionKey("yoki-plan")).toBe(
-				"ck:user:user:npm:@yoki/yoki-plan:access-mode:yoki-plan",
-			);
+			expect(readContributionKey("yoki-plan")).toBe("ck:user:user:npm:@yoki/yoki-plan:access-mode:yoki-plan");
 			expect(readContributionKey("other")).toBeUndefined();
 			process.env.PIDESK_VIEW_CONTRIBUTION_KEYS = "not-json";
 			expect(readContributionKey("yoki-plan")).toBeUndefined();

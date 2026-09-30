@@ -139,7 +139,9 @@ function buildConnectionCard(state: Status.TelegramBridgeStatusLineState): ViewN
 	const bot = state.botUsername ? `@${state.botUsername}` : "未配置";
 	const token = state.hasBotToken ? "已配置" : "缺失";
 	const polling = state.pollingActive ? "活跃" : "停止";
-	const role = state.busRole ? `${state.busRole}${state.busLifecyclePhase ? ` (${state.busLifecyclePhase})` : ""}` : "—";
+	const role = state.busRole
+		? `${state.busRole}${state.busLifecyclePhase ? ` (${state.busLifecyclePhase})` : ""}`
+		: "—";
 
 	return {
 		type: "card",
@@ -247,12 +249,8 @@ function buildQueueCard(
 }
 
 /** Dispatch order: control lane first, then priority, then default. */
-function orderedByLane<T extends { queueLane: Status.TelegramStatusQueueLane }>(
-	items: readonly T[],
-): T[] {
-	return [...items].sort(
-		(a, b) => LANE_ORDER.indexOf(a.queueLane) - LANE_ORDER.indexOf(b.queueLane),
-	);
+function orderedByLane<T extends { queueLane: Status.TelegramStatusQueueLane }>(items: readonly T[]): T[] {
+	return [...items].sort((a, b) => LANE_ORDER.indexOf(a.queueLane) - LANE_ORDER.indexOf(b.queueLane));
 }
 
 /** Threads card: name | slot | sync | lastError (design §4.1), with empty state. */

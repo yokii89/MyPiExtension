@@ -73,10 +73,7 @@ export interface TelegramPanelSession {
 	 * the adapter hands out its factory because it is the one module that resolved
 	 * the SDK. Lives and dies with the session that owns it.
 	 */
-	createFrameScheduler: (options: {
-		intervalMs?: number;
-		send: () => Promise<void> | void;
-	}) => ViewFrameScheduler;
+	createFrameScheduler: (options: { intervalMs?: number; send: () => Promise<void> | void }) => ViewFrameScheduler;
 }
 
 /**

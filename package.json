@@ -14,8 +14,6 @@
     "smoke:yoki-skills": "npm run test:pi-smoke --workspace=pi-codex-skills",
     "check:yoki-ui": "npm run typecheck --workspace=yoki_ui",
     "test:yoki-ui": "npm run test --workspace=yoki_ui",
-    "check:yoki-mcp-adapter": "npm run check --workspace=pi-mcp-adapter",
-    "test:yoki-mcp-adapter": "npm run test --workspace=pi-mcp-adapter",
     "check:hygiene": "node scripts/check-no-nested-node-modules.mjs",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
@@ -31,18 +29,15 @@
     "extensions": [
       "./packages/yoki-ask-user-question/index.ts",
       "./packages/yoki-plan/index.ts",
-      "./packages/yoki-todo/index.ts",
       "./packages/yoki-warp-notify/index.ts",
       "./packages/yoki-web-tools/index.ts",
       "./packages/yoki-image-gen/index.ts",
       "./packages/yoki-newapi/index.ts",
       "./packages/yoki-skills/extensions/pi-codex-skills/index.ts",
       "./packages/yoki-ui/yoki_ui/index.ts",
-      "./packages/yoki-mcp-adapter/mcp-adapter/index.ts",
       "./packages/pi-telegram-main/index.ts"
     ],
     "skills": [
-      "./packages/yoki-web-tools/skills",
       "./packages/yoki-skills/skills"
     ],
     "themes": [

@@ -41,7 +41,8 @@
 			"!packages/yoki-newapi",
 			"!packages/yoki-skills",
 			"!packages/yoki-ui",
-			"!packages/yoki-mcp-adapter"
+			"!packages/yoki-mcp-adapter",
+			"!!参考"
 		]
 	}
 }

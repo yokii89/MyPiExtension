@@ -68,30 +68,26 @@ export function createTelegramPanelSdk(): TelegramPanelSdk {
 			if (!sdk) return null;
 			// Catalog binding（docs/design/19 §10.1）：Host 注入 env 时带上稳定 key
 			const contributionKey = sdk.resolveContributionKey?.(options.panelId);
-			const session: LiveViewSession | null = await sdk.openPanel(
-				client as Parameters<typeof openPanel>[0],
-				{
-					panelId: options.panelId,
-					title: options.title,
-					contributionKey,
-					// 投影层产出的是协议合法树；SDK 的类型由 view-sdk 自己保证
-					root: options.root as Parameters<typeof openPanel>[1]["root"],
-					actions: options.actions as Parameters<typeof openPanel>[1]["actions"],
-					onEvent: (event) => {
-						options.onEvent({
-							type: event.type,
-							actionId: event.type === "action" ? event.actionId : undefined,
-						});
-						// 动作事件不关闭面板：kind 已声明为 "event"，Host 不会 close
-					},
+			const session: LiveViewSession | null = await sdk.openPanel(client as Parameters<typeof openPanel>[0], {
+				panelId: options.panelId,
+				title: options.title,
+				contributionKey,
+				// 投影层产出的是协议合法树；SDK 的类型由 view-sdk 自己保证
+				root: options.root as Parameters<typeof openPanel>[1]["root"],
+				actions: options.actions as Parameters<typeof openPanel>[1]["actions"],
+				onEvent: (event) => {
+					options.onEvent({
+						type: event.type,
+						actionId: event.type === "action" ? event.actionId : undefined,
+					});
+					// 动作事件不关闭面板：kind 已声明为 "event"，Host 不会 close
 				},
-			);
+			});
 			if (!session) return null;
 			// LiveViewSession.update 收 ViewNode | ViewUpdatePayload；投影层给的是
 			// { root, actions }，形状一致，此处只做窄化。
 			const wrapper: TelegramPanelSession = {
-				update: ({ root, actions }) =>
-					session.update({ root, actions } as Parameters<typeof session.update>[0]),
+				update: ({ root, actions }) => session.update({ root, actions } as Parameters<typeof session.update>[0]),
 				close: () => session.close(),
 				closed: session.closed as Promise<{ reason?: string } | null>,
 				// 合并窗口是 SDK 的语义（docs/design/20 O4）：扩展只决定何时标脏。

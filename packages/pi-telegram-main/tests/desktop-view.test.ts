@@ -15,6 +15,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createViewFrameScheduler, measureViewTree, VIEW_LIMITS } from "@pidesk/view-sdk";
+import { createTelegramPanelRuntime, type TelegramPanelSdk, type TelegramPanelSession } from "../lib/desktop-panel.ts";
 import {
 	formatRuntimeEvent,
 	isTelegramPanelAction,
@@ -27,11 +28,6 @@ import {
 	type TelegramPanelProjection,
 	type TelegramPanelSource,
 } from "../lib/desktop-view.ts";
-import {
-	createTelegramPanelRuntime,
-	type TelegramPanelSdk,
-	type TelegramPanelSession,
-} from "../lib/desktop-panel.ts";
 import type { TelegramBridgeStatusLineState } from "../lib/status.ts";
 import type { TelegramTopicTargetRecord } from "../lib/threads.ts";
 
@@ -272,9 +268,7 @@ test("Queue card groups items by lane in dispatch order", () => {
 });
 
 test("Queue card reports the active turn and an empty state", () => {
-	const lines = allText(
-		cardByTitle(project(baseState({ pendingDispatch: true })).root as unknown as AnyNode, "队列"),
-	);
+	const lines = allText(cardByTitle(project(baseState({ pendingDispatch: true })).root as unknown as AnyNode, "队列"));
 	assert.ok(lines.includes("派发中"));
 	assert.ok(lines.includes("队列为空"));
 });
@@ -286,11 +280,8 @@ test("Queue card truncates long queues and reports the overflow count", () => {
 	}));
 	const lines = allText(
 		cardByTitle(
-			project(
-				baseState({ queuedItems: queue.map((item) => ({ queueLane: item.queueLane })) }),
-				[],
-				queue,
-			).root as unknown as AnyNode,
+			project(baseState({ queuedItems: queue.map((item) => ({ queueLane: item.queueLane })) }), [], queue)
+				.root as unknown as AnyNode,
 			"队列",
 		),
 	);
@@ -329,10 +320,8 @@ test("Events card is bounded, newest first", () => {
 	}));
 	const lines = allText(
 		cardByTitle(
-			projectTelegramPanel(
-				source(baseState({ recentRuntimeEvents: events })),
-				1_700_000_030_000,
-			).root as unknown as AnyNode,
+			projectTelegramPanel(source(baseState({ recentRuntimeEvents: events })), 1_700_000_030_000)
+				.root as unknown as AnyNode,
 			"事件",
 		),
 	);
@@ -421,12 +410,13 @@ test("Queue card renders a table when the Host advertises view-table", () => {
 		{ queueLane: "control" as const, summary: "first" },
 		{ queueLane: "priority" as const, summary: "second" },
 	];
-	const table = tableInChildren(
-		cardByTitle(project(baseState(), [], queue, true).root as unknown as AnyNode, "队列"),
-	);
+	const table = tableInChildren(cardByTitle(project(baseState(), [], queue, true).root as unknown as AnyNode, "队列"));
 	assert.ok(table, "expected a table node");
 	assert.equal(table.id, "tg-queue");
-	assert.deepEqual(table.columns?.map((column) => column.key), ["lane", "summary"]);
+	assert.deepEqual(
+		table.columns?.map((column) => column.key),
+		["lane", "summary"],
+	);
 	// 表体按派发顺序出行，而不是按入队顺序
 	assert.deepEqual(
 		table.rows?.map((row) => row.cells.summary),
@@ -471,17 +461,15 @@ test("Table mode truncates on its own side so the Host never drops rows silently
 
 test("Threads card renders one table row per record with per-column cells", () => {
 	const table = tableInChildren(
-		cardByTitle(
-			project(baseState(), [threadRecord(0)], [], true).root as unknown as AnyNode,
-			"Threads",
-		),
+		cardByTitle(project(baseState(), [threadRecord(0)], [], true).root as unknown as AnyNode, "Threads"),
 	);
 	assert.ok(table, "expected a table node");
 	assert.equal(table.id, "tg-threads");
-	assert.deepEqual(table.columns?.map((column) => column.key), ["thread", "slot", "sync", "error"]);
-	assert.deepEqual(table.rows, [
-		{ id: "40", cells: { thread: "Axial0", slot: "A", sync: "open", error: "boom" } },
-	]);
+	assert.deepEqual(
+		table.columns?.map((column) => column.key),
+		["thread", "slot", "sync", "error"],
+	);
+	assert.deepEqual(table.rows, [{ id: "40", cells: { thread: "Axial0", slot: "A", sync: "open", error: "boom" } }]);
 });
 
 test("Table mode still carries its empty states through the node contract", () => {
@@ -504,10 +492,7 @@ test("Table mode needs fewer nodes than the row fallback for the same state", ()
 
 	const rowMode = measureViewTree(project(state, threads, queue, false).root, VIEW_LIMITS).nodes;
 	const tableMode = measureViewTree(project(state, threads, queue, true).root, VIEW_LIMITS).nodes;
-	assert.ok(
-		tableMode < rowMode,
-		`expected tables to be lighter: ${tableMode} vs row composition ${rowMode}`,
-	);
+	assert.ok(tableMode < rowMode, `expected tables to be lighter: ${tableMode} vs row composition ${rowMode}`);
 	// 实测上界：远低于 VIEW_LIMITS.maxNodes = 512
 	assert.ok(tableMode < 200, `unexpectedly heavy table projection: ${tableMode}`);
 });
@@ -563,10 +548,7 @@ test("Sustained marks deliver at the ≤4 frames/second ceiling", async () => {
 	runtime.dispose();
 
 	// 1.1 s at 250 ms/window + the immediate first frame
-	assert.ok(
-		sessions[0].updates.length <= 6,
-		`expected ≤6 frames, delivered ${sessions[0].updates.length}`,
-	);
+	assert.ok(sessions[0].updates.length <= 6, `expected ≤6 frames, delivered ${sessions[0].updates.length}`);
 	assert.ok(sessions[0].updates.length >= 3, "the window still produced frames");
 });
 

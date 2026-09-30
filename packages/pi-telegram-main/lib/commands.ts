@@ -293,7 +293,8 @@ async function safePanelHook(hook?: () => void | Promise<void>): Promise<void> {
 	}
 }
 
-function parseTelegramProfileArg(args: string): string | undefined {	const word = args.trim().split(/\s+/)[0];
+function parseTelegramProfileArg(args: string): string | undefined {
+	const word = args.trim().split(/\s+/)[0];
 	if (!word || word.length === 0) return undefined;
 	if (word.startsWith("-")) return undefined;
 	return word === TELEGRAM_DEFAULT_PROFILE_NAME ? undefined : word;

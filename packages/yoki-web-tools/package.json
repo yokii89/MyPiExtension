@@ -1,55 +1,75 @@
 {
-  "name": "@yoki/yoki-web-tools",
-  "version": "1.20.0",
-  "description": "Web research for Pi: search, content fetching, GitHub repository reading, PDF extraction, curation, and summaries.",
-  "type": "module",
-  "scripts": {
-    "test": "node --test"
-  },
-  "keywords": [
-    "pi-package",
-    "pi",
-    "pi-coding-agent",
-    "extension",
-    "web-search",
-    "perplexity",
-    "fetch",
-    "scraping"
-  ],
-  "author": "<GITHUB_OWNER>",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/<GITHUB_OWNER>/<REPO>.git",
-    "directory": "packages/yoki-web-tools"
-  },
-  "bugs": {
-    "url": "https://github.com/<GITHUB_OWNER>/<REPO>/issues"
-  },
-  "homepage": "https://github.com/<GITHUB_OWNER>/<REPO>/tree/main/packages/yoki-web-tools#readme",
-  "dependencies": {
-    "@mozilla/readability": "^0.6.0",
-    "linkedom": "^0.16.0",
-    "p-limit": "^6.1.0",
-    "turndown": "^7.2.0",
-    "unpdf": "^1.6.2",
-    "yoki_ui": "*"
-  },
-  "peerDependencies": {
-    "@earendil-works/pi-ai": "*",
-    "@earendil-works/pi-coding-agent": "*",
-    "@earendil-works/pi-tui": "*",
-    "typebox": "*"
-  },
-  "pi": {
-    "extensions": [
-      "./index.ts"
-    ],
-    "skills": [
-      "./skills"
-    ]
-  },
-  "devDependencies": {
-    "@types/turndown": "^5.0.6"
-  }
+	"name": "@yoki/yoki-web-tools",
+	"version": "1.21.0",
+	"description": "Pi extension. Web search and fetch for the model with pluggable providers (Brave, Tavily, Serper, Exa, You.com, Jina, Firecrawl, Perplexity, SearXNG, Ollama).",
+	"keywords": [
+		"pi-package",
+		"pi-extension",
+		"yoki",
+		"web-search",
+		"web-fetch",
+		"search",
+		"fetch",
+		"scrape",
+		"web-scraping",
+		"ai",
+		"llm",
+		"agent",
+		"local",
+		"self-hosted",
+		"brave",
+		"tavily",
+		"serper",
+		"exa",
+		"youcom",
+		"jina",
+		"firecrawl",
+		"perplexity",
+		"searxng",
+		"ollama"
+	],
+	"type": "module",
+	"license": "MIT",
+	"author": "<GITHUB_OWNER>",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/<GITHUB_OWNER>/<REPO>.git",
+		"directory": "packages/yoki-web-tools"
+	},
+	"homepage": "https://github.com/<GITHUB_OWNER>/<REPO>/tree/main/packages/yoki-web-tools#readme",
+	"bugs": {
+		"url": "https://github.com/<GITHUB_OWNER>/<REPO>/issues"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"scripts": {
+		"test": "vitest run"
+	},
+	"files": [
+		"index.ts",
+		"web-tools.ts",
+		"providers/",
+		"docs/",
+		"!docs/*.png",
+		"!docs/*.jpg",
+		"!docs/*.svg",
+		"README.md",
+		"LICENSE",
+		"!**/*.test.ts"
+	],
+	"pi": {
+		"image": "./docs/cover.png",
+		"extensions": [
+			"./index.ts"
+		]
+	},
+	"dependencies": {
+		"@yoki/yoki-config": "^1.20.0",
+		"typebox": "^1.1.24"
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-coding-agent": "*",
+		"@earendil-works/pi-tui": "*"
+	}
 }

@@ -464,9 +464,7 @@ export function truncateTelegramQueueSummary(text: string, maxWords = 5, maxLeng
  * item's own status summary. Shared by the Telegram queue menu and the PiDesk
  * desktop panel so both surfaces name the same turn the same way.
  */
-export function resolveTelegramQueueItemText<TContext = unknown>(
-	item: TelegramQueueItem<TContext>,
-): string {
+export function resolveTelegramQueueItemText<TContext = unknown>(item: TelegramQueueItem<TContext>): string {
 	if (item.kind !== "prompt") return item.statusSummary;
 	return (
 		item.content

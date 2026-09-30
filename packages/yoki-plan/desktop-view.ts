@@ -19,12 +19,12 @@ import {
 	connectDesktopView,
 	type DesktopViewClient,
 	type LiveViewSession,
-	registerAccessMode,
 	// 必须是**本地导入绑定**：`export { x as readContributionKey } from …` 只建立
 	// 对外 re-export，不会让 `readContributionKey` 在本模块可见——文件内的两个调用
 	// 点因此抛 ReferenceError，并被 registerPlanModeOnDesktop 的 catch-all 吞成
 	// "没有桌面宿主"。docs/design/20 O5 查 consumer 4 红测的真实根因。
 	resolveContributionKey as readContributionKey,
+	registerAccessMode,
 	type SlotSupervisor,
 	superviseAccessMode,
 	type ViewNode,
@@ -219,8 +219,7 @@ export async function registerPlanModeOnDesktop(opts?: PlanDesktopModeDeps): Pro
 	try {
 		const handle = await register(client, {
 			...PLAN_MODE_REGISTRATION,
-			contributionKey:
-				opts?.contributionKey ?? readContributionKey(PLAN_MODE_CONTRIBUTION_ID),
+			contributionKey: opts?.contributionKey ?? readContributionKey(PLAN_MODE_CONTRIBUTION_ID),
 			onEvent: (event, session) => routeAccessModeEvent(event, session, opts?.onAction),
 		});
 		if (!handle) {
@@ -272,8 +271,7 @@ export function createPlanModeSupervisor(opts: PlanModeSupervisorDeps): SlotSupe
 			}),
 		registration: {
 			...PLAN_MODE_REGISTRATION,
-			contributionKey:
-				opts.contributionKey ?? readContributionKey(PLAN_MODE_CONTRIBUTION_ID),
+			contributionKey: opts.contributionKey ?? readContributionKey(PLAN_MODE_CONTRIBUTION_ID),
 		},
 		onActivate: () => opts.onAction?.("activate"),
 		onDeactivate: () => opts.onAction?.("deactivate"),

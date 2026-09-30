@@ -1,6 +1,7 @@
 ## [Unreleased]
 
 ### Added
+- **`GuidanceFields.description`** (`description?: string`) — optional free-text leaf enrolled in `GuidanceFields` / `GuidanceFieldsSchema` and accepted by `validateGuidanceFields`. Required by `yoki-web-tools` guidance overrides so a wrong-typed `description` is dropped by per-field salvage instead of being treated as an unknown pass-through key.
 - **`REL.todo`** (`.pi/yoki/todo`) — project-scoped todo storage domain under the unified yoki root, matching artifacts / workflows / guidance.
 - **Project path helpers** (`projectYokiRoot`, `projectYokiDomain`, `PROJECT_YOKI_SEGMENTS`, `REL`) — single source of truth for the project-scoped yoki domain under `<cwd>/.pi/yoki/{artifacts,workflows,guidance,todo}/`. Relative prefixes in `REL` always use `/` for skills, collectors, and user-facing strings.
 - `resolveConfigDir()` — honors `XDG_CONFIG_HOME` per the XDG Base Directory spec: unset / empty-after-trim / whitespace-only / relative all fall back to `~/.config`; a leading `~` or `~/…` is expanded via `expandTilde` (mirroring Pi's `expandTildePath`) and then required to be absolute; absolute values are used verbatim. Contract: only bare `~` and `~/…` expand — a `~user` form is NOT expanded (XDG defines no `~user` expansion), so it fails the `isAbsolute` check and silently routes to the default `~/.config` like any other relative path. `configPath` now resolves through `resolveConfigDir()` instead of a hardcoded `~/.config`.
