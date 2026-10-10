@@ -1,13 +1,13 @@
 import { DynamicBorder, type Theme } from "@earendil-works/pi-coding-agent";
 import { type Component, Container, type Input, Spacer } from "@earendil-works/pi-tui";
 import { GLYPH_WARNING } from "yoki_ui/style";
-import type { QuestionnaireState } from "../state/state.js";
-import type { QuestionData } from "../tool/types.js";
-import type { PreviewPaneProps } from "./components/preview/preview-pane.js";
-import type { TabBar } from "./components/tab-bar.js";
-import type { StatefulView } from "./stateful-view.js";
-import type { TabComponents } from "./tab-components.js";
-import { QuestionTabStrategy, SubmitTabStrategy, type TabContentStrategy } from "./tab-content-strategy.js";
+import type { QuestionnaireState } from "../state/state.ts";
+import type { QuestionData } from "../tool/types.ts";
+import type { PreviewPaneProps } from "./components/preview/preview-pane.ts";
+import type { TabBar } from "./components/tab-bar.ts";
+import type { StatefulView } from "./stateful-view.ts";
+import type { TabComponents } from "./tab-components.ts";
+import { QuestionTabStrategy, SubmitTabStrategy, type TabContentStrategy } from "./tab-content-strategy.ts";
 
 export const HINT_PART_ENTER = "Enter to select";
 export const HINT_PART_NAV = "↑/↓ to navigate";

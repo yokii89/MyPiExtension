@@ -13,7 +13,7 @@ import {
 	formatPopTitleStack,
 	formatPushTitleStack,
 	type WarpTransportRuntime,
-} from "./warp-notify.js";
+} from "./warp-notify.ts";
 
 function primeFs(): { open: Mock; write: Mock; close: Mock } {
 	(fs.openSync as unknown as Mock).mockReturnValue(7);

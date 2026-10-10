@@ -1,7 +1,7 @@
 import { createMockCtx, createMockPi } from "@yoki/yoki-test-utils";
 import { describe, expect, it, vi } from "vitest";
-import { registerAskUserQuestionTool } from "./ask-user-question.js";
-import { hasDialogUI } from "./rpc-fallback.js";
+import { registerAskUserQuestionTool } from "./ask-user-question.ts";
+import { hasDialogUI } from "./rpc-fallback.ts";
 
 type SelectFn = (title: string, options: string[]) => Promise<string | undefined>;
 type InputFn = (title: string, placeholder?: string) => Promise<string | undefined>;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { QuestionAnswer, QuestionData } from "../tool/types.js";
-import type { WrappingSelectItem } from "../view/components/wrapping-select.js";
-import { allAnswered, routeKey, wrapTab } from "./key-router.js";
-import type { QuestionnaireRuntime, QuestionnaireState } from "./state.js";
+import type { QuestionAnswer, QuestionData } from "../tool/types.ts";
+import type { WrappingSelectItem } from "../view/components/wrapping-select.ts";
+import { allAnswered, routeKey, wrapTab } from "./key-router.ts";
+import type { QuestionnaireRuntime, QuestionnaireState } from "./state.ts";
 
 const KEY = {
 	UP: "tui.select.up",

@@ -11,16 +11,16 @@
  * config, so the bridge can call unconditionally outside Warp.
  */
 
-import { isEnabled } from "./config.js";
+import { isEnabled } from "./config.ts";
 import {
 	buildWorkflowQuestionAskedPayload,
 	buildWorkflowQuestionCompletePayload,
 	buildWorkflowSessionStartPayload,
 	serializePayload,
 	type WarpPayload,
-} from "./payload.js";
-import { detectWarpEnvironment } from "./protocol.js";
-import { AGENT_TITLE, writeOSC777 } from "./warp-notify.js";
+} from "./payload.ts";
+import { detectWarpEnvironment } from "./protocol.ts";
+import { AGENT_TITLE, writeOSC777 } from "./warp-notify.ts";
 
 export interface WorkflowQuestionTransport {
 	/** A workflow run parked its FIRST outstanding question (0→≥1): emit

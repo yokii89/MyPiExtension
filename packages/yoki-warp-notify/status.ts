@@ -11,7 +11,7 @@
  * already perform on every call.
  */
 
-import { CONFIG_PATH, getBlockingTools, getHeartbeatMs, isEnabled } from "./config.js";
+import { CONFIG_PATH, getBlockingTools, getHeartbeatMs, isEnabled } from "./config.ts";
 import {
 	BROKEN_VERSIONS,
 	type Channel,
@@ -20,7 +20,7 @@ import {
 	negotiateProtocolVersion,
 	parseWarpVersion,
 	readClientVersion,
-} from "./protocol.js";
+} from "./protocol.ts";
 
 export interface WarpNotifyStatus {
 	readonly inWarp: boolean;

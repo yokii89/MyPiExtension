@@ -1,9 +1,9 @@
 import { createMockCtx, createMockPi } from "@yoki/yoki-test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ASK_USER_QUESTION_TOOL_NAME } from "./ask-user-question.js";
-import { ASK_USER_HOST_REGISTRY_KEY, registerAskUserHost } from "./host.js";
-import factory from "./index.js";
-import { reconcileAskUserQuestionTool, registerAskUserQuestionReconciler } from "./reconcile.js";
+import { ASK_USER_QUESTION_TOOL_NAME } from "./ask-user-question.ts";
+import { ASK_USER_HOST_REGISTRY_KEY, registerAskUserHost } from "./host.ts";
+import factory from "./index.ts";
+import { reconcileAskUserQuestionTool, registerAskUserQuestionReconciler } from "./reconcile.ts";
 
 afterEach(() => {
 	delete (globalThis as Record<string, unknown>)[ASK_USER_HOST_REGISTRY_KEY];

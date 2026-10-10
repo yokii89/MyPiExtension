@@ -1,5 +1,5 @@
-import type { QuestionAnswer, QuestionData } from "../../tool/types.js";
-import type { WrappingSelectItem } from "../../view/components/wrapping-select.js";
+import type { QuestionAnswer, QuestionData } from "../../tool/types.ts";
+import type { WrappingSelectItem } from "../../view/components/wrapping-select.ts";
 
 /**
  * Pure derivation: does the option focused by `(currentTab, optionIndex)` carry a

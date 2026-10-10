@@ -2,8 +2,8 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createMockPi } from "@yoki/yoki-test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { registerAskUserQuestionTool } from "./ask-user-question.js";
-import type { AskUserQuestionConfig } from "./config.js";
+import { registerAskUserQuestionTool } from "./ask-user-question.ts";
+import type { AskUserQuestionConfig } from "./config.ts";
 
 /**
  * Integration tests for the raw `ctx.ui.onTerminalInput` collapse listener.

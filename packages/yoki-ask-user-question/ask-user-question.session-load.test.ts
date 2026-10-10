@@ -1,6 +1,6 @@
 import { createMockCtx, createMockPi } from "@yoki/yoki-test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { QuestionnaireResult } from "./tool/types.js";
+import type { QuestionnaireResult } from "./tool/types.ts";
 
 // Issue #107: Pi's jiti loader registers a module in its graph cache BEFORE
 // evaluating the body and does not evict it on evaluation failure, so one
@@ -20,7 +20,7 @@ const BASE_PARAMS = {
 
 /** Re-import the tool module AFTER vi.doMock so the mocked session graph is picked up. */
 async function registerFresh() {
-	const { registerAskUserQuestionTool } = await import("./ask-user-question.js");
+	const { registerAskUserQuestionTool } = await import("./ask-user-question.ts");
 	const { pi, captured } = createMockPi();
 	registerAskUserQuestionTool(pi);
 	return captured.tools.get("ask_user_question")!;
@@ -86,7 +86,7 @@ describe("ask_user_question — registration pre-warm (#107)", () => {
 		vi.useFakeTimers();
 		const factory = vi.fn(() => ({ QuestionnaireSession: class {} }));
 		vi.doMock(SESSION_SPECIFIER, factory);
-		const { registerAskUserQuestionTool, PREWARM_DELAY_MS } = await import("./ask-user-question.js");
+		const { registerAskUserQuestionTool, PREWARM_DELAY_MS } = await import("./ask-user-question.ts");
 		const { pi } = createMockPi();
 		registerAskUserQuestionTool(pi);
 
@@ -102,7 +102,7 @@ describe("ask_user_question — registration pre-warm (#107)", () => {
 		vi.doMock(SESSION_SPECIFIER, () => {
 			throw new Error("Cannot find module '/replaced/store/pi-coding-agent/dist/index.js'");
 		});
-		const { registerAskUserQuestionTool, PREWARM_DELAY_MS } = await import("./ask-user-question.js");
+		const { registerAskUserQuestionTool, PREWARM_DELAY_MS } = await import("./ask-user-question.ts");
 		const { pi } = createMockPi();
 		registerAskUserQuestionTool(pi);
 		// Would reject unhandled (failing the test run) if the pre-warm didn't swallow.

@@ -1,7 +1,7 @@
 import type { Component } from "@earendil-works/pi-tui";
 import { visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { POINTER, POINTER_INACTIVE } from "yoki_ui/style";
-import { renderInlineInputRow } from "./inline-input.js";
+import { renderInlineInputRow } from "./inline-input.ts";
 
 /**
  * Row-intent discriminated union. `kind` is the single discriminator —

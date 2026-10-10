@@ -25,12 +25,12 @@ import {
 import { Text } from "@earendil-works/pi-tui";
 import { validateGuidanceFields } from "@yoki/yoki-config";
 import { Type } from "typebox";
-import { getConfigPath, readConfig, type WebToolsConfig, writeConfig } from "./providers/config.js";
-import { createSearchProvider } from "./providers/factory.js";
-import { fetchViaGenericHtml } from "./providers/fetch-helpers.js";
-import { PROVIDERS } from "./providers/index.js";
-import { GITHUB_TOKEN_ENV_VAR, getActiveGitHubInterceptor, getInterceptors } from "./providers/interceptors/index.js";
-import type { FetchResponse, FullProvider, ProviderMeta, SearchProvider, SearchResult } from "./providers/types.js";
+import { getConfigPath, readConfig, type WebToolsConfig, writeConfig } from "./providers/config.ts";
+import { createSearchProvider } from "./providers/factory.ts";
+import { fetchViaGenericHtml } from "./providers/fetch-helpers.ts";
+import { PROVIDERS } from "./providers/index.ts";
+import { GITHUB_TOKEN_ENV_VAR, getActiveGitHubInterceptor, getInterceptors } from "./providers/interceptors/index.ts";
+import type { FetchResponse, FullProvider, ProviderMeta, SearchProvider, SearchResult } from "./providers/types.ts";
 
 // ---------------------------------------------------------------------------
 // Tunables and external surface

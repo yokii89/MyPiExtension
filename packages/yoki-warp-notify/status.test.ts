@@ -1,9 +1,9 @@
 import { rmSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { CONFIG_PATH, setEnabled } from "./config.js";
-import { BROKEN_VERSIONS } from "./protocol.js";
-import { buildStatusReport, formatStatus, formatUnavailableNotice, readStatus } from "./status.js";
+import { CONFIG_PATH, setEnabled } from "./config.ts";
+import { BROKEN_VERSIONS } from "./protocol.ts";
+import { buildStatusReport, formatStatus, formatUnavailableNotice, readStatus } from "./status.ts";
 
 const WARP_ENV_VARS = ["TERM_PROGRAM", "WARP_CLI_AGENT_PROTOCOL_VERSION", "WARP_CLIENT_VERSION"] as const;
 

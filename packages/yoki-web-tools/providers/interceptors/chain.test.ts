@@ -10,7 +10,7 @@ import { dirname } from "node:path";
 import { configPath } from "@yoki/yoki-config";
 import { createMockCtx, createMockPi, stubFetch } from "@yoki/yoki-test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
-import registerWebTools from "../../index.js";
+import registerWebTools from "../../index.ts";
 
 const CONFIG_PATH = configPath("yoki-web-tools");
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildItemsForQuestion, buildQuestionnaireResponse, buildToolResult } from "./ask-user-question.js";
-import type { QuestionnaireResult, QuestionParams } from "./tool/types.js";
+import { buildItemsForQuestion, buildQuestionnaireResponse, buildToolResult } from "./ask-user-question.ts";
+import type { QuestionnaireResult, QuestionParams } from "./tool/types.ts";
 
 describe("buildItemsForQuestion", () => {
 	it("appends the Type-something sentinel", () => {

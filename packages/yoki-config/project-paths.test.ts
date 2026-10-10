@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PROJECT_YOKI_SEGMENTS, projectYokiDomain, projectYokiRoot, REL } from "./project-paths.js";
+import { PROJECT_YOKI_SEGMENTS, projectYokiDomain, projectYokiRoot, REL } from "./project-paths.ts";
 
 describe("PROJECT_YOKI_SEGMENTS", () => {
 	it("is .pi then yoki", () => {

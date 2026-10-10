@@ -1,8 +1,8 @@
 import { CURSOR_MARKER } from "@earendil-works/pi-tui";
 import { createMockPi } from "@yoki/yoki-test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { registerAskUserQuestionTool } from "./ask-user-question.js";
-import type { QuestionAnswer, QuestionnaireResult } from "./tool/types.js";
+import { registerAskUserQuestionTool } from "./ask-user-question.ts";
+import type { QuestionAnswer, QuestionnaireResult } from "./tool/types.ts";
 
 /** Narrowed tool-result shape for test assertions. */
 interface ToolResult {

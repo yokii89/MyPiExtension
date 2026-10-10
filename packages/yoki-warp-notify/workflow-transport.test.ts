@@ -12,8 +12,8 @@ vi.mock("node:fs", async () => {
 	};
 });
 
-import { CONFIG_PATH, setEnabled } from "./config.js";
-import { createWorkflowQuestionTransport } from "./workflow-transport.js";
+import { CONFIG_PATH, setEnabled } from "./config.ts";
+import { createWorkflowQuestionTransport } from "./workflow-transport.ts";
 
 const WARP_ENV_VARS = ["TERM_PROGRAM", "WARP_CLI_AGENT_PROTOCOL_VERSION", "WARP_CLIENT_VERSION"] as const;
 

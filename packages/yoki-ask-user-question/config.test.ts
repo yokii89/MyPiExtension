@@ -7,7 +7,7 @@ import {
 	DEFAULT_COLLAPSE_KEY,
 	loadConfig,
 	resolveCollapseKey,
-} from "./config.js";
+} from "./config.ts";
 
 describe("resolveCollapseKey", () => {
 	it("returns the default when config has no collapseKey", () => {

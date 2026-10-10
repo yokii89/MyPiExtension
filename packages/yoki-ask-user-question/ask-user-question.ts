@@ -1,14 +1,14 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { matchesKey } from "@earendil-works/pi-tui";
-import { loadConfig, resolveCollapseKey, validateGuidanceFields } from "./config.js";
-import { presentQuestionnaireOnDesktop } from "./desktop-view.js";
-import { ASK_USER_PROMPT_EVENT, type AskUserPromptEventPayload } from "./events.js";
-import { hasAskUserHosts, presentViaAskUserHosts } from "./host.js";
+import { loadConfig, resolveCollapseKey, validateGuidanceFields } from "./config.ts";
+import { presentQuestionnaireOnDesktop } from "./desktop-view.ts";
+import { ASK_USER_PROMPT_EVENT, type AskUserPromptEventPayload } from "./events.ts";
+import { hasAskUserHosts, presentViaAskUserHosts } from "./host.ts";
 // Static import is fine — rpc-fallback pulls only dialog primitives,
 // none of the ~560ms TUI render graph that QuestionnaireSession lazy-loads.
-import { hasDialogUI, runRpcQuestionnaire } from "./rpc-fallback.js";
-import { LABELS_BY_KIND, sentinelsToAppend } from "./state/row-intent.js";
-import { buildQuestionnaireResponse, buildToolResult } from "./tool/response-envelope.js";
+import { hasDialogUI, runRpcQuestionnaire } from "./rpc-fallback.ts";
+import { LABELS_BY_KIND, sentinelsToAppend } from "./state/row-intent.ts";
+import { buildQuestionnaireResponse, buildToolResult } from "./tool/response-envelope.ts";
 import {
 	MAX_OPTIONS,
 	MAX_QUESTIONS,
@@ -18,9 +18,9 @@ import {
 	type QuestionnaireResult,
 	type QuestionParams,
 	QuestionParamsSchema,
-} from "./tool/types.js";
-import { validateQuestionnaire } from "./tool/validate-questionnaire.js";
-import type { WrappingSelectItem } from "./view/components/wrapping-select.js";
+} from "./tool/types.ts";
+import { validateQuestionnaire } from "./tool/validate-questionnaire.ts";
+import type { WrappingSelectItem } from "./view/components/wrapping-select.ts";
 
 function emitAskUserPromptEvent(pi: ExtensionAPI, params: QuestionParams): void {
 	const payload: AskUserPromptEventPayload = {
@@ -55,7 +55,7 @@ const ERROR_STALE_MODULE_CACHE =
 /** Delay before the background session-graph pre-warm; mirrors yoki-workflow's /wf prewarm. */
 export const PREWARM_DELAY_MS = 2000;
 
-type SessionModule = typeof import("./state/questionnaire-session.js");
+type SessionModule = typeof import("./state/questionnaire-session.ts");
 
 type SessionLoad =
 	| { ok: true; module: SessionModule }
@@ -75,7 +75,7 @@ type SessionLoad =
 export async function loadQuestionnaireSession(): Promise<SessionLoad> {
 	let mod: SessionModule;
 	try {
-		mod = await import("./state/questionnaire-session.js");
+		mod = await import("./state/questionnaire-session.ts");
 	} catch (e) {
 		const cause = e instanceof Error ? e.message : String(e);
 		return { ok: false, error: "session_load_failed", message: `${ERROR_SESSION_LOAD_FAILED} (cause: ${cause})` };
@@ -210,7 +210,7 @@ Preview content is rendered as markdown in a monospace box. Multi-line text with
 			// same key so the toggle still works while the overlay is hidden (pi-tui does
 			// not route input to a hidden overlay's `component.handleInput`).
 			const sessionRef: {
-				current: import("./state/questionnaire-session.js").QuestionnaireSession | null;
+				current: import("./state/questionnaire-session.ts").QuestionnaireSession | null;
 			} = { current: null };
 			const overlayHandleRef: { current: import("@earendil-works/pi-tui").OverlayHandle | undefined } = {
 				current: undefined,

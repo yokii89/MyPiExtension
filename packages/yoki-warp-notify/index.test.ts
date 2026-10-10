@@ -19,9 +19,9 @@ vi.mock("node:fs", async () => {
 	};
 });
 
-import { CONFIG_PATH, setEnabled } from "./config.js";
-import register, { __resetState } from "./index.js";
-import { FRAME_INTERVAL_MS, __resetState as resetSpinner, SPINNER_FRAMES } from "./title-spinner.js";
+import { CONFIG_PATH, setEnabled } from "./config.ts";
+import register, { __resetState } from "./index.ts";
+import { FRAME_INTERVAL_MS, __resetState as resetSpinner, SPINNER_FRAMES } from "./title-spinner.ts";
 
 const WARP_ENV_VARS = ["TERM_PROGRAM", "WARP_CLI_AGENT_PROTOCOL_VERSION", "WARP_CLIENT_VERSION"] as const;
 

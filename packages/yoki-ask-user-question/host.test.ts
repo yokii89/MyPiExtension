@@ -8,8 +8,8 @@ import {
 	listAskUserHosts,
 	presentViaAskUserHosts,
 	registerAskUserHost,
-} from "./host.js";
-import type { QuestionParams } from "./tool/types.js";
+} from "./host.ts";
+import type { QuestionParams } from "./tool/types.ts";
 
 const PARAMS: QuestionParams = {
 	questions: [

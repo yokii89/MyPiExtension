@@ -21,8 +21,8 @@ vi.mock("@earendil-works/pi-tui", async (orig) => {
 	return { ...actual, Markdown: FakeMarkdown };
 });
 
-import type { QuestionData } from "../../../tool/types.js";
-import { NOTES_AFFORDANCE_TEXT, PreviewBlockRenderer } from "./preview-block-renderer.js";
+import type { QuestionData } from "../../../tool/types.ts";
+import { NOTES_AFFORDANCE_TEXT, PreviewBlockRenderer } from "./preview-block-renderer.ts";
 
 const theme = makeTheme() as unknown as Theme;
 const markdownTheme = {

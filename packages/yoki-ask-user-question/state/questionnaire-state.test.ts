@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { QuestionAnswer, QuestionData } from "../tool/types.js";
-import type { WrappingSelectItem } from "../view/components/wrapping-select.js";
+import type { QuestionAnswer, QuestionData } from "../tool/types.ts";
+import type { WrappingSelectItem } from "../view/components/wrapping-select.ts";
 import {
 	computeFocusedOptionHasPreview,
 	selectActivePreviewPaneIndex,
 	selectConfirmedIndicator,
-} from "./selectors/derivations.js";
-import { selectActiveView } from "./selectors/focus.js";
+} from "./selectors/derivations.ts";
+import { selectActiveView } from "./selectors/focus.ts";
 
 function q(over: Partial<QuestionData> = {}): QuestionData {
 	return {

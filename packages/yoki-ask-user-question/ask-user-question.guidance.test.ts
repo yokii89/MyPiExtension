@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createMockPi } from "@yoki/yoki-test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_PROMPT_GUIDELINES, DEFAULT_PROMPT_SNIPPET, registerAskUserQuestionTool } from "./ask-user-question.js";
+import { DEFAULT_PROMPT_GUIDELINES, DEFAULT_PROMPT_SNIPPET, registerAskUserQuestionTool } from "./ask-user-question.ts";
 
 const TOOL_NAME = "ask_user_question";
 const CONFIG_PATH = join(process.env.HOME!, ".config", "yoki-ask-user-question", "config.json");

@@ -29,8 +29,8 @@ import {
 	type ViewSpec,
 	type ViewTab,
 } from "@pidesk/view-sdk";
-import { LABELS_BY_KIND } from "./state/row-intent.js";
-import type { QuestionAnswer, QuestionData, QuestionnaireResult, QuestionParams } from "./tool/types.js";
+import { LABELS_BY_KIND } from "./state/row-intent.ts";
+import type { QuestionAnswer, QuestionData, QuestionnaireResult, QuestionParams } from "./tool/types.ts";
 
 /** Longest preview slice shown in the desktop pane before truncation. */
 const MAX_PREVIEW_CHARS = 4000;

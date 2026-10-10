@@ -9,7 +9,7 @@
  */
 
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import type { QuestionnaireResult, QuestionParams } from "./tool/types.js";
+import type { QuestionnaireResult, QuestionParams } from "./tool/types.ts";
 
 export const ASK_USER_HOST_REGISTRY_KEY = "__yokiAskUserHostRegistry__" as const;
 export const ASK_USER_HOST_REGISTRY_VERSION = 1 as const;

@@ -20,8 +20,8 @@
  * `ROW_INTENT_META.other.autoAppendOnMultiSelect`.
  */
 
-import { LABELS_BY_KIND } from "./state/row-intent.js";
-import type { QuestionAnswer, QuestionData, QuestionnaireResult, QuestionParams } from "./tool/types.js";
+import { LABELS_BY_KIND } from "./state/row-intent.ts";
+import type { QuestionAnswer, QuestionData, QuestionnaireResult, QuestionParams } from "./tool/types.ts";
 
 const MULTI_SELECT_INSTRUCTIONS =
 	'Enter the numbers of all that apply, comma-separated (e.g. "1,3"), or type a custom answer as plain text.';

@@ -1,7 +1,7 @@
 import type { ViewNode, ViewSpec } from "@pidesk/view-sdk";
 import { describe, expect, it, vi } from "vitest";
-import { buildDesktopQuestionnaireSpec, presentQuestionnaireOnDesktop } from "./desktop-view.js";
-import type { QuestionParams } from "./tool/types.js";
+import { buildDesktopQuestionnaireSpec, presentQuestionnaireOnDesktop } from "./desktop-view.ts";
+import type { QuestionParams } from "./tool/types.ts";
 
 const PARAMS: QuestionParams = {
 	questions: [

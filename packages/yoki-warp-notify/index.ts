@@ -5,7 +5,7 @@ import type {
 	ExtensionContext,
 	SessionEntry,
 } from "@earendil-works/pi-coding-agent";
-import { DEFAULT_HEARTBEAT_MS, getBlockingTools, getHeartbeatMs, isEnabled, setEnabled } from "./config.js";
+import { DEFAULT_HEARTBEAT_MS, getBlockingTools, getHeartbeatMs, isEnabled, setEnabled } from "./config.ts";
 import {
 	buildIdlePromptPayload,
 	buildPromptSubmitPayload,
@@ -16,15 +16,15 @@ import {
 	lastAssistantText,
 	serializePayload,
 	type WarpPayload,
-} from "./payload.js";
-import { detectWarpEnvironment } from "./protocol.js";
-import { buildStatusReport, formatUnavailableNotice, readStatus } from "./status.js";
-import { startSpinner, stopSpinner } from "./title-spinner.js";
-import { AGENT_TITLE, writeOSC777 } from "./warp-notify.js";
+} from "./payload.ts";
+import { detectWarpEnvironment } from "./protocol.ts";
+import { buildStatusReport, formatUnavailableNotice, readStatus } from "./status.ts";
+import { startSpinner, stopSpinner } from "./title-spinner.ts";
+import { AGENT_TITLE, writeOSC777 } from "./warp-notify.ts";
 
 // Backwards-compatible surface: the transport lives in its own module since
 // 1.21, but existing bridge imports from the package root keep working.
-export { createWorkflowQuestionTransport, type WorkflowQuestionTransport } from "./workflow-transport.js";
+export { createWorkflowQuestionTransport, type WorkflowQuestionTransport } from "./workflow-transport.ts";
 
 // ---------------------------------------------------------------------------
 // Module-level timer state — __resetState() clears for test isolation

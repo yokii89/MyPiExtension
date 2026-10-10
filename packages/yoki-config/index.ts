@@ -10,10 +10,10 @@ export {
 	saveJsonConfig,
 	validateConfig,
 	validateGuidanceFields,
-} from "./config.js";
+} from "./config.ts";
 export {
 	PROJECT_YOKI_SEGMENTS,
 	projectYokiDomain,
 	projectYokiRoot,
 	REL,
-} from "./project-paths.js";
+} from "./project-paths.ts";

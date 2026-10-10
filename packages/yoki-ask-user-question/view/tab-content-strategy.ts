@@ -1,8 +1,8 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { type Component, Container, type Input, Spacer, Text, truncateToWidth } from "@earendil-works/pi-tui";
-import { formatAnswerScalar } from "../tool/format-answer.js";
-import type { QuestionData } from "../tool/types.js";
-import type { PreviewPane, PreviewPaneProps } from "./components/preview/preview-pane.js";
+import { formatAnswerScalar } from "../tool/format-answer.ts";
+import type { QuestionData } from "../tool/types.ts";
+import type { PreviewPane, PreviewPaneProps } from "./components/preview/preview-pane.ts";
 import {
 	ARMED_CANCEL_WARNING,
 	type DialogState,
@@ -16,9 +16,9 @@ import {
 	INCOMPLETE_WARNING_PREFIX,
 	READY_PROMPT,
 	REVIEW_HEADING,
-} from "./dialog-builder.js";
-import type { StatefulView } from "./stateful-view.js";
-import type { TabComponents } from "./tab-components.js";
+} from "./dialog-builder.ts";
+import type { StatefulView } from "./stateful-view.ts";
+import type { TabComponents } from "./tab-components.ts";
 
 const NOTES_HEADER = "Notes:";
 const UNANSWERED_MARKER = "→ not answered";

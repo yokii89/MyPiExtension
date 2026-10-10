@@ -4,15 +4,15 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { registerAskUserQuestionTool } from "./ask-user-question.js";
-import { registerAskUserQuestionReconciler } from "./reconcile.js";
+import { registerAskUserQuestionTool } from "./ask-user-question.ts";
+import { registerAskUserQuestionReconciler } from "./reconcile.ts";
 
 export {
 	ASK_USER_PROMPT_EVENT,
 	type AskUserPromptEventPayload,
 	type AskUserPromptOption,
 	type AskUserPromptQuestion,
-} from "./events.js";
+} from "./events.ts";
 
 export {
 	ASK_USER_HOST_REGISTRY_KEY,
@@ -24,7 +24,7 @@ export {
 	listAskUserHosts,
 	presentViaAskUserHosts,
 	registerAskUserHost,
-} from "./host.js";
+} from "./host.ts";
 
 export default function (pi: ExtensionAPI) {
 	registerAskUserQuestionTool(pi);

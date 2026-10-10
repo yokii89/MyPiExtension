@@ -13,8 +13,8 @@
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { ASK_USER_QUESTION_TOOL_NAME } from "./ask-user-question.js";
-import { hasAskUserHosts } from "./host.js";
+import { ASK_USER_QUESTION_TOOL_NAME } from "./ask-user-question.ts";
+import { hasAskUserHosts } from "./host.ts";
 
 /**
  * Strip-or-restore `ask_user_question` to match available rendering surfaces.

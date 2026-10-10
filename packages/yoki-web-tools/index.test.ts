@@ -3,14 +3,14 @@ import { dirname } from "node:path";
 import { configPath } from "@yoki/yoki-config";
 import { createMockCtx, createMockPi, stubFetch } from "@yoki/yoki-test-utils";
 import { beforeEach, describe, expect, it, type vi } from "vitest";
-import registerWebTools from "./index.js";
+import registerWebTools from "./index.ts";
 import {
 	clearCloneCache,
 	configureSearxng,
 	SEARXNG_DEFAULT_URL,
 	SEARXNG_PROVIDER_META,
 	SearxngProvider,
-} from "./providers/index.js";
+} from "./providers/index.ts";
 
 const CONFIG_PATH = configPath("yoki-web-tools");
 

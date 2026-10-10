@@ -1,10 +1,10 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
 import { POINTER as ACTIVE_POINTER, POINTER_INACTIVE as INACTIVE_POINTER } from "yoki_ui/style";
-import { LABELS_BY_KIND } from "../../state/row-intent.js";
-import type { QuestionData } from "../../tool/types.js";
-import type { StatefulView } from "../stateful-view.js";
-import { renderInlineInputRow } from "./inline-input.js";
+import { LABELS_BY_KIND } from "../../state/row-intent.ts";
+import type { QuestionData } from "../../tool/types.ts";
+import type { StatefulView } from "../stateful-view.ts";
+import { renderInlineInputRow } from "./inline-input.ts";
 
 const CHECKED = "[✔]";
 const UNCHECKED = "[ ]";

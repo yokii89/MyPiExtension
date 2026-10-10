@@ -1,8 +1,8 @@
 import { createMockCtx, createMockPi } from "@yoki/yoki-test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { registerAskUserQuestionTool } from "./ask-user-question.js";
-import { ASK_USER_HOST_REGISTRY_KEY, registerAskUserHost } from "./host.js";
-import { MAX_QUESTIONS, type QuestionnaireResult } from "./tool/types.js";
+import { registerAskUserQuestionTool } from "./ask-user-question.ts";
+import { ASK_USER_HOST_REGISTRY_KEY, registerAskUserHost } from "./host.ts";
+import { MAX_QUESTIONS, type QuestionnaireResult } from "./tool/types.ts";
 
 type CustomFn = (...args: unknown[]) => Promise<unknown>;
 

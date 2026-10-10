@@ -11,7 +11,7 @@ import {
 	isEnabled,
 	loadConfig,
 	setEnabled,
-} from "./config.js";
+} from "./config.ts";
 
 function writeConfigFile(contents: string): void {
 	mkdirSync(dirname(CONFIG_PATH), { recursive: true });

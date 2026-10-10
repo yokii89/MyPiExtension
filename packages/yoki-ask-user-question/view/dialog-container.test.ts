@@ -7,13 +7,13 @@ import {
 	makeQuestionnaireState as makeState,
 	makeMultiSelectPropsFromState as msoPropsFromState,
 	makeSubmitPickerPropsFromState as submitPickerPropsFromState,
-} from "../test-fixtures.js";
-import type { QuestionAnswer, QuestionData } from "../tool/types.js";
-import { MultiSelectView } from "./components/multi-select-view.js";
-import type { OptionListView } from "./components/option-list-view.js";
-import type { PreviewPane } from "./components/preview/preview-pane.js";
-import { CANCEL_LABEL, SUBMIT_LABEL, SubmitPicker } from "./components/submit-picker.js";
-import type { TabBar } from "./components/tab-bar.js";
+} from "../test-fixtures.ts";
+import type { QuestionAnswer, QuestionData } from "../tool/types.ts";
+import { MultiSelectView } from "./components/multi-select-view.ts";
+import type { OptionListView } from "./components/option-list-view.ts";
+import type { PreviewPane } from "./components/preview/preview-pane.ts";
+import { CANCEL_LABEL, SUBMIT_LABEL, SubmitPicker } from "./components/submit-picker.ts";
+import type { TabBar } from "./components/tab-bar.ts";
 import {
 	type DialogConfig,
 	type DialogProps,
@@ -26,8 +26,8 @@ import {
 	INCOMPLETE_WARNING_PREFIX,
 	READY_PROMPT,
 	REVIEW_HEADING,
-} from "./dialog-builder.js";
-import type { TabComponents } from "./tab-components.js";
+} from "./dialog-builder.ts";
+import type { TabComponents } from "./tab-components.ts";
 
 const theme = makeTheme() as unknown as Theme;
 
