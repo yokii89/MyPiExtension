@@ -45,9 +45,6 @@
     ]
   },
   "dependencies": {
-    "@earendil-works/pi-ai": "0.80.5",
-    "@earendil-works/pi-coding-agent": "0.80.5",
-    "@earendil-works/pi-tui": "0.80.5",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@mozilla/readability": "^0.6.0",
     "@standard-schema/spec": "^1.0.0",
@@ -58,9 +55,14 @@
     "p-limit": "^6.1.0",
     "sherpa-onnx-node": "^1.13.0",
     "turndown": "^7.2.0",
-    "typebox": "^1.1.34",
     "unpdf": "^1.6.2",
     "yaml": "^2.8.1"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.0",
