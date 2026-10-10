@@ -2,6 +2,7 @@
  * Pure helpers for pi-provider-newapi (no I/O, no pi runtime).
  */
 
+import { createHash } from "node:crypto";
 import type { ThinkingLevel } from "@earendil-works/pi-ai";
 
 export type NewApiApiType = "openai-completions" | "openai-responses";
@@ -14,6 +15,20 @@ const VISION_HINT_PATTERN =
 
 export function normalizeBaseUrl(input: string): string {
 	return input.trim().replace(/\/+$/, "").replace(/\/v1\/?$/i, "");
+}
+
+/**
+ * Stable signature of the credential context a provider registration was built
+ * from. Lets callers detect login / key / gateway changes that require a full
+ * re-registration, and otherwise reuse the existing registration.
+ */
+export function credentialSignature(fields: {
+	baseUrl?: string;
+	access?: string;
+	api?: string;
+}): string {
+	const material = `${normalizeBaseUrl(fields.baseUrl ?? "")}|${fields.api ?? ""}|${fields.access ?? ""}`;
+	return createHash("sha256").update(material).digest("hex").slice(0, 16);
 }
 
 /** Map Codex wire_api to pi Api type. Unknown values throw. */

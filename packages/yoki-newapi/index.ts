@@ -21,6 +21,7 @@ import type { Api, Model, OAuthCredentials, OAuthLoginCallbacks, ThinkingLevel }
 import { type ExtensionAPI, type ExtensionCommandContext, getAgentDir } from "@earendil-works/pi-coding-agent";
 import { GLYPH_ERROR, GLYPH_SUCCESS, GLYPH_WARNING } from "yoki_ui/style";
 import {
+	credentialSignature,
 	extractApiKeyFromCodexAuth,
 	extractTomlString,
 	isNewApiApiType,
@@ -62,12 +63,18 @@ const CACHE_FILENAME = "newapi-models.json";
 const LOGIN_TIMEOUT_MS = 15_000;
 const DEFAULT_TIMEOUT_MS = 10_000;
 const CACHE_STALE_MS = 24 * 60 * 60 * 1000;
+// After a failed discovery, remember the failure for a short window so
+// subsequent spawns don't block on the same dead endpoint.
+const FAILURE_STALE_MS = 10 * 60 * 1000;
 const PERMANENT_EXPIRES = Number.MAX_SAFE_INTEGER;
 const DEFAULT_CONTEXT_WINDOW = 1_000_000;
 const DEFAULT_MAX_TOKENS = 16_384;
 
 /** Last /v1/models discovery failure, surfaced via the panel and session start. */
 let lastDiscoveryError: string | undefined;
+
+/** Credential signature the last registerProxyProvider call was built from. */
+let lastRegisteredSignature: string | undefined;
 
 type ModelDef = {
 	id: string;
@@ -84,6 +91,9 @@ type CacheFile = {
 	apiKeyFingerprint: string;
 	fetchedAt: number;
 	models: ModelDef[];
+	/** Discovery failed as of fetchedAt; models are last-known or placeholders. */
+	failure?: boolean;
+	error?: string;
 };
 
 export type StoredOAuth = OAuthCredentials & {
@@ -293,11 +303,10 @@ async function writeCache(cache: CacheFile, filename: string = CACHE_FILENAME): 
 }
 
 function isCacheValid(cache: CacheFile, baseUrl: string, apiKey: string): boolean {
-	return (
-		cache.baseUrl === normalizeBaseUrl(baseUrl) &&
-		cache.apiKeyFingerprint === fingerprint(apiKey) &&
-		Date.now() - cache.fetchedAt < CACHE_STALE_MS
-	);
+	if (cache.baseUrl !== normalizeBaseUrl(baseUrl)) return false;
+	if (cache.apiKeyFingerprint !== fingerprint(apiKey)) return false;
+	const ttl = cache.failure ? FAILURE_STALE_MS : CACHE_STALE_MS;
+	return Date.now() - cache.fetchedAt < ttl;
 }
 
 async function readAuthEntry(): Promise<StoredOAuth | undefined> {
@@ -661,6 +670,9 @@ async function loadModels(): Promise<{
 	const cache = await readCache();
 
 	if (resolved.baseUrl && resolved.apiKey && cache && isCacheValid(cache, resolved.baseUrl, resolved.apiKey)) {
+		// A failure marker still answers instantly, but keep surfacing the error
+		// so session start keeps warning instead of going silent.
+		if (cache.failure && cache.error) lastDiscoveryError = cache.error;
 		return {
 			models: ensurePreferredInList(cache.models, resolved.preferredModel),
 			activeBaseUrl: resolved.baseUrl,
@@ -691,6 +703,20 @@ async function loadModels(): Promise<{
 			};
 		} catch (error) {
 			lastDiscoveryError = error instanceof Error ? error.message : String(error);
+			// Failure marker: next spawns answer from this instead of blocking on
+			// the same dead endpoint for another round trip.
+			try {
+				await writeCache({
+					baseUrl: normalizeBaseUrl(resolved.baseUrl),
+					apiKeyFingerprint: fingerprint(resolved.apiKey),
+					fetchedAt: Date.now(),
+					models: cache?.models?.length ? cache.models : PLACEHOLDER_MODELS,
+					failure: true,
+					error: lastDiscoveryError,
+				});
+			} catch {
+				// Best-effort; fall through to cache / placeholder as before.
+			}
 			// Fall through to cache / placeholder
 		}
 	}
@@ -731,12 +757,20 @@ async function registerProxyProvider(
 	// show a "Select authentication method" step. Without a stored credential,
 	// keep the env-var key so NEWAPI_BASE_URL/NEWAPI_API_KEY still authenticate.
 	const storedOAuth = await readAuthEntry();
+	const preferredModel =
+		typeof storedOAuth?.preferredModel === "string" ? storedOAuth.preferredModel : undefined;
 
 	const config: Record<string, unknown> = {
 		name: DISPLAY_NAME,
 		baseUrl: providerBaseUrl,
 		api,
-		models: toProviderModels(hasModels ? models : PLACEHOLDER_MODELS, activeBaseUrl, api),
+		// Always keep the preferred model findable (real entry or stub) so
+		// applyPreferredModel can short-circuit instead of re-running discovery.
+		models: toProviderModels(
+			ensurePreferredInList(hasModels ? models : PLACEHOLDER_MODELS, preferredModel),
+			activeBaseUrl,
+			api,
+		),
 		oauth: {
 			name: DISPLAY_NAME,
 			login: loginNewApi,
@@ -799,6 +833,7 @@ async function registerProxyProvider(
 		// not registered yet
 	}
 	pi.registerProvider(PROVIDER_NAME, config as any);
+	lastRegisteredSignature = storedOAuth ? credentialSignature(storedOAuth) : "env";
 }
 
 async function applyPreferredModel(
@@ -812,10 +847,16 @@ async function applyPreferredModel(
 	const resolved = await resolveCredentials();
 	if (!resolved.preferredModel || resolved.source !== "auth.json") return;
 
-	const loaded = await loadModels();
-	await registerProxyProvider(pi, loaded.models, loaded.activeBaseUrl, loaded.api);
-
-	const model = ctx.modelRegistry.find(PROVIDER_NAME, resolved.preferredModel);
+	// Reuse the current registration when the credentials behind it are
+	// unchanged; only a login / key / gateway change needs the heavy path.
+	const entry = await readAuthEntry();
+	const registrationStale = !entry || credentialSignature(entry) !== lastRegisteredSignature;
+	let model = ctx.modelRegistry.find(PROVIDER_NAME, resolved.preferredModel);
+	if (!model || registrationStale) {
+		const loaded = await loadModels();
+		await registerProxyProvider(pi, loaded.models, loaded.activeBaseUrl, loaded.api);
+		model = ctx.modelRegistry.find(PROVIDER_NAME, resolved.preferredModel);
+	}
 	if (!model) {
 		ctx.ui.notify(
 			`New API: preferred model ${PROVIDER_NAME}/${resolved.preferredModel} not registered`,
@@ -860,8 +901,8 @@ async function gatherStatus(pi: ExtensionAPI, ctx: ExtensionCommandContext): Pro
 		api: resolved.api,
 		source: resolved.source as NewApiStatusInfo["source"],
 		keyMask: resolved.apiKey ? maskKey(resolved.apiKey) : undefined,
-		modelCount: cache?.models.length ?? 0,
-		cacheAge: cache ? formatCacheAge(cache.fetchedAt, Date.now()) : undefined,
+		modelCount: cache && !cache.failure ? cache.models.length : 0,
+		cacheAge: cache && !cache.failure ? formatCacheAge(cache.fetchedAt, Date.now()) : undefined,
 		current: ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined,
 		thinking: pi.getThinkingLevel?.(),
 		lastError: lastDiscoveryError,

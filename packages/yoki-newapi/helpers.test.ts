@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+	credentialSignature,
 	extractApiKeyFromCodexAuth,
 	extractTomlString,
 	mapReasoningEffort,
@@ -115,6 +116,34 @@ describe("stubModelDef", () => {
 		expect(m.id).toBe("grok-4.5");
 		expect(m.name).toBe("grok-4.5");
 		expect(m.reasoning).toBe(true);
+	});
+});
+
+describe("credentialSignature", () => {
+	const base = { baseUrl: "https://gw.example.com", access: "sk-abc", api: "openai-completions" };
+
+	it("is stable for identical credential context", () => {
+		expect(credentialSignature(base)).toBe(credentialSignature({ ...base }));
+	});
+
+	it("normalizes base URL before hashing", () => {
+		expect(credentialSignature({ ...base, baseUrl: "https://gw.example.com/v1/" })).toBe(
+			credentialSignature(base),
+		);
+	});
+
+	it("changes when key, base URL, or api changes", () => {
+		expect(credentialSignature({ ...base, access: "sk-other" })).not.toBe(credentialSignature(base));
+		expect(credentialSignature({ ...base, baseUrl: "https://other.example.com" })).not.toBe(
+			credentialSignature(base),
+		);
+		expect(credentialSignature({ ...base, api: "openai-responses" })).not.toBe(
+			credentialSignature(base),
+		);
+	});
+
+	it("treats undefined and empty fields the same", () => {
+		expect(credentialSignature({})).toBe(credentialSignature({ baseUrl: "", access: "", api: "" }));
 	});
 });
 
