@@ -3,7 +3,7 @@
 Pi TUI package that merges:
 
 - **yoki_themes** dark theme + statusline
-- **static Pi header** + Codex-style input (`pi-claude-code-tui`)
+- **static Pi header** + Codex-style input
 - **window title** spinner / Action Required blink / end notify + BEL
 
 ## Default look
@@ -22,7 +22,7 @@ On session start, yoki_ui applies:
 The theme and extension are bundled with the Yoki Git package:
 
 ```bash
-pi install git:github.com/<GITHUB_OWNER>/<REPO>
+pi install git:github.com/yokii89/MyPiExtension
 ```
 
 For local workspace development, run from the monorepo root:
@@ -169,4 +169,4 @@ themes/yoki_themes.json
 
 ## License
 
-MIT (combined from upstream package sources; see LICENSE).
+MIT (see LICENSE).

@@ -1,6 +1,5 @@
 /**
  * Shared types and config defaults for yoki_ui window-title.
- * Spec: docs/setWindowTitleUI.md
  */
 
 export type Phase = "idle" | "busy" | "attention";

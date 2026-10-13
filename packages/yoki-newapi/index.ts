@@ -5,7 +5,7 @@
  * Discovers models only from GET /v1/models - never LiteLLM /model/info.
  *
  * Install:
- *   pi install C:/Users/yokiHONOR/code/pi/myExtension/pi-provider-newapi
+ *   pi install npm:pi-provider-newapi
  *   /login newapi   (Manual or Import from Codex)
  *
  * Env (optional when no saved login):
@@ -17,17 +17,32 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import type { Api, Model, OAuthCredentials, OAuthLoginCallbacks, ThinkingLevel } from "@earendil-works/pi-ai";
-import { type ExtensionAPI, type ExtensionCommandContext, getAgentDir } from "@earendil-works/pi-coding-agent";
+import type {
+	Api,
+	AssistantMessage,
+	Model,
+	OAuthCredentials,
+	OAuthLoginCallbacks,
+	ThinkingLevel,
+} from "@earendil-works/pi-ai";
+import {
+	type ExtensionAPI,
+	type ExtensionCommandContext,
+	getAgentDir,
+	type SessionEntry,
+} from "@earendil-works/pi-coding-agent";
 import { GLYPH_ERROR, GLYPH_SUCCESS, GLYPH_WARNING } from "yoki_ui/style";
 import {
 	credentialSignature,
 	extractApiKeyFromCodexAuth,
 	extractTomlString,
+	isDegenerateGatewayResponse,
 	isNewApiApiType,
 	mapReasoningEffort,
 	mapWireApi,
 	normalizeBaseUrl,
+	normalizeEndpointTypes,
+	pickApiForModel,
 	stubModelDef,
 	type NewApiApiType,
 } from "./helpers.ts";
@@ -62,6 +77,8 @@ const ENV_API_KEY = "NEWAPI_API_KEY";
 const CACHE_FILENAME = "newapi-models.json";
 const LOGIN_TIMEOUT_MS = 15_000;
 const DEFAULT_TIMEOUT_MS = 10_000;
+/** Cache shape version. 2 adds per-model `supportedEndpointTypes`; older caches refetch once. */
+const CACHE_SCHEMA_VERSION = 2;
 const CACHE_STALE_MS = 24 * 60 * 60 * 1000;
 // After a failed discovery, remember the failure for a short window so
 // subsequent spawns don't block on the same dead endpoint.
@@ -84,9 +101,13 @@ type ModelDef = {
 	cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
 	contextWindow: number;
 	maxTokens: number;
+	/** Gateway `supported_endpoint_types`; picks the wire api per model. */
+	supportedEndpointTypes?: string[];
 };
 
 type CacheFile = {
+	/** Written by writeCache; validated by readCache. */
+	schemaVersion?: number;
 	baseUrl: string;
 	apiKeyFingerprint: string;
 	fetchedAt: number;
@@ -108,7 +129,7 @@ export type StoredOAuth = OAuthCredentials & {
 };
 
 type ModelsListResponse = {
-	data?: Array<{ id?: string; name?: string; owned_by?: string }>;
+	data?: Array<{ id?: string; name?: string; owned_by?: string; supported_endpoint_types?: unknown }>;
 };
 
 export type CodexImport = {
@@ -241,7 +262,11 @@ function guessVision(id: string): boolean {
 	return VISION_HINT_PATTERN.test(id);
 }
 
-function mapModel(entry: { id?: string; name?: string }): ModelDef | undefined {
+function mapModel(entry: {
+	id?: string;
+	name?: string;
+	supported_endpoint_types?: unknown;
+}): ModelDef | undefined {
 	const id = entry.id?.trim();
 	if (!id) return undefined;
 	return {
@@ -253,6 +278,7 @@ function mapModel(entry: { id?: string; name?: string }): ModelDef | undefined {
 		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
 		contextWindow: DEFAULT_CONTEXT_WINDOW,
 		maxTokens: DEFAULT_MAX_TOKENS,
+		supportedEndpointTypes: normalizeEndpointTypes(entry.supported_endpoint_types),
 	};
 }
 
@@ -281,6 +307,7 @@ async function readCache(filename: string = CACHE_FILENAME): Promise<CacheFile |
 		const raw = await readFile(getCachePath(filename), "utf8");
 		const parsed = JSON.parse(raw) as CacheFile;
 		if (
+			parsed.schemaVersion !== CACHE_SCHEMA_VERSION ||
 			typeof parsed.baseUrl !== "string" ||
 			typeof parsed.apiKeyFingerprint !== "string" ||
 			typeof parsed.fetchedAt !== "number" ||
@@ -298,7 +325,11 @@ async function writeCache(cache: CacheFile, filename: string = CACHE_FILENAME): 
 	const path = getCachePath(filename);
 	await mkdir(dirname(path), { recursive: true });
 	const tmp = `${path}.${process.pid}.tmp`;
-	await writeFile(tmp, JSON.stringify(cache, null, 2), "utf8");
+	await writeFile(
+		tmp,
+		JSON.stringify({ ...cache, schemaVersion: CACHE_SCHEMA_VERSION }, null, 2),
+		"utf8",
+	);
 	await rename(tmp, path);
 }
 
@@ -615,20 +646,14 @@ function getApiKey(credentials: OAuthCredentials): string {
 	return credentials.access;
 }
 
-function resolveApiFromCredential(credentials: OAuthCredentials): NewApiApiType {
-	const entry = credentials as StoredOAuth;
-	return isNewApiApiType(entry.api) ? entry.api : "openai-completions";
-}
-
 function modifyModels(models: Model<any>[], credentials: OAuthCredentials): Model<any>[] {
 	const baseUrl =
 		typeof credentials.baseUrl === "string" ? normalizeBaseUrl(credentials.baseUrl) : undefined;
-	const api = resolveApiFromCredential(credentials) as Api;
 	if (!baseUrl) return models;
 	const v1 = `${baseUrl}/v1`;
-	return models.map((model) =>
-		model.provider === PROVIDER_NAME ? { ...model, baseUrl: v1, api } : model,
-	);
+	// Only refresh the gateway base URL; `api` is chosen per model by toProviderModels
+	// from `supported_endpoint_types` and must survive credential refreshes.
+	return models.map((model) => (model.provider === PROVIDER_NAME ? { ...model, baseUrl: v1 } : model));
 }
 
 function toProviderModels(models: ModelDef[], baseUrl?: string, api?: NewApiApiType) {
@@ -637,7 +662,7 @@ function toProviderModels(models: ModelDef[], baseUrl?: string, api?: NewApiApiT
 	return models.map((m) => ({
 		id: m.id,
 		name: m.name,
-		api: resolvedApi as Api,
+		api: pickApiForModel(m.supportedEndpointTypes, resolvedApi) as Api,
 		reasoning: m.reasoning,
 		input: m.input,
 		cost: m.cost,
@@ -1135,6 +1160,15 @@ async function handleNewApiCommand(pi: ExtensionAPI, args: string, ctx: Extensio
 	}
 }
 
+/** Last assistant message on the active branch (walks past trailing context_edit entries). */
+function findLastAssistantMessage(entries: SessionEntry[]): AssistantMessage | undefined {
+	for (let i = entries.length - 1; i >= 0; i -= 1) {
+		const entry = entries[i];
+		if (entry.type === "message" && entry.message.role === "assistant") return entry.message;
+	}
+	return undefined;
+}
+
 export default async function (pi: ExtensionAPI) {
 	// Drop legacy separate provider from earlier draft if still registered.
 	try {
@@ -1182,6 +1216,27 @@ export default async function (pi: ExtensionAPI) {
 	});
 	pi.on("agent_start", async (_event, ctx) => {
 		await maybeApplyPreferred(ctx);
+	});
+
+	// 网关退化响应（content 空/out=1 却报 incomplete.max_output_tokens）会被 pi 的
+	// recoverable-length 启发式误判成上下文压力：丢掉该响应后真压缩一次，把大半历史
+	// 摘要掉（实测 73.4k → 30.1k）。这里用一次"空压缩"顶掉误判路径——firstKeptEntryId
+	// 取分支首条 → 全部条目保留、不调用摘要 LLM，pi 仍会照常自动重试。
+	// 判据来自上面对网关响应的实测采样，锚点语义见本模块 isDegenerateGatewayResponse。
+	pi.on("session_before_compact", (event) => {
+		if (event.reason !== "overflow" || !event.willRetry) return;
+		const last = findLastAssistantMessage(event.branchEntries);
+		if (!last || !isDegenerateGatewayResponse(last)) return;
+		const firstKeptEntryId = event.branchEntries[0]?.id;
+		if (!firstKeptEntryId) return;
+		return {
+			compaction: {
+				summary: "（网关退化响应：已跳过本次自动压缩，历史保持原样）",
+				firstKeptEntryId,
+				tokensBefore: event.preparation.tokensBefore,
+				details: { kind: "pidesk.noop-compaction", reason: "degenerate-gateway-response" },
+			},
+		};
 	});
 
 	pi.registerCommand("newapi", {

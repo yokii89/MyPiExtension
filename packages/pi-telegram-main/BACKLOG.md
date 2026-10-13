@@ -28,7 +28,7 @@ Done when: new client quirks are either fixed with targeted coverage or document
 
 ## P1 — PiDesk Desktop Panel Live Verification
 
-Context: The PiDesk panel ships with automated coverage only (projection budget, lifecycle, capability fallback, and the panel's wiring to the SDK frame scheduler). The desktop client changes real Electron + named-pipe behavior that this repository's Node test runner cannot exercise, and `@pidesk/view-sdk` is not published to a registry, so a live run is the only proof that the lazily resolved SDK surface and the PiDesk Host agree.
+Context: The PiDesk panel ships with automated coverage only (projection budget, lifecycle, capability fallback, and the panel's wiring to the SDK frame scheduler). The desktop client changes real Electron + named-pipe behavior that this repository's Node test runner cannot exercise, so a live run is the only proof that the lazily resolved SDK surface and the PiDesk Host agree.
 
 Open work:
 
@@ -42,11 +42,11 @@ Done when: the acceptance list above is observed on a real desktop build, or eac
 
 ## Blocked — Same-Thread Telegram `/new`
 
-Blocked: upstream Pi core API. Issue: https://github.com/earendil-works/pi/issues/5952
+Blocked: upstream Pi core API.
 
 Context: Threaded Mode manual followers are separate visible Pi processes. Same-thread `/new` is a different feature: replacing the current Pi session inside the same Telegram thread. Extension-only hacks are rejected because they would desynchronize Pi lifecycle/TUI semantics.
 
-Current upstream evidence: Pi 0.80.6 safely exposes `ctx.newSession()` to registered extension commands through `ExtensionCommandContext`, including fresh-context rebinding after replacement. Telegram update and callback handlers still receive only `ExtensionContext`, and extension-origin `pi.sendUserMessage()` deliberately disables slash-command handling. The upstream maintainer described an async extension bridge as potentially possible after the current refactor, but no supported API exists yet.
+Current upstream evidence: Pi 0.80.6 safely exposes `ctx.newSession()` to registered extension commands through `ExtensionCommandContext`, including fresh-context rebinding after replacement. Telegram update and callback handlers still receive only `ExtensionContext`, and extension-origin `pi.sendUserMessage()` deliberately disables slash-command handling. An async extension bridge may become possible after the current Pi refactor, but no supported API exists yet.
 
 Required upstream shape:
 

@@ -4,16 +4,16 @@
  * The only place that reaches `@pidesk/view-sdk` at runtime — and it does so
  * lazily, one call at a time.
  *
- * Why lazy: the package is **not on a registry** yet (docs/design/20 O6), so an
- * install of `@llblab/pi-telegram` elsewhere has a dependency that cannot
- * resolve. A failed load is treated exactly like "no Host" — soft `null`, TUI
- * path preserved (docs/design/19 §4.5) — which a static import could not do: it
- * would take the whole bridge down at extension load.
+ * Why lazy: the SDK is a client for an optional desktop Host, so a load failure
+ * must mean "no Host" — soft `null`, TUI path preserved. A static import could
+ * not do that: any tree where the package cannot resolve (an install predating
+ * the dependency, a broken checkout) would take the whole bridge down at
+ * extension load.
  *
  * Everything the lifecycle needs from the SDK is handed out here (capability
  * gate, frame coalescer, panel session) so no other module in this package
  * imports SDK runtime code, and no other module re-implements what the SDK
- * already decides (准则 §7.1, §9).
+ * already decides.
  */
 
 import type {
@@ -40,7 +40,7 @@ async function loadViewSdk(): Promise<ViewSdkSurface | null> {
 	try {
 		return await import("@pidesk/view-sdk");
 	} catch {
-		// 解析不了 SDK（未发布 / 未构建）= 没有可用的桌面宿主，按无 Host 软失败处理
+		// 解析不了 SDK（旧安装缺依赖 / 树不完整）= 没有可用的桌面宿主，按无 Host 软失败处理
 		return null;
 	}
 }
@@ -66,7 +66,7 @@ export function createTelegramPanelSdk(): TelegramPanelSdk {
 		async openPanel(client, options) {
 			const sdk = await loadViewSdk();
 			if (!sdk) return null;
-			// Catalog binding（docs/design/19 §10.1）：Host 注入 env 时带上稳定 key
+			// Catalog binding：Host 注入 env 时带上稳定 key
 			const contributionKey = sdk.resolveContributionKey?.(options.panelId);
 			const session: LiveViewSession | null = await sdk.openPanel(client as Parameters<typeof openPanel>[0], {
 				panelId: options.panelId,
@@ -90,7 +90,7 @@ export function createTelegramPanelSdk(): TelegramPanelSdk {
 				update: ({ root, actions }) => session.update({ root, actions } as Parameters<typeof session.update>[0]),
 				close: () => session.close(),
 				closed: session.closed as Promise<{ reason?: string } | null>,
-				// 合并窗口是 SDK 的语义（docs/design/20 O4）：扩展只决定何时标脏。
+				// 合并窗口是 SDK 的语义：扩展只决定何时标脏。
 				createFrameScheduler: (schedulerOptions) => sdk.createViewFrameScheduler(schedulerOptions),
 			};
 			return wrapper;

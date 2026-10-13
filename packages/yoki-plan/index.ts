@@ -45,7 +45,7 @@ export {
 
 export default function (pi: ExtensionAPI): void {
 	/**
-	 * Desktop access-mode chip (docs/design/14). Lifecycle is SDK-built-in
+	 * Desktop access-mode chip. Lifecycle is SDK-built-in
 	 * (re-register on closed, backoff, shutdown); one supervisor per process.
 	 */
 	let desktopSupervisor: SlotSupervisor<AccessModeHandle> | null = null;
@@ -73,7 +73,7 @@ export default function (pi: ExtensionAPI): void {
 	}
 
 	/**
-	 * Desktop access-mode chip lifecycle (docs/design/14): register once per
+	 * Desktop access-mode chip lifecycle: register once per
 	 * process; the SDK supervisor re-registers with bounded backoff when the
 	 * pipe drops or the host is slow to greet, and stops on shutdown.
 	 */
@@ -82,7 +82,7 @@ export default function (pi: ExtensionAPI): void {
 			void desktopSupervisor.ensure();
 			return;
 		}
-		// acquire/release：与同进程其它扩展共享一条 pipe（docs/design/15 P1-1）
+		// acquire/release：与同进程其它扩展共享一条 pipe
 		const client = acquireProcessViewClient();
 		if (!client) {
 			// 非桌面环境（无 env）：/plan + 快捷键仍是路径，不创建 supervisor

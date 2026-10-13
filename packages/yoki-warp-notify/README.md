@@ -17,7 +17,7 @@ Zero setup: install, restart Pi inside Warp, done. Nothing to configure, nothing
 ## Install
 
 ```bash
-pi install git:github.com/<GITHUB_OWNER>/<REPO>
+pi install git:github.com/yokii89/MyPiExtension
 ```
 
 Then restart your Pi session **from inside Warp**.
@@ -114,7 +114,7 @@ warp-notify.ts         OSC/CSI transport (/dev/tty on Unix, stdout+ConPTY on Win
 
 **Badge stays "Blocked" after you press ESC.** Handled: any blocking tool left unanswered is drained at the end of the agent loop, which clears the stale badge.
 
-**Toast text leaks internals.** Skill wrappers are collapsed to `/skill:<name>` shorthand automatically; if you spot raw XML in a toast, please [open an issue](https://github.com/<GITHUB_OWNER>/<REPO>/issues).
+**Toast text leaks internals.** Skill wrappers are collapsed to `/skill:<name>` shorthand automatically; if you spot raw XML in a toast, please [open an issue](https://github.com/yokii89/MyPiExtension/issues).
 
 ## License
 

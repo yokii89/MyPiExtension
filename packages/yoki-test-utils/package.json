@@ -4,7 +4,7 @@
 	"description": "Internal test fixtures for yoki-mono (not published)",
 	"type": "module",
 	"license": "MIT",
-	"author": "<GITHUB_OWNER>",
+	"author": "yokii89",
 	"exports": {
 		".": "./index.js",
 		"./pi": "./pi.js",

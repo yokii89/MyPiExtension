@@ -1,6 +1,6 @@
 # Roadmap
 
-Keeping an experienced driver in the loop while the work moves at LLM speed. Companion to the [README's Roadmap](./README.md#roadmap) — no dates, no version targets. Items move down the list as they ship.
+Keeping an experienced driver in the loop while the work moves at LLM speed. No dates, no version targets — items move down the list as they ship.
 
 ## What's Done
 
@@ -15,7 +15,7 @@ Keeping an experienced driver in the loop while the work moves at LLM speed. Com
 - `panel()` — N judges + vote fold (adversarial verification), with `match()` enum-gate disagreement routing
 - Session-backed, mid-loop resume
 - Skill-contract architecture (load-time + runtime schema checks)
-- Sibling family — `ask-user-question`, `todo`, `advisor`, `web-tools`, `args`, `i18n`, `btw`, `voice`, `warp`, `telemetry`
+- Sibling family shipping in this repo — `plan`, `ask-user-question`, `web-tools`, `warp-notify`, `image-gen`, `config`, `ui`, `skills`, the `newapi` provider and the `telegram` bridge
 
 ## What's Next
 

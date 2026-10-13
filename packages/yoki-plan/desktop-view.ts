@@ -3,7 +3,7 @@
  *
  * Surfaces:
  * 1. Post-plan next-step picker — widget above the input bar, single row of action buttons
- * 2. Plan-mode chip registration — composer access-mode slot (docs/design/14)
+ * 2. Plan-mode chip registration — composer access-mode slot
  *
  * Resident access-mode lifecycle (re-register on closed, backoff, shutdown)
  * is built into the SDK (`superviseAccessMode` / process client). This module
@@ -22,7 +22,7 @@ import {
 	// 必须是**本地导入绑定**：`export { x as readContributionKey } from …` 只建立
 	// 对外 re-export，不会让 `readContributionKey` 在本模块可见——文件内的两个调用
 	// 点因此抛 ReferenceError，并被 registerPlanModeOnDesktop 的 catch-all 吞成
-	// "没有桌面宿主"。docs/design/20 O5 查 consumer 4 红测的真实根因。
+	// "没有桌面宿主"。这是 consumer 4 那组红测的真实根因。
 	resolveContributionKey as readContributionKey,
 	registerAccessMode,
 	type SlotSupervisor,
@@ -131,13 +131,13 @@ export const PLAN_MODE_DETAIL = "只读：edit/write 已禁用";
 export const PLAN_MODE_CONTRIBUTION_ID = "yoki-plan";
 
 /**
- * Host 注入的 contributionKey 映射（docs/design/16 §5.3）。
- * 实现已下沉到 SDK（docs/design/19 §3.1.1）；此处保留同名 re-export，
+ * Host 注入的 contributionKey 映射。
+ * 实现已下沉到 SDK；此处保留同名 re-export，
  * 使既有调用点与测试无需改动。
  */
 export { resolveContributionKey as readContributionKey } from "@pidesk/view-sdk";
 
-/** Static desktop chip descriptor for plan mode (docs/design/14 + 16). */
+/** Static desktop chip descriptor for plan mode. */
 export const PLAN_MODE_REGISTRATION = {
 	id: PLAN_MODE_CONTRIBUTION_ID,
 	title: "计划模式",

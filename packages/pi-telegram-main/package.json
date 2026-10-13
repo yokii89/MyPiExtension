@@ -1,5 +1,5 @@
 {
-  "name": "@llblab/pi-telegram",
+  "name": "@yoki/pi-telegram",
   "version": "0.24.0",
   "private": false,
   "publishConfig": {
@@ -17,11 +17,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/llblab/pi-telegram.git"
+    "url": "git+https://github.com/yokii89/MyPiExtension.git",
+    "directory": "packages/pi-telegram-main"
   },
-  "homepage": "https://github.com/llblab/pi-telegram",
+  "homepage": "https://github.com/yokii89/MyPiExtension/tree/main/packages/pi-telegram-main#readme",
   "bugs": {
-    "url": "https://github.com/llblab/pi-telegram/issues"
+    "url": "https://github.com/yokii89/MyPiExtension/issues"
   },
   "engines": {
     "node": ">=22.19.0"
@@ -63,7 +64,7 @@
     "extensions": [
       "./index.ts"
     ],
-    "image": "https://github.com/llblab/pi-telegram/raw/main/screenshot.png"
+    "image": "./screenshot.png"
   },
   "pidesk": {
     "contributes": {
@@ -91,7 +92,7 @@
     "@sinclair/typebox": "*"
   },
   "dependencies": {
-    "@pidesk/view-sdk": "file:../../../pidesk/packages/view-sdk"
+    "@pidesk/view-sdk": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "latest",

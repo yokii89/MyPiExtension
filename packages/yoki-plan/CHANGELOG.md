@@ -8,11 +8,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
-- PiDesk composer mode-dropdown registration (`registerPlanModeOnDesktop`, `access-mode` slot per PiDesk docs/design/14): input-bar chip lists 计划模式, desktop clicks activate the real tool gates, and TUI toggles (`/plan`, Shift+Tab, session resume) sync the chip back via `PlanModeControllerHooks.onModeChange`. Soft-fallback to `/plan` on old hosts / terminal.
+- PiDesk composer mode-dropdown registration (`registerPlanModeOnDesktop`, `access-mode` slot): input-bar chip lists 计划模式, desktop clicks activate the real tool gates, and TUI toggles (`/plan`, Shift+Tab, session resume) sync the chip back via `PlanModeControllerHooks.onModeChange`. Soft-fallback to `/plan` on old hosts / terminal.
 - `createPlanModeSupervisor` — thin wrapper over `@pidesk/view-sdk` `superviseAccessMode`.
 
 ### Changed
-- Desktop chip lifecycle moved into the SDK: `acquireProcessViewClient` + `superviseAccessMode` own re-registration, backoff, in-process lease, and `session_shutdown` release (no force-dispose of the shared pipe). See PiDesk docs/design/15.
+- `@pidesk/view-sdk` is now a published registry dependency (`^0.2.0`) instead of a workspace-local `file:` link. The desktop (PiDesk) path is imported statically at extension load, so `pi install npm:@yoki/yoki-plan` now resolves it; before this change a standalone install failed to load the extension at all.
+- Desktop chip lifecycle moved into the SDK: `acquireProcessViewClient` + `superviseAccessMode` own re-registration, backoff, in-process lease, and `session_shutdown` release (no force-dispose of the shared pipe).
 - `/model` dual-axis selector: thinking depth shown once as a bottom control strip; list rows no longer repeat depth or provider source badges.
 
 ### Removed

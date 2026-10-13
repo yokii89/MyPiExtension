@@ -1,6 +1,5 @@
 /**
  * Window title state machine: idle | busy | attention(complete|intervention).
- * Spec: docs/setWindowTitleUI.md §3–§8, §11.
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";

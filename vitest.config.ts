@@ -6,8 +6,8 @@ export default defineConfig({
 		exclude: [
 			"packages/yoki-newapi/**",
 			"packages/yoki-skills/**",
-			// yoki-ui node:test suite; window-title vitest suite under tests/window-title is included
-			"packages/yoki-ui/tests/*.test.ts",
+			// yoki-ui node:test suite; window-title vitest suite under test/window-title is included
+			"packages/yoki-ui/test/*.test.ts",
 			"packages/yoki-ui/node_modules/**",
 			"packages/yoki-mcp-adapter/**",
 		],

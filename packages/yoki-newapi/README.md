@@ -22,7 +22,7 @@ npm run test:yoki-newapi
 ```
 
 ```bash
-pi install git:github.com/<GITHUB_OWNER>/<REPO>
+pi install git:github.com/yokii89/MyPiExtension
 ```
 
 Or, when developing this extension in isolation, add its workspace path to `~/.pi/agent/settings.json`:

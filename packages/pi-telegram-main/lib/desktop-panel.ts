@@ -1,20 +1,20 @@
 /**
  * PiDesk desktop panel lifecycle for the Telegram bridge
  * Zones: telegram, desktop, orchestration
- * Resident lifecycle of docs/design/19 §4.4: open on connect, poll on a frame
+ * Resident lifecycle: open on connect, poll on a frame
  * budget, tear down on dismiss / dispose.
  *
- * **The SDK is injected, not imported.** `@pidesk/view-sdk` is not on a registry
- * yet, so every reach into it lives in `desktop-panel-sdk.ts` and is soft-failing;
- * a static import here would take the whole bridge down with it when the package
+ * **The SDK is injected, not imported.** Every reach into
+ * `@pidesk/view-sdk` lives in `desktop-panel-sdk.ts` and is soft-failing; a
+ * static import here would take the whole bridge down with it when the package
  * cannot resolve. Callers pass the real functions from `@pidesk/view-sdk`, which
  * also keeps this module unit-testable with fakes.
  *
  * This module owns the refresh cadence over bridge state and nothing else: the
  * merge window comes from the SDK's `createViewFrameScheduler` and the `view-table`
- * gate from its `supportsTable` (准则 §9, docs/design/20 O3/O4).
+ * gate from its `supportsTable`.
  *
- * Headless pi gets `open() === false` and callers keep the TUI path (§4.5).
+ * Headless pi gets `open() === false` and callers keep the TUI path.
  */
 
 import type { ViewFrameScheduler } from "@pidesk/view-sdk";
@@ -39,7 +39,7 @@ export const PANEL_POLL_INTERVAL_MS = 1000;
 export interface TelegramPanelSdk {
 	connect: () => TelegramPanelClient | null | Promise<TelegramPanelClient | null>;
 	/**
-	 * Host `hello` gate for `table` nodes (docs/design/19 §7.1). Resolves false when
+	 * Host `hello` gate for `table` nodes. Resolves false when
 	 * the Host is older than the advertisement or the handshake never landed — the
 	 * projection then keeps its `row`-based fallback instead of shipping a node the
 	 * Host cannot render. The capability name stays inside the SDK.
@@ -68,7 +68,7 @@ export interface TelegramPanelSession {
 	close: () => void;
 	closed: Promise<{ reason?: string } | null>;
 	/**
-	 * The SDK's frame coalescer for this panel (§4.3): the merge window, the
+	 * The SDK's frame coalescer for this panel: the merge window, the
 	 * action-boundary flush and the in-flight backpressure are SDK semantics, and
 	 * the adapter hands out its factory because it is the one module that resolved
 	 * the SDK. Lives and dies with the session that owns it.
@@ -79,7 +79,7 @@ export interface TelegramPanelSession {
 /**
  * Actions the panel surfaces; wired by the extension to real command effects.
  * `connect` receives the live session context so a panel click cannot act on a
- * context replaced underneath it (§4.4).
+ * context replaced underneath it.
  */
 export interface TelegramPanelActionHandlers<TContext> {
 	connect: (context: TContext) => void | Promise<void>;
@@ -102,7 +102,7 @@ export interface TelegramPanelRuntimeOptions<TContext = unknown> {
 	client?: TelegramPanelClient | null;
 	/** Poll interval; default 1000ms. Set 0 to disable polling (tests). */
 	pollIntervalMs?: number;
-	/** Frame merge interval; default 250ms (§4.3). */
+	/** Frame merge interval; default 250ms. */
 	frameIntervalMs?: number;
 	recordRuntimeEvent?: (category: string, error: unknown, details?: Record<string, unknown>) => void;
 }
@@ -182,7 +182,7 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 	}
 
 	async function handleAction(actionId: TelegramPanelAction): Promise<void> {
-		// §4.3 动作边界不得丢：动作前先提交未发送的本地状态
+		// 动作边界不得丢：动作前先提交未发送的本地状态
 		await scheduler?.flush();
 		try {
 			if (actionId === "tg:connect") {
@@ -233,7 +233,7 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 		});
 
 		if (!opened) {
-			// Host 不支持 panel / 连接失败 → 回落 TUI，不报错（§4.5）
+			// Host 不支持 panel / 连接失败 → 回落 TUI，不报错
 			return false;
 		}
 
@@ -244,7 +244,7 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 		});
 		startPolling();
 		// 首帧必须立刻推：宿主保留的是 open() 时的树，节流窗口内不会有第二次推送，
-		// 否则面板要等一个 poll 周期才有内容（§4.4）。
+		// 否则面板要等一个 poll 周期才有内容。
 		void scheduler.flushNow();
 		void opened.closed.then((payload) => {
 			if (session !== opened) return;
@@ -256,7 +256,7 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 			session = null;
 			const reason = payload?.reason;
 			if (reason === "replaced" || reason === "session") {
-				// replaced: 由新 owner 占用，不重连（§9 防无限互相抢占）
+				// replaced: 由新 owner 占用，不重连（防无限互相抢占）
 				// session: 等会话重绑，本轮交给调用方重新 open
 				options.recordRuntimeEvent?.("desktop-panel", new Error(`panel closed: ${reason}`), { reason });
 			}

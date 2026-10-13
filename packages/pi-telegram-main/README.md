@@ -10,20 +10,12 @@ It is a **runtime adapter**, not a remote terminal. Start or supervise work in t
 
 Proactive push is enabled by default. `assistant.proactivePush` projects every completed public assistant text block from local or autonomous work—including visible checkpoints and the final answer—to the authorized Telegram target once and in order; set it explicitly to `false` to disable projection. It never mirrors local prompts, hidden reasoning, tool traffic, token deltas, Telegram-owned turns, or stale-generation work. See [Outbound](docs/outbound.md#proactive-public-output) and the [configuration reference](docs/public-api.md#configuration-api).
 
-This repository is an actively maintained fork of [`badlogic/pi-telegram`](https://github.com/badlogic/pi-telegram). It started from upstream commit [`cb34008`](https://github.com/badlogic/pi-telegram/commit/cb34008460b6c1ca036d92322f69d87f626be0fc) and has since diverged substantially.
-
 ## Install
 
 From npm:
 
 ```bash
-pi install npm:@llblab/pi-telegram
-```
-
-From git:
-
-```bash
-pi install git:github.com/llblab/pi-telegram
+pi install npm:@yoki/pi-telegram
 ```
 
 The 0.21 extension platform requires Pi `0.80.6` or newer. Its Activity API uses the public `agent_settled` lifecycle event to keep retries/continuations under one activity identity and release that identity only after the run fully settles.

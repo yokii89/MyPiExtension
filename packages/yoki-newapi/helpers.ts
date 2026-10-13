@@ -117,6 +117,66 @@ function guessVision(id: string): boolean {
 	return VISION_HINT_PATTERN.test(id);
 }
 
+/** Filter a gateway `supported_endpoint_types` value to non-empty unique strings; undefined when unusable. */
+export function normalizeEndpointTypes(value: unknown): string[] | undefined {
+	if (!Array.isArray(value)) return undefined;
+	const types = value.filter((item): item is string => typeof item === "string" && item.length > 0);
+	return types.length > 0 ? [...new Set(types)] : undefined;
+}
+
+/**
+ * Choose the wire api for a discovered model from its `supported_endpoint_types`.
+ *
+ * The list is advisory: `openai-response` explicitly enables the Responses API, while a
+ * non-OpenAI family (anthropic/gemini/...) marks an upstream whose responses conversion the
+ * gateway does not implement (HTTP 500 on /v1/responses). Lists containing only `openai`
+ * carry no such signal — measured gateways route those through /v1/responses fine — so the
+ * credential api is kept instead of guessing.
+ */
+export function pickApiForModel(
+	supportedEndpointTypes: unknown,
+	fallback: NewApiApiType,
+): NewApiApiType {
+	const types = normalizeEndpointTypes(supportedEndpointTypes);
+	if (!types) return fallback;
+	if (types.includes("openai-response")) return "openai-responses";
+	if (types.some((type) => type !== "openai")) return "openai-completions";
+	return fallback;
+}
+
+/** Minimal assistant-message shape needed to spot degenerate gateway responses. */
+export type DegenerateResponseProbe = {
+	stopReason?: string;
+	rawStopReason?: unknown;
+	usage?: { output?: number };
+	content?: unknown;
+};
+
+/**
+ * A gateways' degenerate "length" response: reports hitting max_output_tokens while emitting
+ * (next to) no output at all. pi's recoverable-length heuristic then misreads it as context
+ * pressure — discards the response and runs a real compaction that drops most history.
+ * Observed fingerprint (5/5 samples, 2026-10-09): `output=1` + `rawStopReason` containing
+ * `max_output_tokens`; content is `[]` or whitespace-only text.
+ */
+export function isDegenerateGatewayResponse(message: DegenerateResponseProbe): boolean {
+	if (message.stopReason !== "length") return false;
+	if ((message.usage?.output ?? 0) > 1) return false;
+	const raw = typeof message.rawStopReason === "string" ? message.rawStopReason : "";
+	if (raw.includes("max_output_tokens")) return true;
+	// Gateways without a raw stop reason: require provably empty output. A tool call or any
+	// non-whitespace text means the model really did produce something — not degenerate.
+	const blocks = Array.isArray(message.content)
+		? (message.content as Array<{ type?: string; text?: string }>)
+		: [];
+	if (blocks.some((block) => block?.type === "toolCall")) return false;
+	const text = blocks
+		.filter((block) => block?.type === "text")
+		.map((block) => block.text ?? "")
+		.join("");
+	return text.trim() === "";
+}
+
 /** Minimal model def when Codex model is missing from /v1/models. */
 export function stubModelDef(id: string): {
 	id: string;

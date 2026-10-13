@@ -13,6 +13,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Submit-tab review now shows the full questionnaire shape: unanswered questions render an inline `→ not answered` warning row instead of being silently omitted, and the heading carries a `· N of M answered` progress counter.
 
 ### Changed
+- `@pidesk/view-sdk` is now a published registry dependency (`^0.2.0`) instead of a workspace-local `file:` link. The desktop (PiDesk) questionnaire widget is imported statically at extension load, so `pi install npm:@yoki/yoki-ask-user-question` now resolves it; before this change a standalone install failed to load the extension at all.
 - Overflow indicators (`↑` / `↓` / `↕`) now occupy dedicated rows prepended/appended to the scroll window instead of overwriting the first/last visible content rows — the clip boundary no longer hides option text or description lines while scrolling.
 - Submit-tab review rows are compact one-line summaries (`● header → answer`), keeping the review list within the tab-height budget the chrome equalizes on.
 
@@ -397,4 +398,4 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.6.0] — 2026-04-18
 
 ### Changed
-- Consolidated into the `<GITHUB_OWNER>/yoki-mono` monorepo. Version aligned to the yoki-pi family lockstep starting point. No runtime behavior change from `0.1.4`.
+- Consolidated into the `yokii89/yoki-mono` monorepo. Version aligned to the yoki-pi family lockstep starting point. No runtime behavior change from `0.1.4`.

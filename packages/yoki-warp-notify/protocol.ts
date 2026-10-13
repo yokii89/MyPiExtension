@@ -85,7 +85,7 @@ export function readClientVersion(): string | undefined {
  * src/payload.ts).
  *
  * Pure: env-var reads on every call, no caching, safe under env mutation
- * in tests (research §Q5 contract).
+ * in tests.
  */
 export function negotiateProtocolVersion(): number {
 	const raw = process.env.WARP_CLI_AGENT_PROTOCOL_VERSION;

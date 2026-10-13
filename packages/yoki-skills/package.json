@@ -7,8 +7,7 @@
   "files": [
     "extensions",
     "skills",
-    "README.md",
-    "COMPLETION-AUDIT.md"
+    "README.md"
   ],
   "pi": {
     "extensions": [
@@ -17,7 +16,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --import ./tests/register-mock-pi-loader.mjs --test tests/**/*.test.ts",
+    "test": "node --experimental-strip-types --import ./test/register-mock-pi-loader.mjs --test test/**/*.test.ts",
     "test:pi-smoke": "node scripts/run-pi-smoke.mjs"
   },
   "peerDependencies": {

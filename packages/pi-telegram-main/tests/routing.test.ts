@@ -953,7 +953,7 @@ test("Routing runtime labels private guest-mode prompts with dm metadata", async
 			guest_message: {
 				guest_query_id: "guest-dm-1",
 				chat: { id: 99, type: "private", username: "guest" } as never,
-				from: { id: 7, is_bot: false, username: "llblab" } as TestUser & {
+				from: { id: 7, is_bot: false, username: "owner_handle" } as TestUser & {
 					username: string;
 				},
 				text: "private guest question",
@@ -982,7 +982,7 @@ test("Routing runtime labels owner-authored private guest turns with the remote 
 					username: "counterparty",
 					first_name: "Remote",
 				} as never,
-				from: { id: 7, is_bot: false, username: "llblab" } as TestUser & {
+				from: { id: 7, is_bot: false, username: "owner_handle" } as TestUser & {
 					username: string;
 				},
 				text: "@k1awbot attach something",
@@ -1020,7 +1020,7 @@ test("Guest peer resolver never labels the paired owner and uses stable fallback
 		Routing.resolveTelegramGuestPromptPeer({
 			chatType: "private",
 			chat: { id: 99, first_name: "Maria", last_name: "Example" },
-			from: { id: 7, username: "llblab" },
+			from: { id: 7, username: "owner_handle" },
 			ownerUserId: 7,
 		}),
 		"Maria Example",
@@ -1029,7 +1029,7 @@ test("Guest peer resolver never labels the paired owner and uses stable fallback
 		Routing.resolveTelegramGuestPromptPeer({
 			chatType: "private",
 			chat: { id: 99 },
-			from: { id: 7, username: "llblab" },
+			from: { id: 7, username: "owner_handle" },
 			ownerUserId: 7,
 		}),
 		"99",
@@ -1038,7 +1038,7 @@ test("Guest peer resolver never labels the paired owner and uses stable fallback
 		Routing.resolveTelegramGuestPromptPeer({
 			chatType: "private",
 			chat: { id: 99, username: "remote" },
-			from: { id: 7, username: "llblab" },
+			from: { id: 7, username: "owner_handle" },
 			ownerUserId: 7,
 		}),
 		"remote",
@@ -1046,7 +1046,7 @@ test("Guest peer resolver never labels the paired owner and uses stable fallback
 	assert.equal(
 		Routing.resolveTelegramGuestPromptPeer({
 			chatType: "private",
-			from: { id: 7, username: "llblab" },
+			from: { id: 7, username: "owner_handle" },
 			replyFrom: { id: 99, is_bot: false, username: "remote" },
 			ownerUserId: 7,
 		}),
@@ -1055,8 +1055,8 @@ test("Guest peer resolver never labels the paired owner and uses stable fallback
 	assert.equal(
 		Routing.resolveTelegramGuestPromptPeer({
 			chatType: "private",
-			chat: { id: 7, username: "llblab" },
-			from: { id: 7, username: "llblab" },
+			chat: { id: 7, username: "owner_handle" },
+			from: { id: 7, username: "owner_handle" },
 			replyFrom: { id: 123, is_bot: true, username: "k1awbot" },
 			ownerUserId: 7,
 		}),
@@ -1076,7 +1076,7 @@ test("Routing runtime separates private guest identity from replied peer metadat
 					type: "private",
 					username: "counterparty",
 				} as never,
-				from: { id: 7, is_bot: false, username: "llblab" } as TestUser & {
+				from: { id: 7, is_bot: false, username: "owner_handle" } as TestUser & {
 					username: string;
 				},
 				text: "@k1awbot test",
@@ -1123,7 +1123,7 @@ test("Routing runtime keeps private guest identity when replying to the bot", as
 					type: "private",
 					username: "counterparty",
 				} as never,
-				from: { id: 7, is_bot: false, username: "llblab" } as TestUser & {
+				from: { id: 7, is_bot: false, username: "owner_handle" } as TestUser & {
 					username: string;
 				},
 				text: "@k1awbot follow up",

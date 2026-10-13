@@ -100,7 +100,7 @@ interface TelegramCommandsAndToolsBindingDeps {
 	canSendDirect: () => boolean;
 	updateStatus: TelegramBridgeStatusUpdater;
 	recordRuntimeEvent: TelegramRuntimeEventRecorder;
-	/** Desktop panel hooks (docs/design/19 §4.5); absent on headless pi. */
+	/** Desktop panel hooks; absent on headless pi. */
 	onConnected?: () => void | Promise<void>;
 	onDisconnected?: () => void | Promise<void>;
 }
@@ -255,7 +255,7 @@ interface TelegramLifecycleBindingDeps {
 	/**
 	 * PiDesk Telegram panel. Session-bound like the other runtimes here: replaced
 	 * sessions must not leave a poller projecting an old session (AGENTS.md §5.2).
-	 * Opened on session start (Catalog cold path, docs/design/19 §10.1) and on
+	 * Opened on session start (Catalog cold path) and on
 	 * connect; soft-fails without a Host so TUI stays unchanged.
 	 */
 	desktopPanel: Pick<DesktopPanel.TelegramPanelRuntime, "open" | "dispose">;
@@ -574,7 +574,7 @@ export function registerTelegramLifecycleRuntimeHooks({
 			assistantOutputRuntime.start();
 			activityRuntime.onSessionStart?.();
 			await sessionLifecycleRuntime.onSessionStart(event, ctx);
-			// Catalog 冷态入口（docs/design/19 §10.1）：会话就绪即尝试挂面板——
+			// Catalog 冷态入口：会话就绪即尝试挂面板——
 			// 未连接时显示断开态；无 Host / 无 panel 槽时 open() 软失败，TUI 不变。
 			// 已连接时此处 open 与 onConnected 幂等（同 panelId 顶替）。
 			// 顺序若被打破只会退化成「等下一次 /telegram-connect」，不会显示错会话的状态。

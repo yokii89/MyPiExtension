@@ -8,5 +8,5 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["yoki_ui/**/*.ts", "tests/**/*.ts"]
+  "include": ["yoki_ui/**/*.ts", "test/**/*.ts"]
 }

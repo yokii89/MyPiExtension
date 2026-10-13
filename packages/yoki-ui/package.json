@@ -28,7 +28,7 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/*.test.ts && vitest run --root ../.. packages/yoki-ui/tests/window-title"
+    "test": "node --experimental-strip-types --test test/*.test.ts && vitest run --root ../.. packages/yoki-ui/test/window-title"
   },
   "pi": {
     "extensions": [
@@ -36,8 +36,7 @@
     ],
     "themes": [
       "./themes"
-    ],
-    "image": "https://raw.githubusercontent.com/Phoobobo/pi-claude-code-tui/main/assets/screenshot.png"
+    ]
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",

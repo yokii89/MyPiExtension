@@ -11,17 +11,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- **Replaced the previous `yoki-web-tools` implementation** with the pluggable-provider architecture from `rpiv-web-tools` 2.11.0. The old single-file tool surface (Gemini/OpenAI search, curator, PDF/RSC extract, chrome cookies, parallel helpers, `skills/librarian`) is removed. New surface: `web_search` + `web_fetch` over ten backends (Brave, Tavily, Serper, Exa, You.com, Jina, Firecrawl, Perplexity, SearXNG, Ollama) with `/web-tools` configuration and an opt-in GitHub URL interceptor.
-- Package renamed to `@yoki/yoki-web-tools`; config path is now `~/.config/yoki-web-tools/config.json` (was `~/.config/rpiv-web-tools/config.json` in the upstream package).
-- Shared config I/O now comes from `@yoki/yoki-config` (upstream used `@juicesharp/rpiv-config`).
-- `GuidanceFields` / `GuidanceFieldsSchema` gained `description?: string` in `@yoki/yoki-config`, matching the upstream schema so per-field salvage drops a wrong-typed `description` leaf instead of passing it through.
+- **Replaced the previous `yoki-web-tools` implementation** with a pluggable-provider architecture. The old single-file tool surface (Gemini/OpenAI search, curator, PDF/RSC extract, chrome cookies, parallel helpers, `skills/librarian`) is removed. New surface: `web_search` + `web_fetch` over ten backends (Brave, Tavily, Serper, Exa, You.com, Jina, Firecrawl, Perplexity, SearXNG, Ollama) with `/web-tools` configuration and an opt-in GitHub URL interceptor.
+- Package renamed to `@yoki/yoki-web-tools`; config path is now `~/.config/yoki-web-tools/config.json`.
+- Shared config I/O now comes from `@yoki/yoki-config`.
+- `GuidanceFields` / `GuidanceFieldsSchema` gained `description?: string` in `@yoki/yoki-config`, so per-field salvage drops a wrong-typed `description` leaf instead of passing it through.
 
 ### Removed
 
 - `skills/librarian` — no longer part of this package.
 - Legacy tool modules and their `node --test` suite under `test/`.
-
-> History below this line is inherited from `@juicesharp/rpiv-web-tools` and is kept for provenance. Version numbers refer to the upstream package until 1.21.0.
 
 ## [2.11.0] - 2026-09-21
 
@@ -188,7 +186,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.10.2] - 2026-05-20
 
 ### Changed
-- Refresh npm cover (`docs/cover.{svg,png}`): align with the unified card layout used across the `@<GITHUB_OWNER>/rpiv-*` family and add a provider chip strip surfacing all six backends (Brave active, plus Tavily, Serper, Exa, Jina, Firecrawl) with the `/web-search-config` hint.
+- Refresh npm cover (`docs/cover.{svg,png}`): align with the unified package-card layout used across this package family and add a provider chip strip surfacing all six backends (Brave active, plus Tavily, Serper, Exa, Jina, Firecrawl) with the `/web-search-config` hint.
 
 ## [1.10.1] - 2026-05-19
 
@@ -382,6 +380,3 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [0.6.1] - 2026-04-18
 
 ## [0.6.0] — 2026-04-18
-
-### Changed
-- Consolidated into the `<GITHUB_OWNER>/rpiv-mono` monorepo. Version aligned to the yoki-pi family lockstep starting point. No runtime behavior change from `0.1.2`.

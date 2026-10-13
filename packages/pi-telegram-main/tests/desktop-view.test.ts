@@ -1,11 +1,10 @@
 /**
  * Regression tests for the Telegram desktop panel
  * Covers projection (node budget, empty states, lane grouping, event bounds),
- * the frame budget as driven by the SDK scheduler, and the resident lifecycle
- * (docs/design/19 §8.1).
+ * the frame budget as driven by the SDK scheduler, and the resident lifecycle.
  *
  * The scheduler itself is not unit-tested here: `createViewFrameScheduler` moved
- * into `@pidesk/view-sdk` (docs/design/20 O4) and its merge/backpressure/stop
+ * into `@pidesk/view-sdk` and its merge/backpressure/stop
  * semantics are pinned by that package's 13 tests. What this suite owns is the
  * wiring — the panel gets one frame per window, flushes at action boundaries, and
  * never resurrects a stopped scheduler.
@@ -153,7 +152,7 @@ test("Panel renders all four cards and stays well inside maxNodes=512", () => {
 });
 
 test("Worst-case tree stays inside the node and depth budgets", () => {
-	// 设计 §4.1 的预算上限：50 队列行 + 20 threads + 20 events
+	// 预算上限：50 队列行 + 20 threads + 20 events
 	const queue = Array.from({ length: 50 }, (_, index) => ({
 		queueLane: "default" as const,
 		summary: `job-${index}`,
@@ -388,7 +387,7 @@ test("Panel action ids are recognized and the slot id is stable", () => {
 	assert.equal(isTelegramPanelAction("tg:nope"), false);
 });
 
-// --- projection: table mode (docs/design/19 §3.2.1, §7.1) ---
+// --- projection: table mode ---
 
 function threadRecord(index: number): TelegramTopicTargetRecord {
 	return {
@@ -504,7 +503,7 @@ test("Row fallback stays the default so an old Host never sees an unknown placeh
 	assert.equal(tableInChildren(cardByTitle(root, "Threads")), undefined);
 });
 
-// --- frame budget wiring (docs/design/20 O4) ---
+// --- frame budget wiring ---
 
 /**
  * The coalescer's own semantics — merge window, in-flight backpressure,
@@ -578,8 +577,9 @@ test("Re-opening after a dismiss resumes frame delivery", async () => {
 
 /**
  * Fake SDK surface. The runtime takes the SDK by injection rather than importing
- * it, because `@pidesk/view-sdk` is not on a registry yet — production resolves it
- * lazily in `desktop-panel-sdk.ts` and treats a failed load as "no Host". The
+ * it, because an unresolvable SDK must degrade to "no Host" instead of failing
+ * the bridge load — production resolves it
+ * lazily in `desktop-panel-sdk.ts`. The
  * frame scheduler handed out below is the **real** SDK one: the panel's job is
  * wiring, so that is what these tests cover.
  */
@@ -781,7 +781,7 @@ test("Panel runtime keeps the bridge alive when the tab is dismissed", async () 
 	runtime.dispose();
 });
 
-test("Panel runtime logs closed(replaced) but never reconnects (§9)", async () => {
+test("Panel runtime logs closed(replaced) but never reconnects", async () => {
 	const { sdk, sessions } = fakeSdk();
 	const reasons: Array<Record<string, unknown> | undefined> = [];
 	const runtime = createTelegramPanelRuntime({
@@ -824,7 +824,7 @@ test("Panel runtime dispose() tears down the session and the poll timer", async 
 	assert.equal(await runtime.open(), false, "a disposed runtime stays closed");
 });
 
-// --- runtime: capability gating (docs/design/19 §7.1) ---
+// --- runtime: capability gating ---
 
 const QUEUE_AND_THREADS = source(
 	baseState({ queuedItems: [{ queueLane: "default" }] }),
@@ -894,7 +894,7 @@ test("Panel runtime keeps row composition for a Host without the capability", as
 	runtime.dispose();
 });
 
-// --- runtime: session-bound actions (docs/design/19 §4.4) ---
+// --- runtime: session-bound actions ---
 
 test("Connect action runs against the live session context", async () => {
 	const { sdk, sessions } = fakeSdk();

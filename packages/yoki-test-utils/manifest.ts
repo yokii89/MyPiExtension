@@ -14,8 +14,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SKIP_DIRS = new Set(["node_modules", "docs"]);
-const SKIP_FILES = new Set(["test-fixtures.ts"]);
+const SKIP_DIRS = new Set(["node_modules", "docs", "test", "tests"]);
 
 export interface ShipManifestResult {
 	/** Entries declared in `package.json` `files`. */
@@ -31,11 +30,12 @@ export interface ShipManifestResult {
 /**
  * Verify a package's ship manifest against its on-disk production .ts tree.
  *
- * Accepts either a directory path or a `file:` URL string (so callers can
- * pass `import.meta.url` directly — the helper resolves it to the test file's
- * parent directory).
+ * Accepts either a directory path or a `file:` URL string. A URL is treated as
+ * the *package root's own* module (the helper takes its parent directory), so a
+ * caller that lives in `test/` must pass the package directory rather than its
+ * own `import.meta.url` — otherwise `package.json` is looked up inside `test/`.
  *
- * Skips: dotfiles/dotdirs, `node_modules`, `docs`, `*.test.ts`, `test-fixtures.ts`.
+ * Skips: dotfiles/dotdirs, `node_modules`, `docs`, `test`/`tests` directories, `*.test.ts`.
  * Does NOT check: asset directories (e.g. `locales/*.json`), `exports` map,
  * `main`/`module` fields.
  *
@@ -108,7 +108,7 @@ function walkProductionTs(root: string, dir: string): string[] {
 			continue;
 		}
 		if (!entry.isFile() || !entry.name.endsWith(".ts")) continue;
-		if (entry.name.endsWith(".test.ts") || SKIP_FILES.has(entry.name)) continue;
+		if (entry.name.endsWith(".test.ts")) continue;
 		// Normalize to forward slashes so coverage checks match package.json
 		// `files` entries on Windows (Node's relative() uses backslashes there).
 		out.push(relative(root, abs).replaceAll("\\", "/"));

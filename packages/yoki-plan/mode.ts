@@ -33,7 +33,7 @@ export interface PlanModeState {
 
 /** Integration hooks fired after every mode transition (enter/exit/restore). */
 export interface PlanModeControllerHooks {
-	/** Notify desktop chip / status surfaces once `mode` has settled (docs/design/14). */
+	/** Notify desktop chip / status surfaces once `mode` has settled. */
 	onModeChange?: (mode: AgentWorkMode) => void;
 }
 

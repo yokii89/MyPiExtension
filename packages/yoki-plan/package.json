@@ -11,15 +11,15 @@
 	],
 	"type": "module",
 	"license": "MIT",
-	"author": "<GITHUB_OWNER>",
+	"author": "yokii89",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/<GITHUB_OWNER>/<REPO>.git",
+		"url": "git+https://github.com/yokii89/MyPiExtension.git",
 		"directory": "packages/yoki-plan"
 	},
-	"homepage": "https://github.com/<GITHUB_OWNER>/<REPO>/tree/main/packages/yoki-plan#readme",
+	"homepage": "https://github.com/yokii89/MyPiExtension/tree/main/packages/yoki-plan#readme",
 	"bugs": {
-		"url": "https://github.com/<GITHUB_OWNER>/<REPO>/issues"
+		"url": "https://github.com/yokii89/MyPiExtension/issues"
 	},
 	"exports": {
 		".": "./index.ts",
@@ -57,7 +57,7 @@
 		"@earendil-works/pi-tui": "*"
 	},
 	"dependencies": {
-		"@pidesk/view-sdk": "file:../../../pidesk/packages/view-sdk",
+		"@pidesk/view-sdk": "^0.2.0",
 		"@yoki/yoki-config": "^1.20.0",
 		"yoki_ui": "*"
 	}

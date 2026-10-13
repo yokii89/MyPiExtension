@@ -271,17 +271,17 @@ export default function (pi: Pi.ExtensionAPI) {
 		},
 	});
 
-	// --- Desktop panel (docs/design/19 §4.6) ---
+	// --- Desktop panel ---
 	//
 	// Resident right-side panel: opened by /telegram-connect, refreshed on a frame
 	// budget, torn down by /telegram-disconnect or by dismissing the tab. The
 	// projection is pull-only over live stores, so it needs no new event plumbing.
-	// Headless pi gets `open() === false` and every call is a silent no-op (§4.5).
+	// Headless pi gets `open() === false` and every call is a silent no-op.
 	//
 	// Action handlers run outside a command, so the runtime borrows the current
 	// session context through `getSessionContext` (the lock runtime needs a real
 	// ctx; it cannot be synthesized). While none is bound the panel stays a
-	// read-only view and `connect` is refused (§4.4).
+	// read-only view and `connect` is refused.
 	const desktopPanelRuntime = DesktopPanel.createTelegramPanelRuntime<Pi.ExtensionContext>({
 		source: {
 			getStatusState: statusRuntime.getStatusState,

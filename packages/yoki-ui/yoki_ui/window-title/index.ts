@@ -2,8 +2,6 @@
  * yoki_ui window-title - cross-window agent feedback via terminal title +
  * end/intervention notify + BEL (host tab-bell side effect).
  *
- * Spec: docs/setWindowTitleUI.md
- *
  * Surfaces owned here:
  *   - ctx.ui.setTitle (spin / Action Required blink / base)
  *   - OS notify (OSC 777 / 99 / Windows Toast) + BEL

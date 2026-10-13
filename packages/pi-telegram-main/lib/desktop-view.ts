@@ -1,21 +1,19 @@
 /**
  * PiDesk desktop panel for the Telegram bridge — pure projection
  * Zones: telegram, desktop
- * Read-only projection of bridge state onto the right-hand ContextSidebar tab
- * (docs/design/19 §4).
+ * Read-only projection of bridge state onto the right-hand ContextSidebar tab.
  *
  * Deliberately **SDK-type-only**: nothing here imports runtime code from
- * `@pidesk/view-sdk`. The package is not on a registry yet, so `pi install
- * npm:@llblab/pi-telegram` yields a copy whose SDK import cannot resolve; only
- * `desktop-panel-sdk.ts` may reach it, and only lazily, so an unresolvable SDK
- * degrades to "no desktop host" instead of killing the whole bridge.
+ * `@pidesk/view-sdk`. Only `desktop-panel-sdk.ts` may reach it, and only lazily,
+ * so an SDK that cannot resolve degrades to "no desktop host" instead of killing
+ * the whole bridge.
  * The resident lifecycle that actually opens the panel lives in the adapter
  * added by the entrypoint wiring.
  *
- * Projection is pure — it reads only state the TUI already holds (§4.2), so the
+ * Projection is pure — it reads only state the TUI already holds, so the
  * panel can never disagree with `/telegram-status`. Budget accounting and frame
  * coalescing are not projected here: `measureViewTree` / `createViewFrameScheduler`
- * in the SDK own them (docs/design/20 O3, O4).
+ * in the SDK own them.
  */
 
 import type { ViewAction, ViewNode, ViewTableColumn } from "@pidesk/view-sdk";
@@ -47,13 +45,13 @@ export function isTelegramPanelAction(value: string): value is TelegramPanelActi
 	);
 }
 
-/** Max runtime events mirrored into the panel (design §4.1). */
+/** Max runtime events mirrored into the panel. */
 export const PANEL_MAX_EVENTS = 20;
 
-/** Max queue rows rendered (design §4.1 budget: ≤50). */
+/** Max queue rows rendered (budget: ≤50). */
 export const PANEL_MAX_QUEUE_ROWS = 50;
 
-/** Max thread rows rendered (design §4.1 budget: ≤20). */
+/** Max thread rows rendered (budget: ≤20). */
 export const PANEL_MAX_THREAD_ROWS = 20;
 
 // --- Projection ---
@@ -70,7 +68,7 @@ export interface TelegramPanelSource {
 /**
  * The panel tree plus its action rows. No node count: the tree's budget weight is
  * the SDK's `measureViewTree` (Host accounting, not an approximation), and the
- * client pre-flights every outbound frame — docs/design/20 O3.
+ * client pre-flights every outbound frame.
  */
 export interface TelegramPanelProjection {
 	root: ViewNode;
@@ -101,7 +99,7 @@ function truncate(value: string, max = 48): string {
 	return `${value.slice(0, max - 1)}…`;
 }
 
-/** `[hh:mm:ss] [level] message` — the events zone stays prose by design (docs/design/19 §4.1 「card + list」). */
+/** `[hh:mm:ss] [level] message` — the events zone stays prose by design (card + list). */
 export function formatRuntimeEvent(event: Status.TelegramRuntimeEvent, nowMs: number): string {
 	const at = Number.isFinite(event.at) ? event.at : nowMs;
 	const stamp = new Date(at).toISOString().slice(11, 19);
@@ -134,7 +132,7 @@ export function buildPanelActions(state: Status.TelegramBridgeStatusLineState): 
 	];
 }
 
-/** Connection card: identity, bus role, instance slot (design §4.1). */
+/** Connection card: identity, bus role, instance slot. */
 function buildConnectionCard(state: Status.TelegramBridgeStatusLineState): ViewNode {
 	const bot = state.botUsername ? `@${state.botUsername}` : "未配置";
 	const token = state.hasBotToken ? "已配置" : "缺失";
@@ -159,13 +157,13 @@ function buildConnectionCard(state: Status.TelegramBridgeStatusLineState): ViewN
 	};
 }
 
-/** Queue table columns (docs/design/19 §4.1 「车道 | 来源 | 摘要」; source is not in the queue contract, so it stays out). */
+/** Queue table columns (车道 | 来源 | 摘要); source is not in the queue contract, so it stays out. */
 const QUEUE_COLUMNS: ViewTableColumn[] = [
 	{ key: "lane", label: "车道", width: 1 },
 	{ key: "summary", label: "摘要", width: 4 },
 ];
 
-/** Thread table columns (docs/design/19 §4.1 「thread 名 | slot | 同步状态 | lastError」). */
+/** Thread table columns (thread 名 | slot | 同步状态 | lastError). */
 const THREAD_COLUMNS: ViewTableColumn[] = [
 	{ key: "thread", label: "Thread", width: 3 },
 	{ key: "slot", label: "槽位", width: 1, align: "center" },
@@ -173,7 +171,7 @@ const THREAD_COLUMNS: ViewTableColumn[] = [
 	{ key: "error", label: "最近错误", width: 3 },
 ];
 
-/** Queue card: active turn + per-lane counts + a bounded item list (design §4.1). */
+/** Queue card: active turn + per-lane counts + a bounded item list. */
 function buildQueueCard(
 	state: Status.TelegramBridgeStatusLineState,
 	source: TelegramPanelSource,
@@ -253,7 +251,7 @@ function orderedByLane<T extends { queueLane: Status.TelegramStatusQueueLane }>(
 	return [...items].sort((a, b) => LANE_ORDER.indexOf(a.queueLane) - LANE_ORDER.indexOf(b.queueLane));
 }
 
-/** Threads card: name | slot | sync | lastError (design §4.1), with empty state. */
+/** Threads card: name | slot | sync | lastError, with empty state. */
 function buildThreadsCard(source: TelegramPanelSource, tableCapable: boolean): ViewNode {
 	const threads = source.listThreads();
 	const shown = threads.slice(0, PANEL_MAX_THREAD_ROWS);
@@ -300,7 +298,7 @@ function buildThreadsCard(source: TelegramPanelSource, tableCapable: boolean): V
 	return { type: "card", title: "Threads", children };
 }
 
-/** Events card: bounded ring of recent runtime events (design §4.1 — 20 entries). */
+/** Events card: bounded ring of recent runtime events (20 entries). */
 function buildEventsCard(state: Status.TelegramBridgeStatusLineState, nowMs: number): ViewNode {
 	const events = state.recentRuntimeEvents.slice(-PANEL_MAX_EVENTS).reverse();
 	if (events.length === 0) {
@@ -316,7 +314,7 @@ function buildEventsCard(state: Status.TelegramBridgeStatusLineState, nowMs: num
 /**
  * Build the whole panel tree.
  *
- * `tableCapable` comes from the Host `hello` advertisement (§7.1): without it the
+ * `tableCapable` comes from the Host `hello` advertisement: without it the
  * queue and thread lists fall back to `row`/`text` composition, which reads worse
  * but never lands as an `unknown` placeholder.
  */

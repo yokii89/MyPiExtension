@@ -1,16 +1,16 @@
 # yoki-ask-user-question
 
 <div align="center">
-  <a href="https://github.com/<GITHUB_OWNER>/<REPO>/tree/main/packages/yoki-ask-user-question">
+  <a href="https://github.com/yokii89/MyPiExtension/tree/main/packages/yoki-ask-user-question">
     <picture>
-      <img src="https://raw.githubusercontent.com/<GITHUB_OWNER>/<REPO>/main/packages/yoki-ask-user-question/docs/cover.png" alt="yoki-ask-user-question cover" width="50%">
+      <img src="https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/cover.png" alt="yoki-ask-user-question cover" width="50%">
     </picture>
   </a>
 </div>
 
 Let the model ask you structured clarifying questions instead of guessing. `yoki-ask-user-question` adds the `ask_user_question` tool to [Pi Agent](https://github.com/badlogic/pi-mono) - a tabbed dialog with single- and multi-select questions, side-by-side previews, per-option notes, and a Submit tab that reviews answers before they go back to the model.
 
-![Side-by-side code preview](https://raw.githubusercontent.com/<GITHUB_OWNER>/<REPO>/main/packages/yoki-ask-user-question/docs/code-preview.jpg)
+![Side-by-side code preview](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/code-preview.jpg)
 
 ## Features
 
@@ -28,13 +28,13 @@ Let the model ask you structured clarifying questions instead of guessing. `yoki
 
 | | |
 |---|---|
-| ![Single-question dialog](https://raw.githubusercontent.com/<GITHUB_OWNER>/<REPO>/main/packages/yoki-ask-user-question/docs/single-question.jpg) | ![Multi-tab + ASCII preview](https://raw.githubusercontent.com/<GITHUB_OWNER>/<REPO>/main/packages/yoki-ask-user-question/docs/multi-tab-preview.jpg) |
-| ![Multi-select with checkboxes](https://raw.githubusercontent.com/<GITHUB_OWNER>/<REPO>/main/packages/yoki-ask-user-question/docs/multi-select.jpg) | ![Submit tab review](https://raw.githubusercontent.com/<GITHUB_OWNER>/<REPO>/main/packages/yoki-ask-user-question/docs/submit-tab.jpg) |
+| ![Single-question dialog](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/single-question.jpg) | ![Multi-tab + ASCII preview](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/multi-tab-preview.jpg) |
+| ![Multi-select with checkboxes](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/multi-select.jpg) | ![Submit tab review](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/submit-tab.jpg) |
 
 ## Install
 
 ```bash
-pi install git:github.com/<GITHUB_OWNER>/<REPO>
+pi install git:github.com/yokii89/MyPiExtension
 ```
 
 Then restart your Pi session.

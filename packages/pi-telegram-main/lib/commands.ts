@@ -272,7 +272,7 @@ export interface TelegramBridgeCommandRegistrationDeps {
 	activateDefaultProfileConfig?: (ctx: ExtensionCommandContext) => Promise<void>;
 	activateProfileConfig?: (ctx: ExtensionCommandContext, profileName: string) => Promise<boolean>;
 	/**
-	 * Desktop panel hooks (docs/design/19 §4.5). Both are optional and must never
+	 * Desktop panel hooks. Both are optional and must never
 	 * throw: headless pi has no desktop host, and the TUI path is unaffected.
 	 * Called *after* the bridge state has settled, so the projection reads truth.
 	 */
@@ -282,7 +282,7 @@ export interface TelegramBridgeCommandRegistrationDeps {
 
 /**
  * Desktop panel hooks are best-effort. A missing / broken desktop host must never
- * turn a working `/telegram-connect` into a failure (§4.5 TUI 回落).
+ * turn a working `/telegram-connect` into a failure; the TUI path stays.
  */
 async function safePanelHook(hook?: () => void | Promise<void>): Promise<void> {
 	if (!hook) return;
