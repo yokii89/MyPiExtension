@@ -1,5 +1,6 @@
 import { basename } from "node:path";
 import type {
+	BeforeAgentStartEvent,
 	ExtensionAPI,
 	ExtensionCommandContext,
 	ExtensionContext,
@@ -107,6 +108,17 @@ function asRecord(input: unknown): Record<string, unknown> | undefined {
 	return typeof input === "object" && input !== null ? (input as Record<string, unknown>) : undefined;
 }
 
+function promptTextFromEvent(event: BeforeAgentStartEvent): string {
+	// Pi 1.2+ also fires this hook for extension-triggered custom runs.
+	if (event.messageType !== "custom") return event.prompt ?? "";
+	const { content } = event.message;
+	if (typeof content === "string") return content;
+	return content
+		.map((block) => (block.type === "text" ? block.text : ""))
+		.filter((text) => text.length > 0)
+		.join("\n");
+}
+
 function captureBlockingCall(toolCallId: string, toolName: string, input: unknown): void {
 	pendingBlockingCalls.set(toolCallId, { toolName, input: asRecord(input) });
 }
@@ -183,7 +195,7 @@ export default function (pi: ExtensionAPI): void {
 	});
 
 	pi.on("before_agent_start", async (event) => {
-		pendingQuery = event.prompt ?? "";
+		pendingQuery = promptTextFromEvent(event);
 	});
 
 	pi.on("agent_start", async (_event, ctx) => {

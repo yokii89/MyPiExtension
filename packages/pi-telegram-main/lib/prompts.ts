@@ -4,7 +4,7 @@
  * Owns Telegram-specific system prompt suffixes injected into pi agent turns
  */
 
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 import { getTelegramDiagnosticsDisplayPaths } from "./paths.ts";
 import type { BeforeAgentStartEvent, ExtensionAPI } from "./pi.ts";
@@ -123,7 +123,9 @@ export function createTelegramBeforeAgentStartHook(
 ): (event: BeforeAgentStartEvent) => { systemPrompt: string } {
 	return (event) =>
 		buildTelegramBridgeSystemPrompt({
-			prompt: event.prompt,
+			// Pi 1.2+ also fires this hook for extension-triggered custom runs,
+			// which carry a message instead of a user prompt.
+			prompt: event.messageType === "custom" ? "" : event.prompt,
 			systemPrompt: event.systemPrompt,
 			telegramPrefix: options.telegramPrefix,
 			localSystemPromptSuffix: options.localSystemPromptSuffix ?? LOCAL_SYSTEM_PROMPT_SUFFIX,

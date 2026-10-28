@@ -8,7 +8,7 @@ import type { ThinkingLevel } from "@earendil-works/pi-ai";
 export type NewApiApiType = "openai-completions" | "openai-responses";
 
 const DEFAULT_CONTEXT_WINDOW = 1_000_000;
-const DEFAULT_MAX_TOKENS = 16_384;
+const DEFAULT_MAX_TOKENS = 65_536;
 
 const VISION_HINT_PATTERN =
 	/(?:^|[-_/.:])(?:gpt-4o|gpt-4\.1|gpt-5|claude-3|claude-4|gemini|vision|vl)(?:$|[-_/.:])/i;

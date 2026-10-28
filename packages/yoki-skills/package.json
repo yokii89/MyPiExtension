@@ -20,16 +20,19 @@
     "test:pi-smoke": "node scripts/run-pi-smoke.mjs"
   },
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": ">=0.80.5",
-    "@earendil-works/pi-tui": ">=0.80.5"
+    "@earendil-works/pi-coding-agent": ">=1.4.0",
+    "@earendil-works/pi-tui": ">=1.4.0"
   },
   "dependencies": {
     "yoki_ui": "*"
   },
   "devDependencies": {
-    "@earendil-works/pi-coding-agent": "^0.80.5",
-    "@earendil-works/pi-tui": "^0.80.5",
+    "@earendil-works/pi-coding-agent": "1.4.0",
+    "@earendil-works/pi-tui": "1.4.0",
     "@types/node": "^22.19.19",
     "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=22.19.0"
   }
 }

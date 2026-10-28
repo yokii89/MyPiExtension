@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **Pi 1.4.0 minimum** — Peer and engine declarations now require Pi `1.4.0` and Node `22.19`; removed the unsupported `ambientObserver` manifest field. Impact: installs match the tested runtime and no longer carry dead metadata.
+
+### Fixed
+
+- **Pi 1.2+ custom runs** — `before_agent_start` now reads extension-triggered custom message text instead of treating those runs as empty prompts. Impact: Warp prompt-submit notifications show the actual trigger text when another extension starts a turn.
+
 ## 1.21.0
 
 ### Added

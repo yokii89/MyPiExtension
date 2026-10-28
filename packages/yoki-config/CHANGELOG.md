@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+### Changed
+- **Node 22.19 minimum** — Engines now require Node `22.19`, matching the Pi 1.4 host. Impact: installs match the tested runtime.
+
 ### Added
 - **`GuidanceFields.description`** (`description?: string`) — optional free-text leaf enrolled in `GuidanceFields` / `GuidanceFieldsSchema` and accepted by `validateGuidanceFields`. Required by `yoki-web-tools` guidance overrides so a wrong-typed `description` is dropped by per-field salvage instead of being treated as an unknown pass-through key.
 - **`REL.todo`** (`.pi/yoki/todo`) — project-scoped todo storage domain under the unified yoki root, matching artifacts / workflows / guidance.

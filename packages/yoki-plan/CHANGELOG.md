@@ -7,6 +7,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **Pi 1.4.0 minimum** — Peer and engine declarations now require Pi `1.4.0` and Node `22.19`. Impact: installs match the tested runtime.
+
 ### Added
 - PiDesk composer mode-dropdown registration (`registerPlanModeOnDesktop`, `access-mode` slot): input-bar chip lists 计划模式, desktop clicks activate the real tool gates, and TUI toggles (`/plan`, Shift+Tab, session resume) sync the chip back via `PlanModeControllerHooks.onModeChange`. Soft-fallback to `/plan` on old hosts / terminal.
 - `createPlanModeSupervisor` — thin wrapper over `@pidesk/view-sdk` `superviseAccessMode`.

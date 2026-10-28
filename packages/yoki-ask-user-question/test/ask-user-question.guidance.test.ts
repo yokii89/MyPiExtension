@@ -22,12 +22,17 @@ beforeEach(() => {
 });
 
 describe("DEFAULT_PROMPT_GUIDELINES — Phase 2 prompt copy", () => {
-	it("describes the 'Type something.' row as appended to EVERY question (no suppress clause)", () => {
+	it("documents the automatic custom-answer row and the abandon affordance (no suppress clause)", () => {
 		const joined = DEFAULT_PROMPT_GUIDELINES.join("\n");
-		expect(joined).toContain("appended automatically to every question");
+		expect(joined).toContain("custom-answer row is appended automatically to every question");
 		expect(joined).not.toContain('suppresses the "Type something." row');
-		// Phase 1 already swapped the abandon clause to "Esc to abandon".
-		expect(joined).toContain("Esc to abandon");
+
+		// 指南只保留最常见的规则；放弃入口仍在工具描述里，且对每个问题都成立。
+		const { pi, captured } = createMockPi();
+		registerAskUserQuestionTool(pi);
+		const description = captured.tools.get(TOOL_NAME)!.description;
+		expect(description).toContain("Esc to abandon");
+		expect(description).toContain("appended automatically to every question");
 	});
 });
 

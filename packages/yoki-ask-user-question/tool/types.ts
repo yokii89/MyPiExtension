@@ -8,11 +8,10 @@ export const MAX_HEADER_LENGTH = 16;
 export const MAX_LABEL_LENGTH = 60;
 
 /**
- * User-facing labels for the three runtime sentinel rows, keyed by their
- * `WrappingSelectItem.kind` discriminator. Sourced from
- * `ROW_INTENT_META` via `LABELS_BY_KIND` (`row-intent.ts`) — single source of
- * truth. Adding a new sentinel requires extending the `WrappingSelectItem`
- * union AND adding an entry to `ROW_INTENT_META`; this map then auto-extends.
+ * 三条运行期哨兵行的用户可见标签，按各自的 `WrappingSelectItem.kind` 判别字段建键。
+ * 标签取自 `ROW_INTENT_META`，经 `LABELS_BY_KIND` 转出（见 `row-intent.ts`）——单一
+ * 事实源。新增哨兵需要同时扩展 `WrappingSelectItem` 联合类型并在 `ROW_INTENT_META`
+ * 里补一项；这两步做完，这张表会自动跟着扩展。
  */
 export const SENTINEL_LABELS = LABELS_BY_KIND;
 
@@ -20,19 +19,16 @@ export type SentinelKind = keyof typeof SENTINEL_LABELS;
 export type SentinelLabel = (typeof SENTINEL_LABELS)[SentinelKind];
 
 /**
- * Labels reserved for Pi-internal sentinels — authoring an option with any
- * of these labels triggers the `reserved_label` runtime guard. Two of the
- * three come from `ROW_INTENT_META` (the runtime kinds); `"Other"` is
- * reserved for CC parity only (the model is conditioned to reach for
- * "Other" in CC; we reject it so the runtime sentinel is the single source
- * of truth) and has no runtime kind.
+ * Pi 内部哨兵所占用的保留标签——只要作者写的 option label 命中其中任意一个，就会触发
+ * `reserved_label` 运行期拦截。三项里有两项来自 `ROW_INTENT_META`（即真的有运行期 kind
+ * 的那两个）；`"Other"` 只为与 CC 对齐而保留（模型在 CC 里被训练成倾向于给出 "Other"），
+ * 这里拒绝它，好让运行期哨兵成为唯一事实源，它本身没有对应的运行期 kind。
  *
- * Reserved unconditionally — multiSelect questions also reject these labels
- * even though the runtime sentinel is suppressed there.
+ * 无条件保留——multiSelect 问题同样拒绝这些标签，尽管那里并不会追加运行期哨兵。
  *
- * Order is pinned by `types.test.ts:292` — keep the explicit
- * `["Other", other, next]` literal so consumers using
- * `RESERVED_LABELS[i]` indexing or `Set` membership see no behavior change.
+ * 数组顺序由 `types.test.ts:292` 锁定——请保留这个显式的
+ * `["Other", other, next]` 字面量，好让使用 `RESERVED_LABELS[i]` 下标或 `Set`
+ * 成员判断的消费方行为不变。
  */
 export const RESERVED_LABELS = ["Other", ROW_INTENT_META.other.label, ROW_INTENT_META.next.label] as const;
 export type ReservedLabel = (typeof RESERVED_LABELS)[number];
@@ -93,15 +89,14 @@ export type QuestionData = Static<typeof QuestionSchema>;
 export type QuestionParams = Static<typeof QuestionParamsSchema>;
 
 /**
- * Answer-intent discriminated union. `kind` is the single discriminator —
- * pre-1.0.3 boolean flags have been removed (see `banned-flags.test.ts`).
- * Mirrors the row-side `WrappingSelectItem.kind` vocabulary where possible;
- * `multi` is the multi-select variant (no row-side analog).
+ * 回答意图的可判别联合。`kind` 是唯一判别字段——1.0.3 之前的布尔标记已全部移除
+ * （见 `banned-flags.test.ts`）。词表尽量与行侧的 `WrappingSelectItem.kind` 对齐；
+ * `multi` 是多选专属变体，行侧没有对应项。
  *
- * Variant semantics:
- * - `option`: user picked one of the author-defined options. `answer` is the option's label.
- * - `custom`: user typed free-text via the "Type something." row. `answer` is the typed text or null.
- * - `multi`: user committed multi-select choices. `selected` carries chosen labels; `answer` is null.
+ * 各变体语义：
+ * - `option`：用户选中了作者定义的某个选项，`answer` 是该选项的 label。
+ * - `custom`：用户通过 "Type something." 行输入自由文本，`answer` 是输入内容或 null。
+ * - `multi`：用户提交了多选结果，`selected` 携带选中的 label 列表，`answer` 为 null。
  */
 export interface QuestionAnswer {
 	questionIndex: number;
@@ -111,11 +106,9 @@ export interface QuestionAnswer {
 	selected?: string[];
 	notes?: string;
 	/**
-	 * Markdown text from the matched option's `preview` field, populated only
-	 * when the user lands on a single-select option carrying a `preview`.
-	 * Used by `buildQuestionnaireResponse` to echo `selected preview: <preview>`
-	 * into the LLM-facing envelope. Undefined for multi-select and custom-text
-	 * (`kind: "custom"`) answers.
+	 * 取自匹配选项 `preview` 字段的 markdown 文本，仅当用户停在一个带 `preview` 的
+	 * 单选选项上时填充。`buildQuestionnaireResponse` 用它把 `selected preview: <preview>`
+	 * 回写进面向模型的 envelope。多选和自定义文本（`kind: "custom"`）回答下为 undefined。
 	 */
 	preview?: string;
 }

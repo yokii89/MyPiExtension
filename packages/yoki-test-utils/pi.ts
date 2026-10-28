@@ -2,7 +2,7 @@ import type { Api, Model } from "@earendil-works/pi-ai";
 import type {
 	ExtensionAPI,
 	ExtensionCommandContext,
-	ExtensionContext,
+	ExtensionToolContext,
 	ExtensionUIContext,
 	RegisteredCommand,
 	SessionEntry,
@@ -220,13 +220,12 @@ export function createMockModelRegistry(models: Model<Api>[] = []) {
 	return {
 		find: vi.fn((provider: string, id: string) => models.find((m) => m.provider === provider && m.id === id)),
 		getAvailable: vi.fn(() => [...models]),
-		getApiKeyAndHeaders: vi.fn(async () => ({ ok: true, apiKey: "test-key", headers: {} })),
 	};
 }
 
 export interface MockCtxOptions {
 	hasUI?: boolean;
-	/** Host mode the ctx advertises (`"rpc"` for ACP hosts). Pi ≥0.79 field — omitted by default, matching the pinned 0.74 peer types. */
+	/** Host mode the ctx advertises (`"rpc"` for ACP hosts). Real contexts always set it. */
 	mode?: string;
 	cwd?: string;
 	model?: Model<Api>;
@@ -244,7 +243,7 @@ export interface MockCtxOptions {
 	childSessionId?: string;
 }
 
-export function createMockCtx(opts: MockCtxOptions = {}): ExtensionContext {
+export function createMockCtx(opts: MockCtxOptions = {}): ExtensionToolContext {
 	return {
 		hasUI: opts.hasUI ?? false,
 		mode: opts.mode,
@@ -254,7 +253,9 @@ export function createMockCtx(opts: MockCtxOptions = {}): ExtensionContext {
 		sessionManager: createMockSessionManager(opts.branch ?? [], opts.sessionId),
 		modelRegistry: createMockModelRegistry(opts.models ?? []),
 		isIdle: vi.fn(() => true),
-	} as unknown as ExtensionContext;
+		tools: [],
+		executeTool: vi.fn(),
+	} as unknown as ExtensionToolContext;
 }
 
 /**

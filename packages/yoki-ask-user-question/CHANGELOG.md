@@ -7,6 +7,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- **Pi 1.4.0 minimum** — Peer dependencies now require Pi `1.4.0` and Node `22.19`. Impact: installs match the tested runtime.
+
 ### Added
 - **Digit quick-jump**: pressing `1`–`9` moves the cursor to the matching numbered option row (jump-then-Enter, never auto-confirm), on both single- and multi-select questions. Digits past the last row, or landing on the unnumbered "Next" sentinel, are ignored; under `inputMode` / notes they still reach the text buffers. On the Submit tab, `1`/`2` move the Submit/Cancel picker focus.
 - **Cancel guard**: when the dialog holds user work (any answer, pending notes, or in-flight custom text), the first Esc now only arms the guard — the footer swaps to a `⚠ Esc again to cancel — your answers will be lost · any other key keeps editing` warning and a second Esc commits the cancel. With nothing to lose, Esc cancels immediately as before. Any other action (navigation, toggling, typing) disarms the guard.

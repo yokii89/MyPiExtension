@@ -23,15 +23,20 @@ import type {
 	LiveViewSession,
 	openPanel,
 	resolveContributionKey,
+	supportsCapability,
+	supportsReadonlyList,
 	supportsTable,
 } from "@pidesk/view-sdk";
 import type { TelegramPanelClient, TelegramPanelSdk, TelegramPanelSession } from "./desktop-panel.ts";
+import { NO_TELEGRAM_PANEL_CAPABILITIES, type TelegramPanelCapabilities } from "./desktop-view.ts";
 
 /** Just the entry points this adapter needs, typed off the real exports. */
 interface ViewSdkSurface {
 	connectDesktopView: typeof connectDesktopView;
 	openPanel: typeof openPanel;
 	resolveContributionKey: typeof resolveContributionKey;
+	supportsCapability: typeof supportsCapability;
+	supportsReadonlyList: typeof supportsReadonlyList;
 	supportsTable: typeof supportsTable;
 	createViewFrameScheduler: typeof createViewFrameScheduler;
 }
@@ -45,6 +50,35 @@ async function loadViewSdk(): Promise<ViewSdkSurface | null> {
 	}
 }
 
+/** Capability helpers this adapter can call; `supportsReadonlyList` is 0.5.0-only. */
+export interface TelegramPanelCapabilitySurface {
+	supportsTable: typeof supportsTable;
+	supportsCapability: typeof supportsCapability;
+	supportsReadonlyList?: typeof supportsReadonlyList;
+}
+
+/**
+ * Map the SDK's `hello` advertisement onto the panel's capability flags.
+ *
+ * A session started before the SDK upgrade (or an install still holding 0.2.0)
+ * resolves a surface without `supportsReadonlyList`. The lifecycle's soft-fail
+ * contract says that must degrade to the old tree, not throw during the
+ * session-start open and leave the panel unregistered.
+ */
+export function readTelegramPanelCapabilities(
+	surface: TelegramPanelCapabilitySurface,
+	client: DesktopViewClient,
+): TelegramPanelCapabilities {
+	const readonlyList =
+		typeof surface.supportsReadonlyList === "function" ? surface.supportsReadonlyList(client) : false;
+	return {
+		table: surface.supportsTable(client),
+		readonlyList,
+		panelBadge: surface.supportsCapability(client, "panel-tab-badge"),
+		panelHeader: surface.supportsCapability(client, "panel-header"),
+	};
+}
+
 /** The real `@pidesk/view-sdk` surface, shaped for `createTelegramPanelRuntime`. */
 export function createTelegramPanelSdk(): TelegramPanelSdk {
 	return {
@@ -54,13 +88,13 @@ export function createTelegramPanelSdk(): TelegramPanelSdk {
 			return client as TelegramPanelClient | null;
 		},
 
-		async supportsTable(client) {
+		async capabilities(client) {
 			const sdk = await loadViewSdk();
-			if (!sdk) return false;
+			if (!sdk) return NO_TELEGRAM_PANEL_CAPABILITIES;
 			const target = client as DesktopViewClient;
 			// hello 落地后才能判定；缺失（无宿主 / 握手超时）按不支持处理，不猜能力
 			await target.ensureConnected();
-			return sdk.supportsTable(target);
+			return readTelegramPanelCapabilities(sdk, target);
 		},
 
 		async openPanel(client, options) {
@@ -79,6 +113,8 @@ export function createTelegramPanelSdk(): TelegramPanelSdk {
 					options.onEvent({
 						type: event.type,
 						actionId: event.type === "action" ? event.actionId : undefined,
+						width: event.type === "layout" ? event.width : undefined,
+						height: event.type === "layout" ? event.height : undefined,
 					});
 					// 动作事件不关闭面板：kind 已声明为 "event"，Host 不会 close
 				},
@@ -87,7 +123,8 @@ export function createTelegramPanelSdk(): TelegramPanelSdk {
 			// LiveViewSession.update 收 ViewNode | ViewUpdatePayload；投影层给的是
 			// { root, actions }，形状一致，此处只做窄化。
 			const wrapper: TelegramPanelSession = {
-				update: ({ root, actions }) => session.update({ root, actions } as Parameters<typeof session.update>[0]),
+				update: ({ root, actions, placementHint }) =>
+					session.update({ root, actions, placementHint } as Parameters<typeof session.update>[0]),
 				close: () => session.close(),
 				closed: session.closed as Promise<{ reason?: string } | null>,
 				// 合并窗口是 SDK 的语义：扩展只决定何时标脏。

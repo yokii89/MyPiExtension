@@ -149,6 +149,45 @@ describe("agent_start handler", () => {
 		expect(osc777Writes[1].query).toBe("how do I deploy?");
 	});
 
+	it("captures custom message text for extension-triggered runs", async () => {
+		setWorkingWarpEnv();
+		const { write } = primeFs();
+		const { pi, captured } = createMockPi();
+		register(pi);
+
+		const beforeStart = captured.events.get("before_agent_start")?.[0];
+		await beforeStart?.(
+			{
+				messageType: "custom",
+				message: {
+					role: "custom",
+					customType: "test",
+					content: [
+						{ type: "text", text: "run the plan" },
+						{ type: "image", data: "abc", mimeType: "image/png" },
+					],
+					display: false,
+					timestamp: Date.now(),
+				},
+			} as never,
+			createMockCtx() as never,
+		);
+
+		const handler = captured.events.get("agent_start")?.[0];
+		await handler?.({} as never, createMockCtx() as never);
+
+		const promptSubmit = write.mock.calls
+			.filter((c) => String(c[1]).startsWith("\x1b]777;notify;"))
+			.map((c) => {
+				const json = String(c[1])
+					.replace(/^\x1b\]777;notify;warp:\/\/cli-agent;/, "")
+					.replace(/\x07$/, "");
+				return JSON.parse(json);
+			})
+			.find((payload) => payload.event === "prompt_submit");
+		expect(promptSubmit?.query).toBe("run the plan");
+	});
+
 	it("defaults query to empty string when before_agent_start is not fired", async () => {
 		setWorkingWarpEnv();
 		const { write } = primeFs();

@@ -77,15 +77,15 @@ const ENV_API_KEY = "NEWAPI_API_KEY";
 const CACHE_FILENAME = "newapi-models.json";
 const LOGIN_TIMEOUT_MS = 15_000;
 const DEFAULT_TIMEOUT_MS = 10_000;
-/** Cache shape version. 2 adds per-model `supportedEndpointTypes`; older caches refetch once. */
-const CACHE_SCHEMA_VERSION = 2;
+/** Cache shape version. 2 adds per-model `supportedEndpointTypes`; 3 bumps the default output budget to 64k. Older caches refetch once. */
+const CACHE_SCHEMA_VERSION = 3;
 const CACHE_STALE_MS = 24 * 60 * 60 * 1000;
 // After a failed discovery, remember the failure for a short window so
 // subsequent spawns don't block on the same dead endpoint.
 const FAILURE_STALE_MS = 10 * 60 * 1000;
 const PERMANENT_EXPIRES = Number.MAX_SAFE_INTEGER;
 const DEFAULT_CONTEXT_WINDOW = 1_000_000;
-const DEFAULT_MAX_TOKENS = 16_384;
+const DEFAULT_MAX_TOKENS = 65_536;
 
 /** Last /v1/models discovery failure, surfaced via the panel and session start. */
 let lastDiscoveryError: string | undefined;

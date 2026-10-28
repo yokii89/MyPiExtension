@@ -17,7 +17,7 @@ import {
 type BeforeAgentStartHookEvent = Parameters<ReturnType<typeof createTelegramBeforeAgentStartHook>>[0];
 
 function createBeforeAgentStartEvent(prompt: string, systemPrompt: string): BeforeAgentStartHookEvent {
-	return { prompt, systemPrompt } as BeforeAgentStartHookEvent;
+	return { messageType: "user", prompt, systemPrompt } as BeforeAgentStartHookEvent;
 }
 
 test("Prompt helpers append context-aware system prompt suffixes", () => {
@@ -101,6 +101,27 @@ test("Prompt helpers add full Telegram-turn guidance for Telegram prompts", () =
 	assert.match(topicSystemPrompt, /The current user message came from Telegram/);
 	assert.doesNotMatch(topicSystemPrompt, /unnamed fresh topic/);
 	assert.doesNotMatch(topicSystemPrompt, /telegram_rename_thread/);
+});
+
+test("Prompt helpers keep extension-triggered custom runs out of Telegram turn detection", () => {
+	const hook = createTelegramBeforeAgentStartHook({
+		telegramPrefix: "[telegram]",
+		localSystemPromptSuffix: "\nlocal bridge available",
+		telegramTurnSystemPromptSuffix: "\ntelegram turn contract",
+	});
+	const customEvent = {
+		messageType: "custom",
+		message: {
+			role: "custom",
+			customType: "test",
+			content: " [telegram] extension-triggered message",
+			display: false,
+			timestamp: Date.now(),
+		},
+		systemPrompt: "base",
+	} as unknown as BeforeAgentStartHookEvent;
+
+	assert.deepEqual(hook(customEvent), { systemPrompt: "base\nlocal bridge available" });
 });
 
 test("Prompt helpers expose detailed Telegram guidance through agent help tool", async () => {

@@ -271,7 +271,7 @@ describe("isDegenerateGatewayResponse", () => {
 			isDegenerateGatewayResponse({
 				stopReason: "length",
 				rawStopReason: "incomplete.max_output_tokens",
-				usage: { output: 16384 },
+				usage: { output: 65536 },
 				content: [{ type: "text", text: "long..." }],
 			}),
 		).toBe(false);

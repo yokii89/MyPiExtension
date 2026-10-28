@@ -1,4 +1,11 @@
-import type { AssistantMessage, Message, ToolResultMessage, UserMessage } from "@earendil-works/pi-ai";
+import type {
+	AssistantMessage,
+	JsonObject,
+	JsonValue,
+	Message,
+	ToolResultMessage,
+	UserMessage,
+} from "@earendil-works/pi-ai";
 import type { SessionEntry } from "@earendil-works/pi-coding-agent";
 
 export function makeUserMessage(text: string): UserMessage {
@@ -11,7 +18,7 @@ export function makeUserMessage(text: string): UserMessage {
 
 export interface AssistantMessageInput {
 	text?: string;
-	toolCalls?: Array<{ id: string; name: string; arguments: Record<string, unknown> }>;
+	toolCalls?: Array<{ id: string; name: string; arguments: JsonObject }>;
 }
 
 export function makeAssistantMessage(input: AssistantMessageInput): AssistantMessage {
@@ -27,7 +34,7 @@ export interface ToolResultInput {
 	toolCallId?: string;
 	toolName: string;
 	text?: string;
-	details?: unknown;
+	details?: JsonValue;
 	isError?: boolean;
 }
 
@@ -55,7 +62,7 @@ export function buildLlmMessages(messages: Message[]): Message[] {
 	return messages.filter((m) => m.role === "user" || m.role === "assistant" || m.role === "toolResult");
 }
 
-export function makeTodoToolResult(details: unknown, text = "ok"): ToolResultMessage {
+export function makeTodoToolResult(details: JsonValue, text = "ok"): ToolResultMessage {
 	return makeToolResult({ toolName: "todo", text, details });
 }
 

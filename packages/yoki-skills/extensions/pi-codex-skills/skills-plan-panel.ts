@@ -1,15 +1,13 @@
-import type { Theme } from "@earendil-works/pi-coding-agent";
-import { type TUI } from "@earendil-works/pi-tui";
-import { addWrappedWithPrefix, panelRule, panelTitle, truncateVisible } from "./panel-style.ts";
+import { addWrappedWithPrefix, type PanelTheme, panelRule, panelTitle, truncateVisible } from "./panel-style.ts";
+import type { PanelKeybindings, PanelTui } from "./skills-panel.ts";
 import type { InstallPlan } from "./types.ts";
-import type { PanelKeybindings } from "./skills-panel.ts";
 
 export type PlanResult = { kind: "confirmed" } | { kind: "cancelled" };
 type PlanState = "preview" | "confirm";
 
 export function createPlanPanel(
-	tui: TUI,
-	theme: Theme,
+	tui: PanelTui,
+	theme: PanelTheme,
 	keybindings: PanelKeybindings,
 	plan: InstallPlan,
 	done: (result: PlanResult) => void,

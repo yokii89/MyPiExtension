@@ -18,7 +18,7 @@ From npm:
 pi install npm:@yoki/pi-telegram
 ```
 
-The 0.21 extension platform requires Pi `0.80.6` or newer. Its Activity API uses the public `agent_settled` lifecycle event to keep retries/continuations under one activity identity and release that identity only after the run fully settles.
+The 0.21 extension platform requires Pi `1.4.0` or newer. Its Activity API uses the public `agent_settled` lifecycle event to keep retries/continuations under one activity identity and release that identity only after the run fully settles.
 
 ## Quick Start
 
@@ -189,9 +189,13 @@ Assistant replies can include top-level hidden `telegram_button` comments. The b
 
 ### PiDesk Desktop Panel
 
-Under the PiDesk desktop client, a connected bridge also attaches a persistent right-hand `Telegram` tab. It is an observation and control surface, not a second chat window: connection identity, polling and bus role, instance slot and thread, the active turn, per-lane queue rows, thread records with their last errors, and a bounded runtime-event feed — plus connect / disconnect / refresh actions.
+Under the PiDesk desktop client, a connected bridge also attaches a persistent right-hand `Telegram` tab. It is an observation and control surface, not a second chat window.
 
-The panel is strictly a projection of state `/telegram-status` already reads, so the two surfaces cannot disagree, and it never carries the bot token. Closing the tab changes nothing about the bridge. In a terminal `pi`, or against a PiDesk build too old to offer the slot, the panel open silently returns nothing and every command behaves exactly as before.
+The tab is sized for a 300px sidebar, so it leads with a conclusion instead of a state dump: one status line (`🟢 已连接` / `🟡 已停止` / `⚪ 未配置凭据`) with bot, profile and bus role as its subline, then four tabs — 概览 / 队列 / 线程 / 事件. 概览 opens with 需要处理, the things the operator can act on, derived only from fields the TUI already prints; the internals (instance slot, lock state, last update id, active turn) sit below it in a 链路 table, present but out of the way. 队列 lists items in dispatch order, 线程 and 事件 render as wrapping rows so a long `lastError` stays readable instead of ellipsized. Three of the four tabs carry a `✓` / `!` dot so trouble is visible without switching; 事件 deliberately carries no status glyph, because a runtime event has a category and no severity — inventing a log level would be a fabricated dimension. Actions are one transport verb plus 刷新, never a disabled button that repeats what the heading already says.
+
+On a Host that advertises the 0.5.0 View SDK capabilities, the diagnostic rows stop behaving like a form and the status line stops scrolling away: 线程/事件 lists are `readonly` (`view-readonly-list`), so a click cannot write `values` or leave a selection bar and the rows stay out of the tab order; the status line moves into the fixed panel header (`panel-header`); broken threads raise an attention badge on the sidebar tab even while the panel is in the background (`panel-tab-badge`); and Host-reported widths (`view-layout`) raise the text budgets above the 300px reference, so a wider sidebar stops clipping queue summaries at the narrowest copy. Older Hosts receive exactly the previous tree and no placement hints.
+
+The panel is strictly a projection of state `/telegram-status` already reads, so the two surfaces cannot disagree, and it never carries the bot token. Closing the tab changes nothing about the bridge. In a terminal `pi`, or against a PiDesk build too old to offer the slot, the panel open silently returns nothing and every command behaves exactly as before; a host without the `view-table` capability gets the same content as `row`/`text` composition rather than an `unknown` placeholder.
 
 ### Threaded Mode And Multi-Instance Bus
 

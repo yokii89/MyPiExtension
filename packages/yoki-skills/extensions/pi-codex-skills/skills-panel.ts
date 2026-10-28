@@ -1,6 +1,5 @@
-import type { Theme } from "@earendil-works/pi-coding-agent";
 import { Key, matchesKey, type TUI } from "@earendil-works/pi-tui";
-import { addWrappedWithPrefix, panelRule, panelTitle, selectedRow, truncateVisible } from "./panel-style.ts";
+import { addWrappedWithPrefix, type PanelTheme, panelRule, panelTitle, selectedRow, truncateVisible } from "./panel-style.ts";
 import type { BundledSkill, DoctorDiagnostic, InstallPlan, ManagedSkill, SkillCommand } from "./types.ts";
 
 export type PanelResult = { kind: "prefill"; command: string } | { kind: "manage"; skill: string; operation: InstallPlan["operation"] } | { kind: "cancelled" };
@@ -17,9 +16,11 @@ function pageTitle(page: PanelPage): string {
 	return page === "home" ? "Pi Skills" : page === "browse" ? "Pi Skills · Browse" : page === "details" ? "Pi Skills · Details" : page === "manage" ? "Pi Skills · Manage" : page === "manage-operation" ? "Pi Skills · Choose operation" : "Pi Skills · Doctor";
 }
 
+export type PanelTui = Pick<TUI, "requestRender">;
+
 export function createSkillsPanel(
-	tui: TUI,
-	theme: Theme,
+	tui: PanelTui,
+	theme: PanelTheme,
 	keybindings: PanelKeybindings,
 	commands: SkillCommand[],
 	diagnostics: DoctorDiagnostic[],

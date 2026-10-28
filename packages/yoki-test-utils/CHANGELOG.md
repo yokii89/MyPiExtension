@@ -4,6 +4,7 @@ All notable changes to this package will be documented in this file.
 
 ## [Unreleased]
 
+- Raised Pi peer requirements to `1.4.0` and Node to `22.19`, matching the host packages used by the test fixtures.
 - Restored `@yoki/yoki-workflow` peer and `createFakeConcurrentHost` (`concurrent-host.ts`); `pi.ts` imports host-port types from `@yoki/yoki-workflow` again.
 - Restored `verifyShipManifest` (`manifest.ts`); on Windows, production walks normalize to forward slashes so `files` coverage matches package.json entries.
 - `verifyShipManifest` understands npm `files` negation patterns: a `!`-prefixed entry (e.g. `"!**/*.test.ts"`) is treated as an exclusion rule rather than a path, so it is no longer reported as `stale` and does not cover on-disk files (#80).

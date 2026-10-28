@@ -2,7 +2,7 @@
 
 Pi extension that installs only Pi-adapted, bundled skills into `~/.pi/agent/skills/codex-managed/<skill>/` and lets Pi execute them through its native `/skill:<name>` command.
 
-Minimum Pi version: `0.80.5`, which provides `pi.getCommands()` and `ctx.ui.custom()`. The extension is tested against Pi `0.80.5`; the compatibility research baseline is Codex CLI `0.144.5`.
+Minimum Pi version: `1.4.0`, which provides `pi.getCommands()` and `ctx.ui.custom()`. The extension is tested against Pi `1.4.0`; the compatibility research baseline is Codex CLI `0.144.5`.
 
 ## Boundaries
 

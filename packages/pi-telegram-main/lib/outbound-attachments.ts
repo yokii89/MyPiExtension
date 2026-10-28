@@ -7,7 +7,7 @@
 import { stat } from "node:fs/promises";
 import { basename } from "node:path";
 
-import { Type } from "@sinclair/typebox";
+import { Type } from "typebox";
 
 import type { ExtensionAPI } from "./pi.ts";
 import { buildTelegramMultipartReplyParameters, normalizeTelegramNativeMarkdown } from "./replies.ts";

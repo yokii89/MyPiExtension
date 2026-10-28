@@ -52,13 +52,16 @@
 		}
 	},
 	"peerDependencies": {
-		"@earendil-works/pi-ai": "*",
-		"@earendil-works/pi-coding-agent": "*",
-		"@earendil-works/pi-tui": "*"
+		"@earendil-works/pi-ai": ">=1.4.0",
+		"@earendil-works/pi-coding-agent": ">=1.4.0",
+		"@earendil-works/pi-tui": ">=1.4.0"
 	},
 	"dependencies": {
-		"@pidesk/view-sdk": "^0.2.0",
+		"@pidesk/view-sdk": "^0.5.0",
 		"@yoki/yoki-config": "^1.20.0",
 		"yoki_ui": "*"
+	},
+	"engines": {
+		"node": ">=22.19.0"
 	}
 }

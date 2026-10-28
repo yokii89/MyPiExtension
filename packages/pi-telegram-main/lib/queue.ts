@@ -475,12 +475,17 @@ export function resolveTelegramQueueItemText<TContext = unknown>(item: TelegramQ
 	);
 }
 
-/** Lane plus human text for every queued item — the row shape the PiDesk panel projects. */
+/**
+ * Lane, enqueue order and human text for every queued item — the row shape the
+ * PiDesk panel projects. `queueOrder` is the stable half of the table row id: a
+ * dequeue shifts array indices but never rewrites an existing item's order.
+ */
 export function describeTelegramQueueItems<TContext = unknown>(
 	items: readonly TelegramQueueItem<TContext>[],
-): Array<{ queueLane: TelegramQueueLane; summary: string }> {
+): Array<{ queueLane: TelegramQueueLane; queueOrder: number; summary: string }> {
 	return items.map((item) => ({
 		queueLane: item.queueLane,
+		queueOrder: item.queueOrder,
 		summary: resolveTelegramQueueItemText(item),
 	}));
 }

@@ -59,7 +59,11 @@ type SessionModule = typeof import("./state/questionnaire-session.ts");
 
 type SessionLoad =
 	| { ok: true; module: SessionModule }
-	| { ok: false; error: Extract<QuestionnaireError, "session_load_failed" | "stale_module_cache">; message: string };
+	| {
+			ok: false;
+			error: Extract<QuestionnaireError, "session_load_failed" | "stale_module_cache">;
+			message: string;
+	  };
 
 /**
  * Lazy-load the ~560ms QuestionnaireSession view/TUI render graph, guarding
@@ -78,7 +82,11 @@ export async function loadQuestionnaireSession(): Promise<SessionLoad> {
 		mod = await import("./state/questionnaire-session.ts");
 	} catch (e) {
 		const cause = e instanceof Error ? e.message : String(e);
-		return { ok: false, error: "session_load_failed", message: `${ERROR_SESSION_LOAD_FAILED} (cause: ${cause})` };
+		return {
+			ok: false,
+			error: "session_load_failed",
+			message: `${ERROR_SESSION_LOAD_FAILED} (cause: ${cause})`,
+		};
 	}
 	if (typeof mod.QuestionnaireSession !== "function") {
 		const keys = JSON.stringify(Object.keys(mod));
@@ -105,10 +113,9 @@ export function buildItemsForQuestion(question: QuestionData): WrappingSelectIte
 
 export const DEFAULT_PROMPT_SNIPPET = `Ask the user up to ${MAX_QUESTIONS} structured questions (${MIN_OPTIONS}-${MAX_OPTIONS} options each) when requirements are ambiguous`;
 export const DEFAULT_PROMPT_GUIDELINES: string[] = [
-	`Use ask_user_question whenever the user's request is underspecified and you cannot proceed without concrete decisions — you can ask up to ${MAX_QUESTIONS} questions per invocation.`,
-	`Each question MUST have ${MIN_OPTIONS}-${MAX_OPTIONS} options. Every option requires a concise label (1-5 words) and a description explaining what the choice means or its trade-offs. The user can additionally type a custom answer ("Type something." row is appended automatically to every question) or press Esc to abandon the questionnaire.`,
-	`Set multiSelect: true when multiple answers are valid. Provide an options[].preview markdown string when an option benefits from richer side-by-side context (mockups, code snippets, diagrams, configs) — single-select only. The "Type something." row is appended to every single-select question regardless of whether any option carries a preview; in preview mode it expands to the full pane width while typing so the custom answer is not cramped into the narrow options column. If you recommend a specific option, make it the first option and append "(Recommended)" to its label.`,
-	"Do not stack multiple ask_user_question calls back-to-back — group all clarifying questions into one invocation.",
+	`Use ask_user_question only when the request is underspecified and you cannot proceed without concrete decisions. Ask all clarifying questions in one invocation (up to ${MAX_QUESTIONS}); never stack calls back-to-back.`,
+	`Each question needs ${MIN_OPTIONS}-${MAX_OPTIONS} options, each with a 1-5 word label and a description of what it means or its trade-offs. A custom-answer row is appended automatically to every question, so don't add your own "Other" option.`,
+	`Set multiSelect: true when multiple answers are valid. Add options[].preview (markdown) when an option benefits from richer side-by-side context (mockups, code snippets, diagrams, configs); preview is single-select only. If you recommend an option, put it first and append "(Recommended)" to its label.`,
 ];
 
 export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
@@ -143,7 +150,11 @@ Preview content is rendered as markdown in a monospace box. Multi-line text with
 			const typed = params as unknown as QuestionParams;
 			// External hosts (Telegram, etc.) can render without TUI hasUI.
 			if (!ctx.hasUI && !hasAskUserHosts()) {
-				return buildToolResult(ERROR_NO_UI, { answers: [], cancelled: true, error: "no_ui" });
+				return buildToolResult(ERROR_NO_UI, {
+					answers: [],
+					cancelled: true,
+					error: "no_ui",
+				});
 			}
 
 			const validation = validateQuestionnaire(typed);
@@ -171,13 +182,19 @@ Preview content is rendered as markdown in a monospace box. Multi-line text with
 
 			// PiDesk (and compatible desktop hosts) inject PIDESK_VIEW_* / PI_VIEW_*.
 			// Present a modal ViewNode questionnaire before TUI/RPC fallbacks.
-			const desktopResult = await presentQuestionnaireOnDesktop(typed, { signal });
+			const desktopResult = await presentQuestionnaireOnDesktop(typed, {
+				signal,
+			});
 			if (desktopResult !== null) {
 				return buildQuestionnaireResponse(desktopResult, typed);
 			}
 
 			if (!ctx.hasUI) {
-				return buildToolResult(ERROR_NO_UI, { answers: [], cancelled: true, error: "no_ui" });
+				return buildToolResult(ERROR_NO_UI, {
+					answers: [],
+					cancelled: true,
+					error: "no_ui",
+				});
 			}
 
 			// RPC hosts (VSCode pendant, ACP clients like Zed/Paseo — issue #78):
@@ -196,7 +213,11 @@ Preview content is rendered as markdown in a monospace box. Multi-line text with
 			// load it only when the tool runs, not at extension registration.
 			const sessionLoad = await loadQuestionnaireSession();
 			if (!sessionLoad.ok) {
-				return buildToolResult(sessionLoad.message, { answers: [], cancelled: true, error: sessionLoad.error });
+				return buildToolResult(sessionLoad.message, {
+					answers: [],
+					cancelled: true,
+					error: sessionLoad.error,
+				});
 			}
 			const { QuestionnaireSession } = sessionLoad.module;
 			// Resolve the collapse/expand key spec from config. Default is `ctrl+]`; users
@@ -212,7 +233,9 @@ Preview content is rendered as markdown in a monospace box. Multi-line text with
 			const sessionRef: {
 				current: import("./state/questionnaire-session.ts").QuestionnaireSession | null;
 			} = { current: null };
-			const overlayHandleRef: { current: import("@earendil-works/pi-tui").OverlayHandle | undefined } = {
+			const overlayHandleRef: {
+				current: import("@earendil-works/pi-tui").OverlayHandle | undefined;
+			} = {
 				current: undefined,
 			};
 			let hasAnnouncedHide = false;
@@ -276,7 +299,11 @@ Preview content is rendered as markdown in a monospace box. Multi-line text with
 					if (hasDialogUI(ctx.ui)) {
 						return buildQuestionnaireResponse(await runRpcQuestionnaire(ctx.ui, typed), typed);
 					}
-					return buildToolResult(ERROR_NO_CUSTOM_UI, { answers: [], cancelled: true, error: "no_custom_ui" });
+					return buildToolResult(ERROR_NO_CUSTOM_UI, {
+						answers: [],
+						cancelled: true,
+						error: "no_custom_ui",
+					});
 				}
 
 				return buildQuestionnaireResponse(result, typed);

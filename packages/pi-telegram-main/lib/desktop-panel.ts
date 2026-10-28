@@ -11,19 +11,22 @@
  * also keeps this module unit-testable with fakes.
  *
  * This module owns the refresh cadence over bridge state and nothing else: the
- * merge window comes from the SDK's `createViewFrameScheduler` and the `view-table`
- * gate from its `supportsTable`.
+ * merge window comes from the SDK's `createViewFrameScheduler` and the
+ * capability gates from its `hello` advertisement.
  *
  * Headless pi gets `open() === false` and callers keep the TUI path.
  */
 
-import type { ViewFrameScheduler } from "@pidesk/view-sdk";
+import type { ViewFrameScheduler, ViewPlacementHint } from "@pidesk/view-sdk";
 import {
 	isTelegramPanelAction,
+	NO_TELEGRAM_PANEL_CAPABILITIES,
 	projectTelegramPanel,
 	TELEGRAM_PANEL_ID,
 	TELEGRAM_PANEL_TITLE,
 	type TelegramPanelAction,
+	type TelegramPanelCapabilities,
+	type TelegramPanelProjection,
 	type TelegramPanelSource,
 } from "./desktop-view.ts";
 
@@ -34,17 +37,17 @@ export const PANEL_POLL_INTERVAL_MS = 1000;
  * The slice of `@pidesk/view-sdk` this runtime needs.
  * Every member is asynchronous and soft-failing: `connect` resolves `null` when
  * no Host is present, `openPanel` resolves `null` when the Host is too old, and
- * `supportsTable` answers `false` rather than guessing.
+ * `capabilities` answers all-false rather than guessing.
  */
 export interface TelegramPanelSdk {
 	connect: () => TelegramPanelClient | null | Promise<TelegramPanelClient | null>;
 	/**
-	 * Host `hello` gate for `table` nodes. Resolves false when
-	 * the Host is older than the advertisement or the handshake never landed — the
-	 * projection then keeps its `row`-based fallback instead of shipping a node the
-	 * Host cannot render. The capability name stays inside the SDK.
+	 * Host `hello` gates, resolved once per open. A missing advertisement or a
+	 * handshake that never landed resolves every flag to `false` — the projection
+	 * then keeps its old-Host composition instead of shipping fields the Host
+	 * would silently drop. Capability names stay inside the SDK.
 	 */
-	supportsTable: (client: TelegramPanelClient) => Promise<boolean>;
+	capabilities: (client: TelegramPanelClient) => Promise<TelegramPanelCapabilities>;
 	openPanel: (
 		client: TelegramPanelClient,
 		options: {
@@ -52,7 +55,8 @@ export interface TelegramPanelSdk {
 			title?: string;
 			root: unknown;
 			actions: unknown;
-			onEvent: (event: { type: string; actionId?: string }) => void;
+			/** `layout` carries the content-box size (docs/06 R5); other events ignore it. */
+			onEvent: (event: { type: string; actionId?: string; width?: number; height?: number }) => void;
 		},
 	) => Promise<TelegramPanelSession | null>;
 }
@@ -64,7 +68,7 @@ export interface TelegramPanelClient {
 
 /** Minimal session surface — structurally compatible with `LiveViewSession`. */
 export interface TelegramPanelSession {
-	update: (payload: { root: unknown; actions: unknown }) => void;
+	update: (payload: { root: unknown; actions: unknown; placementHint?: unknown }) => void;
 	close: () => void;
 	closed: Promise<{ reason?: string } | null>;
 	/**
@@ -141,14 +145,34 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 	let disposed = false;
 	/** Serializes overlapping open() calls (action spam / reconnect races). */
 	let opening: Promise<boolean> | null = null;
-	/** Refreshed per open from the Host `hello`; decides table vs. row composition. */
-	let tableCapable = false;
+	/** Refreshed per open from the Host `hello`; decides which optional fields may be sent. */
+	let capabilities: TelegramPanelCapabilities = NO_TELEGRAM_PANEL_CAPABILITIES;
+	/** Last content-box width from a `layout` event; undefined before the first one / on old Hosts. */
+	let layoutWidth: number | undefined;
+
+	function placementHintFor(projection: TelegramPanelProjection): ViewPlacementHint | undefined {
+		if (!capabilities.panelBadge && !capabilities.panelHeader) return undefined;
+		const hint: ViewPlacementHint = { panelId: TELEGRAM_PANEL_ID };
+		// 整体替换语义：条件消失时必须不带键，否则旧徽章 / 旧头部会留在宿主上
+		if (capabilities.panelBadge && projection.badge) hint.panelBadge = projection.badge;
+		if (capabilities.panelHeader && projection.header) hint.panelHeader = projection.header;
+		return hint;
+	}
 
 	/** Re-reads live bridge state: the scheduler never buffers a tree, so a burst of marks still ships the newest panel. */
 	function sendFrame(): void {
 		if (!session) return;
-		const projection = projectTelegramPanel(options.source, Date.now(), tableCapable);
-		session.update({ root: projection.root, actions: projection.actions });
+		const projection = projectTelegramPanel(options.source, {
+			nowMs: Date.now(),
+			capabilities,
+			width: layoutWidth,
+		});
+		const placementHint = placementHintFor(projection);
+		session.update({
+			root: projection.root,
+			actions: projection.actions,
+			...(placementHint ? { placementHint } : {}),
+		});
 	}
 
 	async function ensureClient(): Promise<TelegramPanelClient | null> {
@@ -219,14 +243,26 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 		const target = await ensureClient();
 		if (!target) return false;
 
-		tableCapable = await sdk.supportsTable(target);
-		const initial = projectTelegramPanel(options.source, Date.now(), tableCapable);
+		capabilities = await sdk.capabilities(target);
+		const initial = projectTelegramPanel(options.source, {
+			nowMs: Date.now(),
+			capabilities,
+			width: layoutWidth,
+		});
 		const opened = await sdk.openPanel(target, {
 			panelId: TELEGRAM_PANEL_ID,
 			title: TELEGRAM_PANEL_TITLE,
 			root: initial.root,
 			actions: initial.actions,
 			onEvent(event) {
+				if (event.type === "layout") {
+					// Host 已去抖（150ms）；这里只记宽度并标脏，不额外节流
+					if (event.width !== undefined && Number.isFinite(event.width) && event.width > 0) {
+						layoutWidth = event.width;
+						pushFrame();
+					}
+					return;
+				}
 				if (event.type !== "action") return;
 				if (event.actionId && isTelegramPanelAction(event.actionId)) enqueueAction(event.actionId);
 			},
@@ -254,6 +290,7 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 			scheduler?.stop();
 			scheduler = null;
 			session = null;
+			layoutWidth = undefined;
 			const reason = payload?.reason;
 			if (reason === "replaced" || reason === "session") {
 				// replaced: 由新 owner 占用，不重连（防无限互相抢占）
@@ -270,6 +307,7 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 		scheduler = null;
 		const current = session;
 		session = null;
+		layoutWidth = undefined;
 		current?.close();
 	}
 
@@ -277,9 +315,15 @@ export function createTelegramPanelRuntime<TContext = unknown>(
 		async open() {
 			if (disposed) return false;
 			if (opening) return opening;
-			opening = doOpen().finally(() => {
-				opening = null;
-			});
+			// 会话启动处是 fire-and-forget：失败必须落成可诊断事件，不能变成未处理拒绝
+			opening = doOpen()
+				.catch((error) => {
+					options.recordRuntimeEvent?.("desktop-panel", error, { phase: "open" });
+					return false;
+				})
+				.finally(() => {
+					opening = null;
+				});
 			return opening;
 		},
 

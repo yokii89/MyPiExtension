@@ -63,7 +63,9 @@ Use emoji as stable semantic markers, not decoration. Emoji carry transportable 
 | `🟢` | Current/active/enabled `On` | Current option in vertical lists, active state rows, active `On` toggle | One strong current marker per option list. |
 | `🟡` | Active `Off` or elevated/filter state | Active `Off` toggle, Priority/Scoped active tab | Yellow means intentionally not-normal or off/default-caution, not error. |
 | `🟣` | Normal/default active tab | Normal priority tab, All/default scope tab, active page picker | Use for neutral active tabs. |
-| `⚫️` | Inactive placeholder | Inactive toggle values and inactive tabs | Keeps row width stable. |
+| `⚫️` | Inactive placeholder | Inactive toggle values and inactive tabs | Keeps row width stable. Do not use on dark backgrounds: the glyph is black on `#111113` and reads as missing. |
+| `⚪` | Not configured (no credential at all) | Desktop panel status headline `⚪ 未配置凭据` | Distinct from `🟡`: `🟡 已停止` means configured but not running and still offers 「连接」, `⚪` means there is nothing to connect with. Hollow so it survives both themes. |
+| `✓` / `!` | Section settled / section needs attention | Desktop panel tab dots (`ViewTab.status`) | Protocol-owned semantics, not emoji: the Host tints them success/warning. Give a status glyph only where the data supports it — runtime events carry a category and no severity, so the 事件 tab deliberately gets no `✓`/`!`. |
 | `⬆️` | Navigate upward | `⬆️ 主菜单`, `⬆️ 返回` | Always first row in submenus. |
 
 ### Queue Reaction Shortcuts
