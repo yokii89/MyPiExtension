@@ -133,10 +133,50 @@ retry with the same credentials, re-enter them, or abort.
 If discovery fails at session start and a cached list is used instead, the
 extension notifies once instead of failing silently.
 
+## Model capability matching
+
+The relay's `/v1/models` does not expose capabilities. At registration every
+model id is matched **exactly** (case-insensitive) against pi-ai's built-in chat
+catalog, with vendor catalogs preferred over gateway catalogs:
+
+- `reasoning` and `input` (text / image) are inherited. `input` fixes models the
+  old id heuristic declared text-only (Claude, DeepSeek, …).
+- `contextWindow` is inherited **only when every exact catalog candidate agrees
+  and the value is lower than the current fallback** (1M by default). Conflicting
+  catalogs (e.g. `gpt-5.4`: 272k in openai vs 1.05M in azure) keep the fallback
+  to avoid premature compaction.
+- `maxTokens` is **not** inherited: raising the output budget can trigger
+  upstream 400s. `thinkingLevelMap` / `compat` / sampling params stay with this
+  provider because their values are API-specific; `cost` stays 0 because relay
+  pricing differs.
+- No fuzzy matching: `gpt-5.2` never matches `gpt-5.2-chat`.
+- Unmatched ids keep the legacy fallback (`reasoning: true`, 1M context, id-based
+  vision guess), so new or renamed relay models still work.
+- The cache's fields are only fallbacks. Capability is resolved at registration,
+  so a pi-ai upgrade takes effect without re-discovering models.
+
+To narrow or correct a model, use `~/.pi/agent/models.json` (the topmost layer):
+
+```json
+{
+  "providers": {
+    "newapi": {
+      "modelOverrides": {
+        "some-chat-model": { "reasoning": false },
+        "some-reasoning-model": { "thinkingLevelMap": { "xhigh": null, "max": null } }
+      }
+    }
+  }
+}
+```
+
+`get_available_thinking_levels` then reports `["off"]` for a non-reasoning
+model and the mapped subset otherwise.
+
 ## Notes
 
-- Model cost defaults are placeholders (0 cost). Context defaults to 1M tokens; override via `models.json` if needed.
-- Reasoning defaults to `true` so thinking level cycling works; vision is still guessed from model id heuristics.
+- Model cost defaults are placeholders (0 cost). Context defaults to 1M tokens and is lowered only when the built-in catalog is unanimous; override via `models.json` if needed.
+- Reasoning and input modalities are matched against pi-ai's built-in catalog by exact id; unmatched ids default to `true` reasoning and the id-based vision heuristic.
 - For gateways that are true LiteLLM, prefer `pi-provider-litellm`.
 - There is no separate `cc` provider; Codex import writes into `newapi` only.
 - MCP / project trust settings from Codex are not imported.

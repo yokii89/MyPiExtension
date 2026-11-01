@@ -33,6 +33,11 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { GLYPH_ERROR, GLYPH_SUCCESS, GLYPH_WARNING } from "yoki_ui/style";
 import {
+	builtinCapabilitiesFor,
+	ensureBuiltinCapabilityIndex,
+	resolveContextWindow,
+} from "./capabilities.ts";
+import {
 	credentialSignature,
 	extractApiKeyFromCodexAuth,
 	extractTomlString,
@@ -96,6 +101,7 @@ let lastRegisteredSignature: string | undefined;
 type ModelDef = {
 	id: string;
 	name: string;
+	/** Cached fallback; registration overrides it from pi-ai's catalog by exact id. */
 	reasoning: boolean;
 	input: Array<"text" | "image">;
 	cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
@@ -272,7 +278,10 @@ function mapModel(entry: {
 	return {
 		id,
 		name: entry.name?.trim() || id,
-		// Default to reasoning-enabled so Shift+Tab thinking works on proxy models.
+		// Fallback for ids absent from pi-ai's built-in catalog: keep Shift+Tab
+		// thinking available and keep the vision heuristic below. Composed models
+		// use the catalog's reasoning/input/context when the exact id matches
+		// (see capabilities.ts).
 		reasoning: true,
 		input: guessVision(id) ? ["text", "image"] : ["text"],
 		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -659,17 +668,24 @@ function modifyModels(models: Model<any>[], credentials: OAuthCredentials): Mode
 function toProviderModels(models: ModelDef[], baseUrl?: string, api?: NewApiApiType) {
 	const v1 = baseUrl ? `${normalizeBaseUrl(baseUrl)}/v1` : undefined;
 	const resolvedApi = api ?? "openai-completions";
-	return models.map((m) => ({
-		id: m.id,
-		name: m.name,
-		api: pickApiForModel(m.supportedEndpointTypes, resolvedApi) as Api,
-		reasoning: m.reasoning,
-		input: m.input,
-		cost: m.cost,
-		contextWindow: m.contextWindow,
-		maxTokens: m.maxTokens,
-		...(v1 ? { baseUrl: v1 } : {}),
-	}));
+	return models.map((m) => {
+		const capabilities = builtinCapabilitiesFor(m.id);
+		return {
+			id: m.id,
+			name: m.name,
+			api: pickApiForModel(m.supportedEndpointTypes, resolvedApi) as Api,
+			// Exact-id catalog match overrides the cached fallbacks. `reasoning` and
+			// `input` are API-agnostic; `contextWindow` only drops when every catalog
+			// candidate agrees (see capabilities.ts). Thinking maps/compat/cost stay
+			// provider-specific and are intentionally not inherited.
+			reasoning: capabilities?.reasoning ?? m.reasoning,
+			input: capabilities?.input ?? m.input,
+			cost: m.cost,
+			contextWindow: resolveContextWindow(m.contextWindow, capabilities),
+			maxTokens: m.maxTokens,
+			...(v1 ? { baseUrl: v1 } : {}),
+		};
+	});
 }
 
 const PLACEHOLDER_MODELS: ModelDef[] = [
@@ -771,6 +787,7 @@ async function registerProxyProvider(
 	activeBaseUrl?: string,
 	api: NewApiApiType = "openai-completions",
 ) {
+	await ensureBuiltinCapabilityIndex();
 	const hasModels = models.length > 0;
 	const providerBaseUrl = activeBaseUrl
 		? `${normalizeBaseUrl(activeBaseUrl)}/v1`
@@ -804,6 +821,7 @@ async function registerProxyProvider(
 			modifyModels,
 		},
 		refreshModels: async (context: any) => {
+			await ensureBuiltinCapabilityIndex();
 			const fromCred = credentialsFromContext(context.credential);
 			const resolved = await resolveCredentials();
 			const baseUrl = fromCred.baseUrl ?? resolved.baseUrl ?? activeBaseUrl;
@@ -1194,6 +1212,9 @@ export default async function (pi: ExtensionAPI) {
 		if (!preferred) return;
 		const key = `${preferred}|${entry?.preferredThinking ?? ""}|${entry?.access?.slice(0, 8) ?? ""}`;
 		const current = ctx.model;
+		// A session the host moved to another provider is the host's choice: this hook
+		// only keeps newapi's own preferred model sticky, it must not steal the turn.
+		if (current && current.provider !== PROVIDER_NAME) return;
 		if (
 			appliedPreferredKey === key &&
 			current?.provider === PROVIDER_NAME &&
