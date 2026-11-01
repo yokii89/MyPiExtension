@@ -1,17 +1,18 @@
+import { accessModeManifestEntry } from "@pidesk/view-sdk";
 import { describe, expect, it, vi } from "vitest";
 import {
 	asColumn,
 	asRow,
 	buildPostPlanSpecForTest,
 	createPlanModeSupervisor,
-	PLAN_MODE_CONTRIBUTION_ID,
-	PLAN_MODE_REGISTRATION,
+	PLAN_MODE,
 	planModeDetailFor,
 	postPlanChoiceFromValue,
 	presentPostPlanOnDesktop,
 	readContributionKey,
 	registerPlanModeOnDesktop,
 } from "../desktop-view.ts";
+import pkg from "../package.json";
 import { POST_PLAN_OPTIONS } from "../post-plan.ts";
 
 const STEPS = [
@@ -91,9 +92,10 @@ describe("plan-mode desktop registration", () => {
 		return { register, handle };
 	}
 
-	it("catalog contribution id matches live registration id", () => {
-		expect(PLAN_MODE_CONTRIBUTION_ID).toBe("yoki-plan");
-		expect(PLAN_MODE_REGISTRATION.id).toBe(PLAN_MODE_CONTRIBUTION_ID);
+	it("descriptor is the package.json manifest entry (one source, no drift)", () => {
+		expect(pkg.pidesk.contributes.accessModes).toHaveLength(1);
+		expect(pkg.pidesk.contributes.accessModes).toContainEqual(accessModeManifestEntry(PLAN_MODE));
+		expect(PLAN_MODE.id).toBe("yoki-plan");
 	});
 
 	it("reads contribution key from host env map", () => {
@@ -263,7 +265,7 @@ describe("createPlanModeSupervisor (SDK lifecycle)", () => {
 
 		await sup.ensure();
 		expect(setActive).toHaveBeenCalledWith(true, planModeDetailFor("plan"));
-		expect(tryRegister).toHaveBeenCalledWith(expect.anything(), expect.objectContaining(PLAN_MODE_REGISTRATION));
+		expect(tryRegister).toHaveBeenCalledWith(expect.anything(), expect.objectContaining(PLAN_MODE));
 
 		lastOptions?.onEvent?.({ type: "action", actionId: "mode:activate" });
 		lastOptions?.onEvent?.({ type: "action", actionId: "mode:deactivate" });

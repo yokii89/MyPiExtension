@@ -15,9 +15,11 @@
 
 import {
 	ACCESS_MODE_ACTIONS,
+	type AccessModeContributionInput,
 	type AccessModeHandle,
 	connectDesktopView,
 	type DesktopViewClient,
+	defineAccessMode,
 	type LiveViewSession,
 	// 必须是**本地导入绑定**：`export { x as readContributionKey } from …` 只建立
 	// 对外 re-export，不会让 `readContributionKey` 在本模块可见——文件内的两个调用
@@ -33,6 +35,7 @@ import {
 } from "@pidesk/view-sdk";
 import type { AgentWorkMode } from "./bridge.ts";
 import type { PlanStep } from "./extract.ts";
+import pkg from "./package.json";
 import {
 	POST_PLAN_OPTION_VALUES,
 	POST_PLAN_OPTIONS,
@@ -127,9 +130,6 @@ export function buildPostPlanSpecForTest(steps: readonly PlanStep[]): ViewSpec {
 
 export const PLAN_MODE_DETAIL = "只读：edit/write 已禁用";
 
-/** Catalog contribution id — must match package.json `pidesk.contributes.accessModes[].id`. */
-export const PLAN_MODE_CONTRIBUTION_ID = "yoki-plan";
-
 /**
  * Host 注入的 contributionKey 映射。
  * 实现已下沉到 SDK；此处保留同名 re-export，
@@ -137,14 +137,13 @@ export const PLAN_MODE_CONTRIBUTION_ID = "yoki-plan";
  */
 export { resolveContributionKey as readContributionKey } from "@pidesk/view-sdk";
 
-/** Static desktop chip descriptor for plan mode. */
-export const PLAN_MODE_REGISTRATION = {
-	id: PLAN_MODE_CONTRIBUTION_ID,
-	title: "计划模式",
-	description: "只读探索：edit/write 禁用，bash 限白名单；产出计划后再执行。",
-	icon: "clipboard",
-	accent: "warning",
-} as const;
+/**
+ * Live chip descriptor, projected from the `pidesk.contributes.accessModes[]`
+ * entry in package.json — the same entry the Host's Catalog scanner reads, so
+ * the Catalog row and the live registration cannot drift. `defineAccessMode`
+ * validates + freezes it and drops `activation`.
+ */
+export const PLAN_MODE = defineAccessMode(pkg.pidesk.contributes.accessModes[0] as AccessModeContributionInput);
 
 /** Chip detail line driven by controller truth. */
 export function planModeDetailFor(mode: AgentWorkMode): string | undefined {
@@ -218,8 +217,8 @@ export async function registerPlanModeOnDesktop(opts?: PlanDesktopModeDeps): Pro
 	const register = opts?.register ?? registerAccessMode;
 	try {
 		const handle = await register(client, {
-			...PLAN_MODE_REGISTRATION,
-			contributionKey: opts?.contributionKey ?? readContributionKey(PLAN_MODE_CONTRIBUTION_ID),
+			...PLAN_MODE,
+			contributionKey: opts?.contributionKey ?? readContributionKey(PLAN_MODE.id),
 			onEvent: (event, session) => routeAccessModeEvent(event, session, opts?.onAction),
 		});
 		if (!handle) {
@@ -270,8 +269,8 @@ export function createPlanModeSupervisor(opts: PlanModeSupervisorDeps): SlotSupe
 				}
 			}),
 		registration: {
-			...PLAN_MODE_REGISTRATION,
-			contributionKey: opts.contributionKey ?? readContributionKey(PLAN_MODE_CONTRIBUTION_ID),
+			...PLAN_MODE,
+			contributionKey: opts.contributionKey ?? readContributionKey(PLAN_MODE.id),
 		},
 		onActivate: () => opts.onAction?.("activate"),
 		onDeactivate: () => opts.onAction?.("deactivate"),

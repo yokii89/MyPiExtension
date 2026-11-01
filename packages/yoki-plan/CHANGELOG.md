@@ -8,6 +8,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
+- **Access-mode chip descriptor comes from the manifest** — `PLAN_MODE` is now `defineAccessMode(pkg.pidesk.contributes.accessModes[0])` (`@pidesk/view-sdk` 0.5.1), replacing the hand-written `PLAN_MODE_REGISTRATION` object and the duplicated `PLAN_MODE_CONTRIBUTION_ID` constant. Impact: the Catalog entry the Host scans and the live chip registration read one source and cannot drift; the descriptor is frozen with `activation` dropped, and a manifest entry that loses `id`/`title` or switches `activation` away from `onAccessMode` now throws at extension load instead of registering a mismatched chip.
+- **`@pidesk/view-sdk` is now `^0.5.1`** — the additive 0.5.1 release (access-mode contribution helper + public manifest subset); no wire, Host capability, or protocol change. Impact: `defineAccessMode` / `accessModeManifestEntry` resolve at install time instead of only in a local PiDesk checkout.
+- **`@pidesk/view-sdk` is now `^0.5.2`** — behavior-only release: when the Host named in the rendezvous file cannot be reached, the client falls back to the endpoint baked into its spawn environment (PiDesk `docs/design/122`). Impact: the access-mode chip and plan panel keep working while a second PiDesk instance is open; no API or wire change, so nothing here was adapted.
 - **Pi 1.4.0 minimum** — Peer and engine declarations now require Pi `1.4.0` and Node `22.19`. Impact: installs match the tested runtime.
 
 ### Added

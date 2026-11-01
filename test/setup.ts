@@ -10,6 +10,17 @@ delete process.env.PI_CODING_AGENT_DIR;
 delete process.env.XDG_CONFIG_HOME;
 delete process.env.WEB_SEARCH_PROVIDER;
 
+// A desktop host (PiDesk / ZCode) injects PIDESK_VIEW_* / PI_VIEW_* into the pi
+// process, and `npm test` inherits them when the suite is started from inside such
+// a session. view-sdk 0.5.2 falls back to that baked endpoint whenever the Host named
+// in the rendezvous file is unreachable, so an inherited env lets a unit test open a
+// real floating view on the machine running the suite — the questionnaire then waits
+// for a human and every assertion times out. Scrub both prefixes before anything
+// imports the SDK; tests that want a desktop env set it explicitly.
+for (const key of Object.keys(process.env)) {
+	if (/^(?:PIDESK|PI)_VIEW_/.test(key)) delete process.env[key];
+}
+
 // The suite asserts the Unix terminal transport used by Warp. Keep that
 // contract deterministic when the tests themselves run under Windows; native
 // Windows behavior is exercised separately by the transport's stdout branch.
