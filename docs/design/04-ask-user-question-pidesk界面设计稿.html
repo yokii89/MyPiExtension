@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>ask_user_question · PiDesk 桌面 GUI 设计稿</title>
+<style>
+  html { color-scheme: light dark; }
+  body {
+    margin: 0; padding: 24px 20px 48px;
+    background: light-dark(#f3f4f6, #101114);
+    color: light-dark(#1c1e23, #e8eaef);
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.5;
+    display: flex; justify-content: center;
+  }
+  #pd-gui-spec { width: 100%; max-width: 980px; }
+</style>
+</head>
+<body>
+<div id="pd-gui-spec">
+  <style>
+    #pd-gui-spec {
+      --pd-bg: light-dark(#eef0f4, #17181c);
+      --pd-surface: light-dark(#ffffff, #24262c);
+      --pd-border: light-dark(#e2e5ea, #3a3d46);
+      --pd-text: light-dark(#1c1e23, #e8eaef);
+      --pd-muted: light-dark(#667085, #9aa1ad);
+      --pd-accent: light-dark(#3574f0, #5c9dff);
+      --pd-accent-soft: light-dark(rgba(53, 116, 240, 0.10), rgba(92, 157, 255, 0.16));
+      --pd-warn: light-dark(#b45309, #f5a623);
+      --pd-warn-soft: light-dark(rgba(180, 83, 9, 0.10), rgba(245, 166, 35, 0.14));
+      --pd-danger: light-dark(#d92d20, #f0554a);
+      --pd-ok: light-dark(#12805c, #3fce94);
+      font-family: -apple-system, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+      color: var(--pd-text);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    #pd-gui-spec h2 { font-size: 14px; font-weight: 500; margin: 0 0 2px; }
+    #pd-gui-spec h3 {
+      font-size: 14px; font-weight: 500; margin: 26px 0 4px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    #pd-gui-spec h3 .pd-tag {
+      font-size: 11px; font-weight: 400; color: var(--pd-muted);
+      border: 1px solid var(--pd-border); border-radius: 999px; padding: 1px 8px;
+    }
+    #pd-gui-spec .pd-sub { color: var(--pd-muted); font-size: 12px; margin: 0 0 14px; }
+    #pd-gui-spec .pd-meta {
+      display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 6px; padding: 0; list-style: none;
+    }
+    #pd-gui-spec .pd-meta li {
+      font-size: 11px; color: var(--pd-muted);
+      border: 1px solid var(--pd-border); border-radius: 6px; padding: 2px 8px;
+      background: var(--pd-surface);
+    }
+    #pd-gui-spec .pd-meta li b { color: var(--pd-text); font-weight: 500; }
+    #pd-gui-spec code {
+      font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+      background: var(--pd-accent-soft); color: var(--pd-text);
+      border-radius: 4px; padding: 0 4px;
+    }
+    #pd-gui-spec .pd-screen { display: grid; grid-template-columns: minmax(300px, 440px) 1fr; gap: 18px; align-items: start; }
+    #pd-gui-spec .pd-screen + .pd-screen { margin-top: 18px; }
+    @media (max-width: 720px) { #pd-gui-spec .pd-screen { grid-template-columns: 1fr; } }
+    #pd-gui-spec .pd-stage {
+      background: var(--pd-bg); border: 1px solid var(--pd-border); border-radius: 10px;
+      padding: 18px 16px 16px;
+    }
+    #pd-gui-spec .pd-cap { font-size: 11px; color: var(--pd-muted); margin: 8px 2px 0; }
+    #pd-gui-spec .pd-notes { margin: 0; padding: 0; list-style: none; font-size: 12px; color: var(--pd-muted); }
+    #pd-gui-spec .pd-notes li { padding: 5px 0 5px 14px; position: relative; border-bottom: 1px dashed var(--pd-border); }
+    #pd-gui-spec .pd-notes li:last-child { border-bottom: none; }
+    #pd-gui-spec .pd-notes li::before {
+      content: ""; position: absolute; left: 2px; top: 12px;
+      width: 5px; height: 5px; border-radius: 50%; background: var(--pd-accent); opacity: 0.7;
+    }
+    #pd-gui-spec .pd-notes b { color: var(--pd-text); font-weight: 500; }
+
+    /* ---- PiDesk 浮层小组件 mock（产品界面，全部使用 pd-* 专用 token） ---- */
+    #pd-gui-spec .pd-widget {
+      background: var(--pd-surface);
+      border: 1px solid var(--pd-border);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px light-dark(rgba(16, 24, 40, 0.10), rgba(0, 0, 0, 0.45));
+      overflow: hidden;
+      font-size: 13px;
+    }
+    #pd-gui-spec .pd-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--pd-border);
+      font-weight: 500; font-size: 12px;
+    }
+    #pd-gui-spec .pd-head span:last-child { color: var(--pd-muted); font-weight: 400; font-size: 11px; }
+    #pd-gui-spec .pd-body { padding: 12px 14px; display: grid; gap: 10px; }
+    #pd-gui-spec .pd-cardtitle {
+      font-size: 12px; font-weight: 500; color: var(--pd-muted);
+      border: 1px solid var(--pd-border); border-radius: 6px;
+      padding: 3px 8px; display: inline-block; width: fit-content;
+    }
+    #pd-gui-spec .pd-q { font-weight: 500; }
+    #pd-gui-spec .pd-opt {
+      display: flex; gap: 8px; align-items: flex-start;
+      border: 1px solid var(--pd-border); border-radius: 8px;
+      padding: 7px 10px; background: var(--pd-surface);
+    }
+    #pd-gui-spec .pd-opt .pd-ctl {
+      flex: none; width: 14px; height: 14px; margin-top: 2px;
+      border: 1.5px solid var(--pd-muted); border-radius: 50%;
+    }
+    #pd-gui-spec .pd-opt.multi .pd-ctl { border-radius: 4px; }
+    #pd-gui-spec .pd-opt .pd-lb { font-weight: 500; }
+    #pd-gui-spec .pd-opt .pd-ds { font-size: 11px; color: var(--pd-muted); }
+    #pd-gui-spec .pd-opt.sel { border-color: var(--pd-accent); background: var(--pd-accent-soft); }
+    #pd-gui-spec .pd-opt.sel .pd-ctl {
+      border-color: var(--pd-accent); background: var(--pd-accent);
+      box-shadow: inset 0 0 0 2.5px var(--pd-surface);
+    }
+    #pd-gui-spec .pd-field { border: 1px solid var(--pd-border); border-radius: 8px; padding: 7px 10px; }
+    #pd-gui-spec .pd-field .pd-lb2 { font-size: 11px; color: var(--pd-muted); margin-bottom: 2px; }
+    #pd-gui-spec .pd-field .pd-val { font-size: 12px; }
+    #pd-gui-spec .pd-field .pd-val.pd-ph { color: var(--pd-muted); }
+    #pd-gui-spec .pd-cursor { display: inline-block; width: 1px; height: 12px; background: var(--pd-accent); vertical-align: -2px; }
+    #pd-gui-spec .pd-note-cap { font-size: 11px; color: var(--pd-muted); }
+    #pd-gui-spec .pd-btnrow {
+      display: flex; justify-content: flex-end; gap: 8px;
+      padding: 9px 14px; border-top: 1px solid var(--pd-border);
+      background: light-dark(rgba(0,0,0,0.015), rgba(255,255,255,0.02));
+    }
+    #pd-gui-spec .pd-btn {
+      font-size: 12px; border-radius: 7px; padding: 4px 12px;
+      border: 1px solid var(--pd-border); color: var(--pd-text);
+    }
+    #pd-gui-spec .pd-btn.pd-primary { background: var(--pd-accent); border-color: var(--pd-accent); color: #fff; }
+    #pd-gui-spec .pd-btn.pd-danger { background: var(--pd-danger); border-color: var(--pd-danger); color: #fff; }
+    #pd-gui-spec .pd-btn.pd-ghost-inline { border: none; color: var(--pd-accent); padding: 4px 6px; }
+    #pd-gui-spec .pd-tabs { display: flex; gap: 6px; padding: 9px 14px 0; flex-wrap: wrap; }
+    #pd-gui-spec .pd-tab {
+      font-size: 12px; padding: 3px 10px; border-radius: 7px;
+      border: 1px solid var(--pd-border); color: var(--pd-muted);
+      display: flex; align-items: center; gap: 5px;
+    }
+    #pd-gui-spec .pd-tab.pd-active { border-color: var(--pd-accent); color: var(--pd-accent); background: var(--pd-accent-soft); font-weight: 500; }
+    #pd-gui-spec .pd-chip { font-size: 10px; border-radius: 999px; padding: 0 5px; line-height: 14px; }
+    #pd-gui-spec .pd-chip.pd-ok { color: var(--pd-ok); background: light-dark(rgba(18,128,92,0.10), rgba(63,206,148,0.15)); }
+    #pd-gui-spec .pd-chip.pd-warn { color: var(--pd-warn); background: var(--pd-warn-soft); }
+    #pd-gui-spec .pd-next {
+      width: fit-content; font-size: 12px; color: var(--pd-accent);
+      border: 1px dashed var(--pd-accent); border-radius: 7px; padding: 4px 12px;
+    }
+    #pd-gui-spec .pd-review-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      border: 1px solid var(--pd-border); border-radius: 8px; padding: 7px 10px;
+    }
+    #pd-gui-spec .pd-review-row .pd-sum { font-size: 12px; }
+    #pd-gui-spec .pd-review-row .pd-miss { color: var(--pd-warn); background: var(--pd-warn-soft); border-radius: 5px; padding: 0 5px; }
+    #pd-gui-spec .pd-review-row .pd-sup { color: var(--pd-muted); }
+    #pd-gui-spec .pd-editor {
+      margin-top: 10px; border: 1px solid var(--pd-border); border-radius: 9px;
+      padding: 7px 10px; font-size: 12px; color: var(--pd-muted);
+      background: var(--pd-surface); opacity: 0.75;
+    }
+
+    #pd-gui-spec .pd-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+    #pd-gui-spec .pd-table th {
+      text-align: left; font-weight: 500; color: var(--pd-muted);
+      border-bottom: 1px solid var(--pd-border); padding: 5px 8px;
+    }
+    #pd-gui-spec .pd-table td { border-bottom: 1px solid var(--pd-border); padding: 5px 8px; vertical-align: top; }
+    #pd-gui-spec .pd-rules { margin: 8px 0 0; padding-left: 18px; font-size: 12px; color: var(--pd-muted); }
+    #pd-gui-spec .pd-rules li { margin-bottom: 5px; }
+    #pd-gui-spec .pd-rules b { color: var(--pd-text); font-weight: 500; }
+  </style>
+
+  <h2>ask_user_question · PiDesk 桌面 GUI 设计稿</h2>
+  <p class="pd-sub">按 desktop-view.ts 当前实现逐屏枚举，作为后续 GUI 优化的基准稿。浮层样式为示意，页签 status 的具体视觉由 Host 决定。</p>
+  <ul class="pd-meta">
+    <li>spec.title <b>回答问题</b></li>
+    <li>placement <b>widget</b> · <b>aboveEditor</b> · <b>floating</b></li>
+    <li>actions <b>cancel</b>（ghost→danger）/ <b>submit</b>（primary）</li>
+    <li>节点协议 <b>@pidesk/view-sdk view/v1</b></li>
+  </ul>
+
+  <h3>A · 单题布局 <span class="pd-tag">无页签 · 卡片纵向堆叠</span></h3>
+  <div class="pd-screen">
+    <div class="pd-stage">
+      <div class="pd-widget">
+        <div class="pd-head"><span>回答问题</span><span>widget · aboveEditor</span></div>
+        <div class="pd-body">
+          <span class="pd-cardtitle">Library</span>
+          <div class="pd-q">Which library should we use?</div>
+          <div>
+            <div class="pd-opt"><span class="pd-ctl"></span><span><span class="pd-lb">A</span><br><span class="pd-ds">fast</span></span></div>
+            <div class="pd-opt" style="margin-top:6px"><span class="pd-ctl"></span><span><span class="pd-lb">B</span><br><span class="pd-ds">slow</span></span></div>
+          </div>
+          <div class="pd-field">
+            <div class="pd-lb2">自由输入（可选）</div>
+            <div class="pd-val pd-ph">没有合适选项时直接输入答案；已选选项时作为补充说明返回<span class="pd-cursor"></span></div>
+          </div>
+        </div>
+        <div class="pd-btnrow"><span class="pd-btn">取消</span><span class="pd-btn pd-primary">提交</span></div>
+      </div>
+      <div class="pd-editor">@ 提到文件或命令，输入任务…（任务输入栏）</div>
+      <div class="pd-cap">A1 · 初始：浮层悬于任务输入栏上方；单题无页签，卡片标题为 header（缺省「问题 N」）。</div>
+    </div>
+    <ul class="pd-notes">
+      <li><b>结构</b>：<code>card</code>（title = <code>header</code>）→ <code>text(body)</code> 问题 → <code>list q0</code> → <code>input q0-custom</code>；无 <code>next</code> 按钮（footer 提交）。</li>
+      <li><b>list 选项</b>：<code>value = opt:&lt;q&gt;:&lt;o&gt;</code>，label + description 两行；单选 <code>multiple</code> 缺省。</li>
+      <li><b>与 TUI 差异</b>：桌面端选中选项<b>不关闭浮层</b>，可继续补输入再提交；TUI 单题确认即完成。</li>
+    </ul>
+  </div>
+
+  <div class="pd-screen">
+    <div class="pd-stage">
+      <div class="pd-widget">
+        <div class="pd-head"><span>回答问题</span><span>自由输入 · 两种语义</span></div>
+        <div class="pd-body">
+          <div class="pd-q">Which library should we use?</div>
+          <div>
+            <div class="pd-opt sel"><span class="pd-ctl"></span><span><span class="pd-lb">A</span><br><span class="pd-ds">fast</span></span></div>
+            <div class="pd-opt" style="margin-top:6px"><span class="pd-ctl"></span><span><span class="pd-lb">B</span><br><span class="pd-ds">slow</span></span></div>
+          </div>
+          <div class="pd-field">
+            <div class="pd-lb2">自由输入（可选）</div>
+            <div class="pd-val">生态最熟，团队都会写<span class="pd-cursor"></span></div>
+          </div>
+          <div class="pd-note-cap">→ 提交后：{ kind: "option", answer: "A", notes: "生态最熟，团队都会写" }</div>
+        </div>
+        <div class="pd-btnrow"><span class="pd-btn">取消</span><span class="pd-btn pd-primary">提交</span></div>
+      </div>
+      <div class="pd-cap">A2 · 已选选项 + 补充文本：自由输入作为该选择的 notes 随答案返回。</div>
+    </div>
+    <ul class="pd-notes">
+      <li><b>统一自由输入</b>（合并前的「备注」字段已删除）：有选择 → <code>notes</code> 补充；无选择 → <code>custom</code> 答案；提交时按 Host 表单快照里的选择状态判定。</li>
+      <li><b>复核预览</b>：复核行内联追加「（补充：…）」，见 B3。</li>
+    </ul>
+  </div>
+
+  <div class="pd-screen">
+    <div class="pd-stage">
+      <div class="pd-widget">
+        <div class="pd-head"><span>回答问题</span><span>自由输入 · 两种语义</span></div>
+        <div class="pd-body">
+          <div class="pd-q">Which library should we use?</div>
+          <div>
+            <div class="pd-opt"><span class="pd-ctl"></span><span><span class="pd-lb">A</span><br><span class="pd-ds">fast</span></span></div>
+            <div class="pd-opt" style="margin-top:6px"><span class="pd-ctl"></span><span><span class="pd-lb">B</span><br><span class="pd-ds">slow</span></span></div>
+          </div>
+          <div class="pd-field">
+            <div class="pd-lb2">自由输入（可选）</div>
+            <div class="pd-val">用 OAuth 吧，别自己造<span class="pd-cursor"></span></div>
+          </div>
+          <div class="pd-note-cap">→ 提交后：{ kind: "custom", answer: "用 OAuth 吧，别自己造" }</div>
+        </div>
+        <div class="pd-btnrow"><span class="pd-btn">取消</span><span class="pd-btn pd-primary">提交</span></div>
+      </div>
+      <div class="pd-cap">A3 · 无选择纯文本：自由输入即答案，该题视为已答（tab status answered）。</div>
+    </div>
+    <ul class="pd-notes">
+      <li><b>已答判定</b> <code>isQuestionAnswered</code>：选择非空 或 自由输入非空，二者任一。</li>
+      <li><b>取消守卫</b> <code>hasAnyWork</code>：任一题已答即视为有工作内容，见 A4。</li>
+    </ul>
+  </div>
+
+  <div class="pd-screen">
+    <div class="pd-stage">
+      <div class="pd-widget">
+        <div class="pd-head"><span>回答问题</span><span>两段式取消 · 第二段</span></div>
+        <div class="pd-body">
+          <div class="pd-q">Which library should we use?</div>
+          <div>
+            <div class="pd-opt sel"><span class="pd-ctl"></span><span><span class="pd-lb">A</span><br><span class="pd-ds">fast</span></span></div>
+            <div class="pd-opt" style="margin-top:6px"><span class="pd-ctl"></span><span><span class="pd-lb">B</span><br><span class="pd-ds">slow</span></span></div>
+          </div>
+          <div class="pd-field">
+            <div class="pd-lb2">自由输入（可选）</div>
+            <div class="pd-val">生态最熟，团队都会写</div>
+          </div>
+        </div>
+        <div class="pd-btnrow"><span class="pd-btn pd-danger">再按一次确认取消</span><span class="pd-btn pd-primary">提交</span></div>
+      </div>
+      <div class="pd-cap">A4 · 取消布防（cancelArmed）：cancel 按钮 ghost → danger，文案换为「再按一次确认取消」。</div>
+    </div>
+    <ul class="pd-notes">
+      <li><b>第一段</b>：有任何作答时，第一次「取消」仅布防，不关闭。</li>
+      <li><b>解除布防</b>：任意表单 <code>change</code> 事件恢复「取消」。</li>
+      <li><b>无工作内容</b>：直接 <code>close({action:"cancel"})</code>，等价 TUI Esc 无守卫。</li>
+    </ul>
+  </div>
+
+  <h3>B · 多题 tabs 布局 <span class="pd-tag">一题一页签 + 复核页</span></h3>
+  <div class="pd-screen">
+    <div class="pd-stage">
+      <div class="pd-widget">
+        <div class="pd-head"><span>回答问题</span><span>tabs · activeTab</span></div>
+        <div class="pd-tabs">
+          <span class="pd-tab pd-active">Library</span>
+          <span class="pd-tab">Features <span class="pd-chip pd-ok">✓</span></span>
+          <span class="pd-tab">复核 <span class="pd-chip pd-warn">⚠</span></span>
+        </div>
+        <div class="pd-body">
+          <div class="pd-q">Which library should we use?</div>
+          <div>
+            <div class="pd-opt"><span class="pd-ctl"></span><span><span class="pd-lb">A</span><br><span class="pd-ds">fast</span></span></div>
+            <div class="pd-opt" style="margin-top:6px"><span class="pd-ctl"></span><span><span class="pd-lb">B</span><br><span class="pd-ds">slow</span></span></div>
+          </div>
+          <div class="pd-field">
+            <div class="pd-lb2">自由输入（可选）</div>
+            <div class="pd-val pd-ph">没有合适选项时直接输入答案；已选选项时作为补充说明返回</div>
+          </div>
+        </div>
+        <div class="pd-btnrow"><span class="pd-btn">取消</span><span class="pd-btn pd-primary">提交</span></div>
+      </div>
+      <div class="pd-cap">B1 · 单选题页签：Host 自持页签切换（点击 / ←→），扩展仅经 activeTab 回显接管。</div>
+    </div>
+    <ul class="pd-notes">
+      <li><b>自动前进</b>：仅多题布局、单选 <code>list</code>、未答→已答的 change → 跳至<b>下一未答题</b>（无则复核页）；回改已答题不前进。</li>
+      <li><b>页签状态</b>：题目页签已答 → <code>status:"answered"</code>；复核页全答 → answered，有缺 → <code>attention</code>。✓/⚠ 仅示意，实际由 Host 渲染。</li>
+      <li><b>结构</b>：<code>tabs #questionnaire-tabs</code>，页签 <code>q0…qN-1</code> + <code>review</code>（label 复核）；所有页签 children 常驻树中，切页不丢值。</li>
+    </ul>
+  </div>
+
+  <div class="pd-screen">
+    <div class="pd-stage">
+      <div class="pd-widget">
+        <div class="pd-head"><span>回答问题</span><span>tabs · 多选题</span></div>
+        <div class="pd-tabs">
+          <span class="pd-tab">Library <span class="pd-chip pd-ok">✓</span></span>
+          <span class="pd-tab pd-active">Features</span>
+          <span class="pd-tab">复核 <span class="pd-chip pd-warn">⚠</span></span>
+        </div>
+        <div class="pd-body">
+          <div class="pd-q">Which features do you want to enable?</div>
+          <div class="pd-note-cap">可多选</div>
+          <div>
+            <div class="pd-opt multi sel"><span class="pd-ctl"></span><span><span class="pd-lb">Auth</span><br><span class="pd-ds">login</span></span></div>
+            <div class="pd-opt multi" style="margin-top:6px"><span class="pd-ctl"></span><span><span class="pd-lb">Billing</span><br><span class="pd-ds">pay</span></span></div>
+          </div>
+          <div class="pd-field">
+            <div class="pd-lb2">自由输入（可选）</div>
+            <div class="pd-val">先只开 Auth<span class="pd-cursor"></span></div>
+          </div>
+          <div class="pd-next">下一题 →</div>
+        </div>
+        <div class="pd-btnrow"><span class="pd-btn">取消</span><span class="pd-btn pd-primary">提交</span></div>
+      </div>
+      <div class="pd-cap">B2 · 多选题页签：可多选 caption + checkbox 列表 + 显式前进按钮（ghost）。</div>
+    </div>
+    <ul class="pd-notes">
+      <li><b>勾选 ≠ 确认</b>：多选 change 不触发自动前进，由「下一题 →」（<code>goto:&lt;i+1&gt;</code>）或「完成，去复核 →」（<code>goto:review</code>，最后一题）显式推进。</li>
+      <li><b>勾选 + 补充文本</b> → <code>{ kind:"multi", selected:[…], notes }</code>（与 TUI 合并语义一致）。</li>
+      <li><b>caption</b>「可多选」为 <code>tone:"muted"</code>，与复核说明共用样式。</li>
+    </ul>
+  </div>
+
+  <div class="pd-screen">
+    <div class="pd-stage">
+      <div class="pd-widget">
+        <div class="pd-head"><span>回答问题</span><span>tabs · 复核页</span></div>
+        <div class="pd-tabs">
+          <span class="pd-tab">Library <span class="pd-chip pd-ok">✓</span></span>
+          <span class="pd-tab">Features <span class="pd-chip pd-ok">✓</span></span>
+          <span class="pd-tab pd-active">复核 <span class="pd-chip pd-ok">✓</span></span>
+        </div>
+        <div class="pd-body">
+          <div class="pd-note-cap">提交后以下答案将返回给模型；未作答的题目可点「修改」返回补答。</div>
+          <div class="pd-review-row">
+            <span class="pd-sum">Library：A<span class="pd-sup">（补充：生态最熟，团队都会写）</span></span>
+            <span class="pd-btn pd-ghost-inline">修改</span>
+          </div>
+          <div class="pd-review-row" style="margin-top:6px">
+            <span class="pd-sum">Features：Billing</span>
+            <span class="pd-btn pd-ghost-inline">修改</span>
+          </div>
+        </div>
+        <div class="pd-btnrow"><span class="pd-btn">取消</span><span class="pd-btn pd-primary">提交</span></div>
+      </div>
+      <div class="pd-cap">B3 · 复核页（全答完）：行摘要 + 补充内联预览 + 「修改」跳回（goto:&lt;i&gt;）。</div>
+    </div>
+    <ul class="pd-notes">
+      <li><b>未作答行</b>：<code>header：未作答</code>，<code>tone:"warning"</code>——状态词写在文案里，旧 Host 丢色仍可读。</li>
+      <li><b>页签状态</b>：全答 → <code>answered</code>（如本屏 ✓）；有缺 → <code>attention</code>（⚠，见 B1/B2）。</li>
+      <li><b>补充预览</b>：有选择的题目在摘要后追加「（补充：…）」，纯文本题直接显示文本。</li>
+      <li><b>允许部分作答</b>：提交不做完整性拦截，未答题不产生 answer。</li>
+    </ul>
+  </div>
+
+  <h3>节点清单 <span class="pd-tag">view/v1 协议面</span></h3>
+  <table class="pd-table">
+    <tr><th>节点</th><th>id / 用法</th><th>关键属性</th></tr>
+    <tr><td>tabs</td><td><code>questionnaire-tabs</code></td><td>页签 <code>q&lt;i&gt;</code> + <code>review</code>（label 复核）；<code>activeTab</code>；status answered / attention</td></tr>
+    <tr><td>card</td><td>单题外壳</td><td>title = <code>header</code>，缺省「问题 N」</td></tr>
+    <tr><td>text</td><td>问题正文 / 复核行</td><td>variant body；未作答行 tone warning</td></tr>
+    <tr><td>caption</td><td>可多选 · 复核说明</td><td>tone muted</td></tr>
+    <tr><td>list</td><td><code>q&lt;i&gt;</code></td><td>multiple = multiSelect；value = <code>opt:&lt;q&gt;:&lt;o&gt;</code></td></tr>
+    <tr><td>input</td><td><code>q&lt;i&gt;-custom</code></td><td>label 自由输入（可选）；placeholder 见 A1</td></tr>
+    <tr><td>button</td><td><code>goto:&lt;i&gt;</code> / <code>goto:review</code></td><td>variant ghost：下一题 → / 完成，去复核 → / 修改</td></tr>
+    <tr><td>row · column</td><td>复核行 / 布局容器</td><td>gap 8 / 16</td></tr>
+    <tr><td>actions</td><td><code>cancel</code> / <code>submit</code></td><td>kind submit；cancel ghost → danger（布防），submit primary「提交」</td></tr>
+  </table>
+
+  <h3>交互规则 <span class="pd-tag">优化时的不变量</span></h3>
+  <ol class="pd-rules">
+    <li><b>自动前进</b>：多题布局下单选 list 的「未答→已答」change；跳下一未答题，无则复核页。多选勾选、自由输入、备注不触发；回改已答题不触发。</li>
+    <li><b>两段式取消</b>：hasAnyWork（任一题已答）时首次取消仅布防；任意 change 解除；无工作直接关闭。</li>
+    <li><b>自由输入语义</b>：有选择 → notes 补充；无选择 → custom 答案；复核页内联预览补充。</li>
+    <li><b>提交取值</b>：Host 表单快照（<code>event.values</code>）优先，缺失字段回退扩展侧 shadow state。</li>
+    <li><b>状态词入文案</b>：tone 可能被旧 Host 丢弃，「未作答」等状态必须保留在文本中。</li>
+    <li><b>回落</b>：无 socket / 协议错误 / placement 被拒 → 静默回落 TUI / RPC（不在本稿范围）。</li>
+  </ol>
+</div>
+</body>
+</html>
