@@ -1,11 +1,10 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { type Component, type Input, visibleWidth } from "@earendil-works/pi-tui";
+import { type Component, visibleWidth } from "@earendil-works/pi-tui";
 import { makeTheme } from "@yoki/yoki-test-utils";
 import { describe, expect, it } from "vitest";
 import type { QuestionAnswer, QuestionData } from "../tool/types.ts";
 import type { MultiSelectView } from "../view/components/multi-select-view.ts";
 import type { OptionListView } from "../view/components/option-list-view.ts";
-import type { PreviewPane } from "../view/components/preview/preview-pane.ts";
 import { SubmitPicker } from "../view/components/submit-picker.ts";
 import type { TabBar } from "../view/components/tab-bar.ts";
 import {
@@ -28,15 +27,15 @@ function stubComponent(lines: string[]): Component {
 	return { render: () => lines, handleInput() {}, invalidate() {} };
 }
 
-function stubPreviewPane(lines: string[], rowRange?: (w: number) => [number, number]): PreviewPane {
+function stubOptionList(
+	lines: string[] = ["<OPTION_LIST>"],
+	rowRange?: (w: number) => [number, number],
+): OptionListView {
 	return {
 		...stubComponent(lines),
 		focusedItemRowRange: rowRange ?? ((_w: number) => [0, 1] as [number, number]),
-	} as unknown as PreviewPane;
-}
-
-function stubOptionList(): OptionListView {
-	return stubComponent(["<OPTION_LIST>"]) as unknown as OptionListView;
+		naturalHeight: (w: number) => stubComponent(lines).render(w).length,
+	} as unknown as OptionListView;
 }
 
 interface DialogParts {
@@ -46,7 +45,7 @@ interface DialogParts {
 
 type MakeConfigOverrides = Partial<Omit<DialogConfig, "tabsByIndex">> & {
 	state?: DialogState;
-	previewPane?: PreviewPane;
+	optionList?: OptionListView;
 	initialProps?: DialogProps;
 	tabsByIndex?: ReadonlyArray<TabComponents>;
 	multiSelectByTab?: ReadonlyArray<MultiSelectView | undefined>;
@@ -76,23 +75,19 @@ function makeConfig(over: MakeConfigOverrides = {}): DialogParts {
 	const state: DialogState = over.state ?? {
 		currentTab: 0,
 		optionIndex: 0,
-		notesVisible: false,
 		inputMode: false,
 		answers: new Map(),
 		multiSelectChecked: new Set(),
-		notesByTab: new Map(),
-		focusedOptionHasPreview: false,
+		draftByTab: new Map(),
 		submitChoiceIndex: 0,
-		notesDraft: "",
 		collapsed: false,
 		cancelArmed: false,
 	};
-	const previewPane = over.previewPane ?? stubPreviewPane(["<PREVIEW>"]);
+	const optionList = over.optionList ?? stubOptionList();
 	const tabsByIndex: ReadonlyArray<TabComponents> =
 		over.tabsByIndex ??
 		questions.map((_, i) => ({
-			optionList: stubOptionList(),
-			preview: previewPane,
+			optionList,
 			multiSelect: over.multiSelectByTab?.[i],
 			bodyHeights: () => ({ current: 0, max: 0 }),
 		}));
@@ -100,7 +95,6 @@ function makeConfig(over: MakeConfigOverrides = {}): DialogParts {
 		theme: over.theme ?? theme,
 		questions,
 		tabBar: over.tabBar ?? (stubComponent(["<TABBAR>", ""]) as unknown as TabBar),
-		notesInput: over.notesInput ?? (stubComponent(["<NOTES_INPUT>"]) as unknown as Input),
 		isMulti: over.isMulti ?? questions.length > 1,
 		tabsByIndex,
 		submitPicker: over.submitPicker,
@@ -108,7 +102,7 @@ function makeConfig(over: MakeConfigOverrides = {}): DialogParts {
 		getCurrentBodyHeight: over.getCurrentBodyHeight ?? (() => 1),
 		getTerminalRows: over.getTerminalRows ?? (() => 24),
 	};
-	const initialProps: DialogProps = over.initialProps ?? { state, activePreviewPane: previewPane };
+	const initialProps: DialogProps = over.initialProps ?? { state };
 	return { config, initialProps };
 }
 
@@ -255,14 +249,12 @@ describe("Dialog overflow — submit tab", () => {
 		return {
 			currentTab: 2,
 			optionIndex: 0,
-			notesVisible: false,
 			inputMode: false,
 			answers,
 			multiSelectChecked: new Set(),
-			notesByTab: new Map(),
-			focusedOptionHasPreview: false,
+			draftByTab: new Map(),
+
 			submitChoiceIndex: 0,
-			notesDraft: "",
 			collapsed: false,
 			cancelArmed: false,
 			...over,
@@ -304,7 +296,7 @@ describe("Dialog overflow — indicator content", () => {
 				getTerminalRows: () => 8,
 				getBodyHeight: () => 20,
 				getCurrentBodyHeight: () => 10,
-				previewPane: stubPreviewPane(Array(20).fill("<LINE>")),
+				optionList: stubOptionList(Array(20).fill("<LINE>")),
 			}),
 		);
 		const lines = dlg.render(80);
@@ -324,7 +316,7 @@ describe("Dialog overflow — indicator content", () => {
 				getTerminalRows: () => 14,
 				getBodyHeight: () => 20,
 				getCurrentBodyHeight: () => 10,
-				previewPane: stubPreviewPane(Array(20).fill("<LINE>"), (_w: number) => [5, 8] as [number, number]),
+				optionList: stubOptionList(Array(20).fill("<LINE>"), (_w: number) => [5, 8] as [number, number]),
 			}),
 		);
 		const lines = dlg.render(80);
@@ -344,7 +336,7 @@ describe("Dialog overflow — indicator content", () => {
 				getTerminalRows: () => 14,
 				getBodyHeight: () => 20,
 				getCurrentBodyHeight: () => 10,
-				previewPane: stubPreviewPane(Array(20).fill("<LINE>")),
+				optionList: stubOptionList(Array(20).fill("<LINE>")),
 			}),
 		);
 		const lines = dlg.render(80);
@@ -362,7 +354,7 @@ describe("Dialog overflow — indicator content", () => {
 				getTerminalRows: () => 14,
 				getBodyHeight: () => 30,
 				getCurrentBodyHeight: () => 30,
-				previewPane: stubPreviewPane(Array(30).fill("<LINE>"), (_w: number) => [29, 30] as [number, number]),
+				optionList: stubOptionList(Array(30).fill("<LINE>"), (_w: number) => [29, 30] as [number, number]),
 			}),
 		);
 		const lines = dlg.render(80);
@@ -381,7 +373,7 @@ describe("Dialog overflow — centering with non-trivial focusedItemRowRange", (
 				getTerminalRows: () => 14,
 				getBodyHeight: () => 20,
 				getCurrentBodyHeight: () => 10,
-				previewPane: stubPreviewPane(Array(20).fill("<LINE>"), (_w: number) => [5, 8] as [number, number]),
+				optionList: stubOptionList(Array(20).fill("<LINE>"), (_w: number) => [5, 8] as [number, number]),
 			}),
 		);
 		const lines = dlg.render(80);
@@ -397,7 +389,7 @@ describe("Dialog overflow — centering with non-trivial focusedItemRowRange", (
 				getTerminalRows: () => 14,
 				getBodyHeight: () => 20,
 				getCurrentBodyHeight: () => 10,
-				previewPane: stubPreviewPane(Array(20).fill("<LINE>"), (_w: number) => [2, 8] as [number, number]),
+				optionList: stubOptionList(Array(20).fill("<LINE>"), (_w: number) => [2, 8] as [number, number]),
 			}),
 		);
 		const lines = dlg.render(80);

@@ -3,7 +3,7 @@ import type { QuestionnaireState } from "../state/state.ts";
 import type { ApplyContext } from "../state/state-reducer.ts";
 import type { QuestionData } from "../tool/types.ts";
 import type { MultiSelectView, MultiSelectViewProps } from "../view/components/multi-select-view.ts";
-import type { PreviewPane, PreviewPaneProps } from "../view/components/preview/preview-pane.ts";
+import type { OptionListView, OptionListViewProps } from "../view/components/option-list-view.ts";
 import type { SubmitPickerProps } from "../view/components/submit-picker.ts";
 import type { WrappingSelectItem } from "../view/components/wrapping-select.ts";
 import type { StatefulView } from "../view/stateful-view.ts";
@@ -37,13 +37,10 @@ export function makeQuestionnaireState(over: Partial<QuestionnaireState> = {}): 
 		currentTab: over.currentTab ?? 0,
 		optionIndex: over.optionIndex ?? 0,
 		inputMode: over.inputMode ?? false,
-		notesVisible: over.notesVisible ?? false,
 		answers: over.answers ?? new Map(),
 		multiSelectChecked: over.multiSelectChecked ?? new Set(),
-		notesByTab: over.notesByTab ?? new Map(),
-		focusedOptionHasPreview: over.focusedOptionHasPreview ?? false,
+		draftByTab: over.draftByTab ?? new Map(),
 		submitChoiceIndex: over.submitChoiceIndex ?? 0,
-		notesDraft: over.notesDraft ?? "",
 		collapsed: over.collapsed ?? false,
 		cancelArmed: over.cancelArmed ?? false,
 	};
@@ -67,22 +64,22 @@ export function makeStatefulView<P>(): StatefulView<P> {
 }
 
 /**
- * Mock PreviewPane for test fixtures. `TabComponents.preview` is statically typed
- * `PreviewPane`, but tests bypass `buildQuestionnaire` and only need a `StatefulView`
- * shape — this cast preserves that ergonomics without forcing tests to construct
- * a real PreviewPane (which would require a real OptionListView + PreviewBlockRenderer).
+ * Mock OptionListView for test fixtures. Mirrors makeFakeMultiSelectView — provides
+ * the concrete methods (focusedItemRowRange, naturalHeight) that TabComponents.optionList
+ * requires now that it's typed as OptionListView instead of StatefulView<OptionListViewProps>.
  */
-export function makeFakePreviewPane(): PreviewPane {
+export function makeFakeOptionListView(): OptionListView {
 	return {
-		...makeStatefulView<PreviewPaneProps>(),
-		setGlobalLeftWidth: vi.fn(),
-	} as unknown as PreviewPane;
+		...makeStatefulView<OptionListViewProps>(),
+		focusedItemRowRange: (_w: number) => [0, 0] as [number, number],
+		naturalHeight: (_w: number) => 0,
+	} as unknown as OptionListView;
 }
 
 /**
- * Mock MultiSelectView for test fixtures. Mirrors makeFakePreviewPane — provides
- * the concrete methods (focusedItemRowRange, naturalHeight) that TabComponents.multiSelect
- * requires now that it's typed as MultiSelectView instead of StatefulView<MultiSelectViewProps>.
+ * Mock MultiSelectView for test fixtures. Provides the concrete methods
+ * (focusedItemRowRange, naturalHeight) that TabComponents.multiSelect requires
+ * now that it's typed as MultiSelectView instead of StatefulView<MultiSelectViewProps>.
  */
 export function makeFakeMultiSelectView(): MultiSelectView {
 	return {
@@ -94,8 +91,7 @@ export function makeFakeMultiSelectView(): MultiSelectView {
 
 export function makeTabComponents(over: Partial<TabComponents> = {}): TabComponents {
 	return {
-		optionList: over.optionList ?? makeStatefulView(),
-		preview: over.preview ?? makeFakePreviewPane(),
+		optionList: over.optionList ?? makeFakeOptionListView(),
 		multiSelect: over.multiSelect,
 		bodyHeights: over.bodyHeights ?? (() => ({ current: 0, max: 0 })),
 	};

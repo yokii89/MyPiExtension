@@ -2,8 +2,7 @@ import type { StatefulView } from "../stateful-view.ts";
 import { WrappingSelect, type WrappingSelectItem, type WrappingSelectTheme } from "./wrapping-select.ts";
 
 /**
- * Maximum number of option rows visible in the WrappingSelect window. Lifted here from
- * `preview-pane.ts` so the cap travels with the option-list owner.
+ * Maximum number of option rows visible in the WrappingSelect window.
  */
 export const MAX_VISIBLE_OPTIONS = 10;
 
@@ -26,6 +25,8 @@ export interface OptionListViewProps {
 	inputCursorOffset?: number;
 	/** Optional previously-confirmed indicator. Omit when no marker should be drawn. */
 	confirmed?: { index: number; labelOverride?: string };
+	/** Optional saved free-text draft; rendered as a suffix on the unfocused "other" row. */
+	draft?: string;
 }
 
 /**
@@ -50,6 +51,7 @@ export class OptionListView implements StatefulView<OptionListViewProps> {
 		this.select.setConfirmedIndex(props.confirmed?.index, props.confirmed?.labelOverride);
 		this.select.setInputBuffer(props.inputBuffer);
 		this.select.setInputCursorOffset(props.inputCursorOffset);
+		this.select.setDraft(props.draft);
 	}
 
 	handleInput(_data: string): void {}
@@ -60,6 +62,14 @@ export class OptionListView implements StatefulView<OptionListViewProps> {
 
 	render(width: number): string[] {
 		return this.select.render(width);
+	}
+
+	/**
+	 * Row count of the body at `width`. Mirrors MultiSelectView's contract — the height
+	 * computers use this for dialog sizing without a separate render pass.
+	 */
+	naturalHeight(width: number): number {
+		return this.select.render(width).length;
 	}
 
 	focusedItemRowRange(width: number): [number, number] {

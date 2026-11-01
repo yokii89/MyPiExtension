@@ -113,30 +113,6 @@ describe("ask_user_question.execute — RPC dialog walker (ctx.mode === 'rpc')",
 		expect(r?.content[0]).toMatchObject({ text: expect.stringContaining('"Which?"="typed it"') });
 	});
 
-	it("folds option previews into the select title and echoes the selected preview", async () => {
-		const tool = register();
-		const withPreview = {
-			questions: [
-				{
-					question: "Which?",
-					header: "Pick",
-					options: [
-						{ label: "A", description: "a", preview: "PREVIEW-A" },
-						{ label: "B", description: "b" },
-					],
-				},
-			],
-		};
-		let title = "";
-		const select = vi.fn(async (t: string, options: string[]) => {
-			title = t;
-			return options[0];
-		});
-		const r = await run(tool, withPreview, ctxRpc({ select }));
-		expect(title).toContain("PREVIEW-A");
-		expect(r?.content[0]).toMatchObject({ text: expect.stringContaining("selected preview: PREVIEW-A") });
-	});
-
 	it("multi-select uses ctx.ui.input and parses comma-separated indices into labels", async () => {
 		const tool = register();
 		const input = vi.fn(async () => "1,3"); // red, blue

@@ -46,13 +46,10 @@ function makeState(over: Partial<QuestionnaireState> = {}): QuestionnaireState {
 		currentTab: 0,
 		optionIndex: 0,
 		inputMode: false,
-		notesVisible: false,
 		answers: new Map<number, QuestionAnswer>(),
 		multiSelectChecked: new Set<number>(),
-		notesByTab: new Map<number, string>(),
-		focusedOptionHasPreview: false,
+		draftByTab: new Map<number, string>(),
 		submitChoiceIndex: 0,
-		notesDraft: "",
 		collapsed: false,
 		cancelArmed: false,
 		...over,
@@ -208,18 +205,14 @@ describe("routeKey — confirm (single-select)", () => {
 		}
 	});
 
-	it("inline-input mode: Enter confirms with the buffered text + kind:'custom'", () => {
+	it("inline-input mode: Enter emits draft_commit with the buffered text (commit semantics live in the reducer)", () => {
 		const other: WrappingSelectItem = { kind: "other", label: "Type something." };
 		const action = routeKey(
 			sentinel(KEY.CONFIRM),
 			makeState({ inputMode: true }),
-			makeRuntime({ currentItem: other, inputBuffer: "my custom answer" }),
+			makeRuntime({ currentItem: other, inputBuffer: "my custom answer", questions: [makeQuestion()] }),
 		);
-		expect(action.kind).toBe("confirm");
-		if (action.kind === "confirm") {
-			expect(action.answer.answer).toBe("my custom answer");
-			expect(action.answer.kind).toBe("custom");
-		}
+		expect(action).toEqual({ kind: "draft_commit", text: "my custom answer", autoAdvanceTab: undefined });
 	});
 });
 
@@ -405,7 +398,7 @@ describe("routeKey — multiSelect free-text ('Type something.')", () => {
 		{ kind: "next", label: "Next" },
 	];
 
-	it("Enter on the 'Type something.' row (inputMode) → confirm kind:'custom' with the buffer", () => {
+	it("Enter on the 'Type something.' row (inputMode) → draft_commit with the buffer", () => {
 		const action = routeKey(
 			sentinel(KEY.CONFIRM),
 			makeState({ optionIndex: 3, inputMode: true }),
@@ -417,11 +410,7 @@ describe("routeKey — multiSelect free-text ('Type something.')", () => {
 				inputBuffer: "typed answer",
 			}),
 		);
-		expect(action.kind).toBe("confirm");
-		if (action.kind === "confirm") {
-			expect(action.answer.kind).toBe("custom");
-			expect(action.answer.answer).toBe("typed answer");
-		}
+		expect(action).toEqual({ kind: "draft_commit", text: "typed answer", autoAdvanceTab: undefined });
 	});
 
 	it("Space on the 'Type something.' row (defensive, !inputMode) → ignore (no phantom toggle)", () => {
@@ -560,54 +549,31 @@ describe("routeKey — cancel + submit", () => {
 	});
 });
 
-describe("routeKey — notes", () => {
-	it("'n' when focused option has preview emits notes_enter", () => {
-		expect(routeKey("n", makeState({ focusedOptionHasPreview: true }), makeRuntime())).toEqual({
-			kind: "notes_enter",
-		});
+describe("routeKey — draft commit (unified free-text)", () => {
+	it("'n' is a plain ignored byte outside inputMode (the former notes key is retired)", () => {
+		expect(routeKey("n", makeState(), makeRuntime())).toEqual({ kind: "ignore" });
 	});
 
-	it("'n' when focused option has no preview is ignored", () => {
-		expect(routeKey("n", makeState({ focusedOptionHasPreview: false }), makeRuntime())).toEqual({
-			kind: "ignore",
-		});
-	});
-
-	it("'n' is ignored on multiSelect questions even with preview", () => {
-		const multiQ = makeQuestion({ multiSelect: true });
+	it("Enter under inputMode emits draft_commit carrying the live buffer (single-question: no advance)", () => {
+		const other: WrappingSelectItem = { kind: "other", label: "Type something." };
 		expect(
 			routeKey(
-				"n",
-				makeState({ focusedOptionHasPreview: true }),
-				makeRuntime({ questions: [multiQ, makeQuestion()] }),
+				sentinel(KEY.CONFIRM),
+				makeState({ inputMode: true, optionIndex: 2 }),
+				makeRuntime({ currentItem: other, inputBuffer: "typed text", questions: [makeQuestion()] }),
 			),
-		).toEqual({ kind: "ignore" });
+		).toEqual({ kind: "draft_commit", text: "typed text", autoAdvanceTab: undefined });
 	});
 
-	it("notesMode: Esc -> notes_exit", () => {
-		expect(routeKey(sentinel(KEY.CANCEL), makeState({ notesVisible: true }), makeRuntime())).toEqual({
-			kind: "notes_exit",
-		});
-	});
-
-	it("notesMode: Enter -> notes_exit (save + return to options)", () => {
-		expect(routeKey(sentinel(KEY.CONFIRM), makeState({ notesVisible: true }), makeRuntime())).toEqual({
-			kind: "notes_exit",
-		});
-	});
-
-	it("notesMode: Tab byte emits notes_forward (any non-Esc/Enter key forwards to the Input)", () => {
-		expect(routeKey(BYTE_TAB, makeState({ notesVisible: true }), makeRuntime())).toEqual({
-			kind: "notes_forward",
-			data: BYTE_TAB,
-		});
-	});
-
-	it("notesMode: arbitrary printable byte emits notes_forward (single dispatch path)", () => {
-		expect(routeKey("a", makeState({ notesVisible: true }), makeRuntime())).toEqual({
-			kind: "notes_forward",
-			data: "a",
-		});
+	it("Enter under inputMode on a multi-question dialog carries the auto-advance target", () => {
+		const other: WrappingSelectItem = { kind: "other", label: "Type something." };
+		expect(
+			routeKey(
+				sentinel(KEY.CONFIRM),
+				makeState({ inputMode: true, optionIndex: 2 }),
+				makeRuntime({ currentItem: other, inputBuffer: "typed", questions: [makeQuestion(), makeQuestion()] }),
+			),
+		).toEqual({ kind: "draft_commit", text: "typed", autoAdvanceTab: 1 });
 	});
 });
 
@@ -644,11 +610,11 @@ describe("routeKey — collapse/expand (Ctrl+] toggle + collapsed-mode lockout)"
 		expect(routeKey(BYTE_CTRL_RBRACKET, makeState(), makeRuntime())).toEqual({ kind: "toggle_collapsed" });
 	});
 
-	it("Ctrl+] emits toggle_collapsed even while notesVisible (the notes branch never sees the key)", () => {
-		// Notes mode normally forwards every keystroke to the notes input via `notes_forward`.
-		// The collapse intercept sits ABOVE all state branches so the user can shrink the
-		// dialog to read the transcript mid-notes-edit without dirtying the draft.
-		expect(routeKey(BYTE_CTRL_RBRACKET, makeState({ notesVisible: true }), makeRuntime())).toEqual({
+	it("Ctrl+] emits toggle_collapsed even under inputMode (the input branch never sees the key)", () => {
+		// inputMode normally forwards every keystroke to the inline input via the ignore
+		// fast path. The collapse intercept sits ABOVE all state branches so the user can
+		// shrink the dialog to read the transcript mid-edit without dirtying the draft.
+		expect(routeKey(BYTE_CTRL_RBRACKET, makeState({ inputMode: true }), makeRuntime())).toEqual({
 			kind: "toggle_collapsed",
 		});
 	});
@@ -678,11 +644,11 @@ describe("routeKey — collapse/expand (Ctrl+] toggle + collapsed-mode lockout)"
 		expect(routeKey(BYTE_TAB, makeState({ collapsed: true }), makeRuntime())).toEqual({ kind: "ignore" });
 	});
 
-	it("while collapsed, the notes-forward and toggle branches are unreachable (lockout precedes them)", () => {
-		// Regression guard: without the lockout, a collapsed + notesVisible state would forward
-		// keystrokes into the notes input, and a collapsed + multiSelect state would let Space
+	it("while collapsed, the input-forward and toggle branches are unreachable (lockout precedes them)", () => {
+		// Regression guard: without the lockout, a collapsed + inputMode state would forward
+		// keystrokes into the inline input, and a collapsed + multiSelect state would let Space
 		// flip checkboxes. Both paths must be dead-ended at the collapsed branch.
-		expect(routeKey("x", makeState({ collapsed: true, notesVisible: true }), makeRuntime())).toEqual({
+		expect(routeKey("x", makeState({ collapsed: true, inputMode: true }), makeRuntime())).toEqual({
 			kind: "ignore",
 		});
 		expect(
@@ -763,8 +729,8 @@ describe("routeKey — cancel guard (arm/disarm)", () => {
 		expect(routeKey(sentinel(KEY.CANCEL), state, makeRuntime())).toEqual({ kind: "cancel" });
 	});
 
-	it("notes alone count as user work (guard arms)", () => {
-		const state = makeState({ notesByTab: new Map([[0, "note"]]) });
+	it("a saved draft alone counts as user work (guard arms)", () => {
+		const state = makeState({ draftByTab: new Map([[0, "note"]]) });
 		expect(routeKey(sentinel(KEY.CANCEL), state, makeRuntime())).toEqual({ kind: "arm_cancel" });
 	});
 

@@ -31,7 +31,6 @@ function emitAskUserPromptEvent(pi: ExtensionAPI, params: QuestionParams): void 
 			options: q.options.map((o) => ({
 				label: o.label,
 				description: o.description,
-				hasPreview: typeof o.preview === "string" && o.preview.length > 0,
 			})),
 		})),
 	};
@@ -114,8 +113,8 @@ export function buildItemsForQuestion(question: QuestionData): WrappingSelectIte
 export const DEFAULT_PROMPT_SNIPPET = `Ask the user up to ${MAX_QUESTIONS} structured questions (${MIN_OPTIONS}-${MAX_OPTIONS} options each) when requirements are ambiguous`;
 export const DEFAULT_PROMPT_GUIDELINES: string[] = [
 	`Use ask_user_question only when the request is underspecified and you cannot proceed without concrete decisions. Ask all clarifying questions in one invocation (up to ${MAX_QUESTIONS}); never stack calls back-to-back.`,
-	`Each question needs ${MIN_OPTIONS}-${MAX_OPTIONS} options, each with a 1-5 word label and a description of what it means or its trade-offs. A custom-answer row is appended automatically to every question, so don't add your own "Other" option.`,
-	`Set multiSelect: true when multiple answers are valid. Add options[].preview (markdown) when an option benefits from richer side-by-side context (mockups, code snippets, diagrams, configs); preview is single-select only. If you recommend an option, put it first and append "(Recommended)" to its label.`,
+	`Each question needs ${MIN_OPTIONS}-${MAX_OPTIONS} options, each with a 1-5 word label and a description of what it means or its trade-offs. A free-text row ("Type something.") is appended automatically to every question — text typed with no option selected IS the answer, and text typed alongside a selection comes back as the selection's supplement ("user notes:") — so don't add your own "Other" option.`,
+	`Set multiSelect: true when multiple answers are valid. If you recommend an option, put it first and append "(Recommended)" to its label.`,
 ];
 
 export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
@@ -130,18 +129,9 @@ export function registerAskUserQuestionTool(pi: ExtensionAPI): void {
 4. Offer choices to the user about what direction to take
 
 Usage notes:
-- Users will always be able to type a custom answer ("Type something." row is appended automatically to every question) or press Esc to abandon the questionnaire. Do NOT author "Other" / "Type something." labels yourself — duplicates are rejected at runtime.
-- Use multiSelect: true to allow multiple answers to be selected for a question. It is always available on every question (even when options carry a \`preview\`), expanding to the full pane width while typing so the custom answer is not cramped into the narrow options column.
-- If you recommend a specific option, make that the first option in the list and add "(Recommended)" at the end of the label.
-
-Preview feature:
-Use the optional \`preview\` field on options when presenting concrete artifacts that users need to visually compare:
-- ASCII mockups of UI layouts or components
-- Code snippets showing different implementations
-- Diagram variations
-- Configuration examples
-
-Preview content is rendered as markdown in a monospace box. Multi-line text with newlines is supported. When any option has a preview, the UI switches to a side-by-side layout with a vertical option list on the left and preview on the right. Do not use previews for simple preference questions where labels and descriptions suffice. Note: previews are only supported for single-select questions (not multiSelect).`,
+- Every question carries a built-in free-text field (the "Type something." row is appended automatically). Text typed with no option selected IS the answer; text typed alongside a selection is returned as that selection's supplement ("user notes:"). Users can also press Esc to abandon the questionnaire. Do NOT author "Other" / "Type something." / "Next" labels yourself — they are reserved and rejected at runtime.
+- Use multiSelect: true to allow multiple answers to be selected for a question.
+- If you recommend a specific option, make that the first option in the list and add "(Recommended)" at the end of the label.`,
 		promptSnippet: guidance.promptSnippet ?? DEFAULT_PROMPT_SNIPPET,
 		promptGuidelines: guidance.promptGuidelines ?? DEFAULT_PROMPT_GUIDELINES,
 		parameters: QuestionParamsSchema,

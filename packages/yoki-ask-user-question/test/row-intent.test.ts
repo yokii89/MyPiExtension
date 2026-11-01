@@ -90,7 +90,7 @@ describe("sentinelsToAppend walker", () => {
 	};
 	const baseMulti: QuestionData = { ...baseSingle, multiSelect: true };
 
-	it("appends `other` for single-select regardless of preview", () => {
+	it("appends `other` for single-select", () => {
 		expect(sentinelsToAppend(baseSingle)).toEqual(["other"]);
 	});
 

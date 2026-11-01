@@ -506,6 +506,7 @@ describe("WrappingSelect.setConfirmedIndex", () => {
 		expect(lines[1]).toContain(CURSOR_MARKER);
 		expect(lines[1]).not.toContain("✔");
 	});
+
 	it("clamps index to valid range", () => {
 		const s = new WrappingSelect(
 			[
@@ -640,5 +641,42 @@ describe("WrappingSelectItem.kind contract — exhaustive", () => {
 		const isOther = item.kind === "other";
 		const hasInputCursor = lines.some((l) => l.includes(CURSOR_MARKER));
 		expect(hasInputCursor).toBe(isOther);
+	});
+});
+
+describe("WrappingSelect.setDraft (unified free-text suffix)", () => {
+	const items = [
+		{ kind: "option" as const, label: "Alpha" },
+		{ kind: "other" as const, label: "Type something." },
+	];
+
+	it("unfocused other row shows the saved draft as a `· ✎ <draft>` suffix", () => {
+		const s = new WrappingSelect(items, 10, markedTheme);
+		s.setSelectedIndex(0);
+		s.setFocused(true);
+		s.setDraft("shorter expiry");
+		const lines = s.render(80);
+		expect(lines[1]).toContain("Type something. · ✎ shorter expiry");
+		// 草稿后缀不影响聚焦行：聚焦 other 行仍是内联输入渲染
+		s.setSelectedIndex(1);
+		const focusedLines = s.render(80);
+		expect(focusedLines[1]).not.toContain("✎");
+		expect(focusedLines[1]).toContain(CURSOR_MARKER);
+	});
+
+	it("whitespace-only or undefined draft clears the suffix; confirmed-override row never shows it", () => {
+		const s = new WrappingSelect(items, 10, markedTheme);
+		s.setSelectedIndex(0);
+		s.setFocused(true);
+		s.setDraft("   ");
+		expect(s.render(80).join("\n")).not.toContain("✎");
+		s.setDraft(undefined);
+		expect(s.render(80).join("\n")).not.toContain("✎");
+		// 已确认 other 行（custom 答案）显示答案文本本身，不叠加草稿
+		s.setDraft("a draft");
+		s.setConfirmedIndex(1, "Hello");
+		const lines = s.render(80);
+		expect(lines[1]).toContain("Hello ✔");
+		expect(lines[1]).not.toContain("✎");
 	});
 });

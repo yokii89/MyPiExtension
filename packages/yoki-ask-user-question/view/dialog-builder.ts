@@ -1,9 +1,8 @@
 import { DynamicBorder, type Theme } from "@earendil-works/pi-coding-agent";
-import { type Component, Container, type Input, Spacer } from "@earendil-works/pi-tui";
+import { type Component, Container, Spacer } from "@earendil-works/pi-tui";
 import { GLYPH_WARNING } from "yoki_ui/style";
 import type { QuestionnaireState } from "../state/state.ts";
 import type { QuestionData } from "../tool/types.ts";
-import type { PreviewPaneProps } from "./components/preview/preview-pane.ts";
 import type { TabBar } from "./components/tab-bar.ts";
 import type { StatefulView } from "./stateful-view.ts";
 import type { TabComponents } from "./tab-components.ts";
@@ -12,7 +11,6 @@ import { QuestionTabStrategy, SubmitTabStrategy, type TabContentStrategy } from 
 export const HINT_PART_ENTER = "Enter to select";
 export const HINT_PART_NAV = "↑/↓ to navigate";
 export const HINT_PART_TOGGLE = "Space to toggle";
-export const HINT_PART_NOTES = "n to add notes";
 export const HINT_PART_TAB = "Tab to switch questions";
 export const HINT_PART_CANCEL = "Esc to cancel";
 export const HINT_PART_COLLAPSE = "Ctrl+] to collapse";
@@ -26,7 +24,6 @@ export const HINT_PART_EXPAND = "Ctrl+] to expand";
 export const HINT_SINGLE = [HINT_PART_ENTER, HINT_PART_NAV, HINT_PART_CANCEL].join(" · ");
 export const HINT_MULTI = [HINT_PART_ENTER, HINT_PART_NAV, HINT_PART_TAB, HINT_PART_CANCEL].join(" · ");
 export const HINT_MULTISELECT_SUFFIX = ` · ${HINT_PART_TOGGLE}`;
-export const HINT_NOTES_SUFFIX = ` · ${HINT_PART_NOTES}`;
 /** Single-line footer shown by `QuestionnaireSession` when `state.collapsed === true`. Bypasses `buildHintText`. */
 export const COLLAPSED_HINT = [HINT_PART_EXPAND, HINT_PART_CANCEL].join(" · ");
 /**
@@ -48,7 +45,6 @@ export type DialogState = QuestionnaireState;
 /** Per-tick projection of dialog state. Written by the adapter; read by the strategy thunk. */
 export interface DialogProps {
 	state: DialogState;
-	activePreviewPane: StatefulView<PreviewPaneProps>;
 }
 
 /** Construction-time config for `DialogView`. Frozen after construction. */
@@ -56,7 +52,6 @@ export interface DialogConfig {
 	theme: Theme;
 	questions: readonly QuestionData[];
 	tabBar: TabBar | undefined;
-	notesInput: Input;
 	isMulti: boolean;
 	tabsByIndex: ReadonlyArray<TabComponents>;
 	/** Optional so single-question mode and non-submit tests can omit it; SubmitTabStrategy falls back to Spacer rows. */
@@ -70,12 +65,10 @@ export interface DialogConfig {
 }
 
 /**
- * The 7th renderable, promoted from a structural literal to a named class so
+ * The dialog renderable, promoted from a structural literal to a named class so
  * all view-layer components share one explicit `implements StatefulView<P>`
  * contract. `setProps(DialogProps)` writes the live cell read by the
- * strategy thunk during `render()`. `liveProps.activePreviewPane` is a
- * resolved pane reference threaded by the adapter per tick — the dialog
- * itself does not derive it.
+ * strategy thunk during `render()`.
  */
 export class DialogView implements StatefulView<DialogProps> {
 	private liveProps: DialogProps;
@@ -90,9 +83,7 @@ export class DialogView implements StatefulView<DialogProps> {
 		this.questionStrategy = new QuestionTabStrategy({
 			theme: config.theme,
 			questions: config.questions,
-			getPreviewPane: () => this.liveProps.activePreviewPane,
 			tabsByIndex: config.tabsByIndex,
-			notesInput: config.notesInput,
 			isMulti: config.isMulti,
 			getCurrentBodyHeight: config.getCurrentBodyHeight,
 		});
@@ -113,8 +104,8 @@ export class DialogView implements StatefulView<DialogProps> {
 	handleInput(_data: string): void {}
 
 	// Invalidation is driven by `QuestionnairePropsAdapter.invalidate()`, which
-	// owns the full set of renderables (binding registries + extras like
-	// `notesInput`). DialogView has no cached layout of its own.
+	// owns the full set of renderables (binding registries). DialogView has no
+	// cached layout of its own.
 	invalidate(): void {}
 
 	render(width: number): string[] {
@@ -219,7 +210,6 @@ export class DialogView implements StatefulView<DialogProps> {
 		for (const c of headingRowCache) container.addChild(c);
 		container.addChild(strategy.bodyComponent(state));
 		container.addChild(new Spacer(1));
-		for (const c of strategy.midRows(state)) container.addChild(c);
 
 		container.addChild(border());
 		for (const c of strategy.footerRows(state)) container.addChild(c);

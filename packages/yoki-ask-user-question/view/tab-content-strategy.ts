@@ -1,8 +1,7 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { type Component, Container, type Input, Spacer, Text, truncateToWidth } from "@earendil-works/pi-tui";
+import { type Component, Container, Spacer, Text, truncateToWidth } from "@earendil-works/pi-tui";
 import { formatAnswerScalar } from "../tool/format-answer.ts";
 import type { QuestionData } from "../tool/types.ts";
-import type { PreviewPane, PreviewPaneProps } from "./components/preview/preview-pane.ts";
 import {
 	ARMED_CANCEL_WARNING,
 	type DialogState,
@@ -10,17 +9,14 @@ import {
 	HINT_PART_COLLAPSE,
 	HINT_PART_ENTER,
 	HINT_PART_NAV,
-	HINT_PART_NOTES,
 	HINT_PART_TAB,
 	HINT_PART_TOGGLE,
 	INCOMPLETE_WARNING_PREFIX,
 	READY_PROMPT,
 	REVIEW_HEADING,
 } from "./dialog-builder.ts";
-import type { StatefulView } from "./stateful-view.ts";
 import type { TabComponents } from "./tab-components.ts";
 
-const NOTES_HEADER = "Notes:";
 const UNANSWERED_MARKER = "→ not answered";
 
 /**
@@ -67,9 +63,6 @@ export interface TabContentStrategy {
 	/** Natural rendered height of `bodyComponent(state)` at given width. */
 	bodyHeight(width: number, state: DialogState): number;
 
-	/** Optional rows between body's trailing Spacer and the bottom border. */
-	midRows(state: DialogState): Component[];
-
 	/** Footer rows below the bottom border. Rendered row count MUST equal `footerRowCount`. */
 	footerRows(state: DialogState): Component[];
 
@@ -80,9 +73,7 @@ export interface TabContentStrategy {
 export interface QuestionTabStrategyConfig {
 	theme: Theme;
 	questions: readonly QuestionData[];
-	getPreviewPane: () => StatefulView<PreviewPaneProps>;
 	tabsByIndex: ReadonlyArray<TabComponents>;
-	notesInput: Input;
 	isMulti: boolean;
 	getCurrentBodyHeight: (width: number) => number;
 }
@@ -112,16 +103,13 @@ export class QuestionTabStrategy implements TabContentStrategy {
 		const question = this.config.questions[state.currentTab];
 		const mso = this.config.tabsByIndex[state.currentTab]?.multiSelect;
 		if (question?.multiSelect === true && mso) return mso;
-		return this.config.getPreviewPane();
+		const optionList = this.config.tabsByIndex[state.currentTab]?.optionList;
+		if (!optionList) throw new Error(`no option list for tab ${state.currentTab}`);
+		return optionList;
 	}
 
 	bodyHeight(width: number, _state: DialogState): number {
 		return this.config.getCurrentBodyHeight(width);
-	}
-
-	midRows(state: DialogState): Component[] {
-		if (!state.notesVisible) return [];
-		return [new Text(this.config.theme.fg("muted", NOTES_HEADER), 1, 0), this.config.notesInput, new Spacer(1)];
 	}
 
 	footerRows(state: DialogState): Component[] {
@@ -148,7 +136,7 @@ export class QuestionTabStrategy implements TabContentStrategy {
 		const question = this.config.questions[state.currentTab];
 		const mso = this.config.tabsByIndex[state.currentTab]?.multiSelect;
 		if (question?.multiSelect === true && mso) return mso.focusedItemRowRange(width);
-		return (this.config.getPreviewPane() as unknown as PreviewPane).focusedItemRowRange(width);
+		return this.config.tabsByIndex[state.currentTab]?.optionList.focusedItemRowRange(width);
 	}
 }
 
@@ -216,10 +204,6 @@ export class SubmitTabStrategy implements TabContentStrategy {
 		return this.bodyComponent(state).render(width).length;
 	}
 
-	midRows(_state: DialogState): Component[] {
-		return [];
-	}
-
 	footerRows(state: DialogState): Component[] {
 		const missing: string[] = [];
 		for (let i = 0; i < this.config.questions.length; i++) {
@@ -250,20 +234,17 @@ export class SubmitTabStrategy implements TabContentStrategy {
 
 /**
  * Build the controls hint line. Order:
- *   Enter · ↑/↓ [· Space toggle] [· n notes] [· Tab switch] · Esc · Ctrl+] collapse
+ *   Enter · ↑/↓ [· Space toggle] [· Tab switch] · Esc · Ctrl+] collapse
  *
  * `HINT_SINGLE` / `HINT_MULTI` are the CORE prefix that must always render — the
  * collapse affordance is appended last so the core stays a contiguous substring even
- * when the trailing part is clipped by `OneLineClippedText` on terminals < ~95 cols.
+ * when the trailing part is clipped by `OneLineClippedText` on narrow terminals.
  * This is the trade we picked over wrapping (which would inflate `footerRowCount`
  * and desync the height math in `DialogView.render`).
  */
-export function buildHintText(question: QuestionData | undefined, isMulti: boolean, state: DialogState): string {
+export function buildHintText(question: QuestionData | undefined, isMulti: boolean, _state: DialogState): string {
 	const parts: string[] = [HINT_PART_ENTER, HINT_PART_NAV];
 	if (question?.multiSelect === true) parts.push(HINT_PART_TOGGLE);
-	if (question && question.multiSelect !== true && state.focusedOptionHasPreview && !state.notesVisible) {
-		parts.push(HINT_PART_NOTES);
-	}
 	if (isMulti) parts.push(HINT_PART_TAB);
 	parts.push(HINT_PART_CANCEL);
 	parts.push(HINT_PART_COLLAPSE);

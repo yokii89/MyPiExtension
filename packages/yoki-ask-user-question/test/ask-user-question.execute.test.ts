@@ -323,8 +323,8 @@ describe("ask_user_question.execute — event emission", () => {
 					header: "Lib",
 					multiSelect: false,
 					options: [
-						{ label: "React", description: "UI library", hasPreview: false },
-						{ label: "Vue", description: "Another UI library", hasPreview: false },
+						{ label: "React", description: "UI library" },
+						{ label: "Vue", description: "Another UI library" },
 					],
 				},
 			],
@@ -395,8 +395,8 @@ describe("ask_user_question.execute — event emission", () => {
 					header: "FW",
 					multiSelect: false,
 					options: [
-						{ label: "React", description: "UI lib", hasPreview: false },
-						{ label: "Vue", description: "Another UI lib", hasPreview: false },
+						{ label: "React", description: "UI lib" },
+						{ label: "Vue", description: "Another UI lib" },
 					],
 				},
 				{
@@ -404,8 +404,8 @@ describe("ask_user_question.execute — event emission", () => {
 					header: "Lang",
 					multiSelect: false,
 					options: [
-						{ label: "TS", description: "TypeScript", hasPreview: false },
-						{ label: "JS", description: "JavaScript", hasPreview: false },
+						{ label: "TS", description: "TypeScript" },
+						{ label: "JS", description: "JavaScript" },
 					],
 				},
 			],

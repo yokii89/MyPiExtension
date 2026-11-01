@@ -48,8 +48,8 @@ export const SENTINEL_KINDS: readonly SentinelKind[] = ["other", "next"];
  * - `autoSubmitsInMulti` — in multiSelect mode, Enter on this row commits
  *   the question (emits `multi_confirm`). The Next sentinel is the only true.
  * - `autoAppendOnSingleSelect` — `buildItemsForQuestion` appends
- *   this row when the question is single-select, regardless of whether any
- *   option carries a `preview`. The "other" sentinel is the only true.
+ *   this row unconditionally when the question is single-select. The "other"
+ *   sentinel is the only true.
  * - `autoAppendOnMultiSelect` — `buildItemsForQuestion` appends this row
  *   when the question is multi-select. The `other` and `next` sentinels are both true.
  */

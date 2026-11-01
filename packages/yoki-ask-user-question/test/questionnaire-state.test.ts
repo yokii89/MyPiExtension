@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-	computeFocusedOptionHasPreview,
-	selectActivePreviewPaneIndex,
-	selectConfirmedIndicator,
-} from "../state/selectors/derivations.ts";
+import { selectActiveTabIndex, selectConfirmedIndicator } from "../state/selectors/derivations.ts";
 import { selectActiveView } from "../state/selectors/focus.ts";
 import type { QuestionAnswer, QuestionData } from "../tool/types.ts";
 import type { WrappingSelectItem } from "../view/components/wrapping-select.ts";
@@ -71,45 +67,24 @@ describe("selectConfirmedIndicator", () => {
 	});
 });
 
-describe("selectActivePreviewPaneIndex", () => {
+describe("selectActiveTabIndex", () => {
 	it("returns currentTab when within range", () => {
-		expect(selectActivePreviewPaneIndex(1, 3)).toBe(1);
+		expect(selectActiveTabIndex(1, 3)).toBe(1);
 	});
 	it("clamps to the last question index when on the Submit tab", () => {
-		expect(selectActivePreviewPaneIndex(3, 3)).toBe(2);
+		expect(selectActiveTabIndex(3, 3)).toBe(2);
 	});
 	it("returns 0 when totalQuestions is 0 (defensive)", () => {
-		expect(selectActivePreviewPaneIndex(0, 0)).toBe(0);
+		expect(selectActiveTabIndex(0, 0)).toBe(0);
 	});
 });
 
 describe("selectActiveView", () => {
-	it("returns 'notes' when notesVisible is true", () => {
-		expect(selectActiveView({ notesVisible: true, currentTab: 0 }, 2)).toBe("notes");
-	});
-	it("returns 'submit' when currentTab equals totalQuestions and notes hidden", () => {
-		expect(selectActiveView({ notesVisible: false, currentTab: 2 }, 2)).toBe("submit");
+	it("returns 'submit' when currentTab equals totalQuestions", () => {
+		expect(selectActiveView({ currentTab: 2 }, 2)).toBe("submit");
 	});
 	it("returns 'options' as the default", () => {
-		expect(selectActiveView({ notesVisible: false, currentTab: 0 }, 2)).toBe("options");
-	});
-	it("priority order: notes wins over Submit-tab (matches dispatcher cascade)", () => {
-		expect(selectActiveView({ notesVisible: true, currentTab: 2 }, 2)).toBe("notes");
-	});
-});
-
-describe("preexisting selectors retained", () => {
-	it("computeFocusedOptionHasPreview returns true when the focused option carries a preview", () => {
-		const questions = [
-			q({
-				options: [
-					{ label: "A", description: "a", preview: "code" },
-					{ label: "B", description: "b" },
-				],
-			}),
-		];
-		expect(computeFocusedOptionHasPreview(questions, 0, 0)).toBe(true);
-		expect(computeFocusedOptionHasPreview(questions, 0, 1)).toBe(false);
+		expect(selectActiveView({ currentTab: 0 }, 2)).toBe("options");
 	});
 });
 

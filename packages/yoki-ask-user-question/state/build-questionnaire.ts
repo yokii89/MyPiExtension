@@ -1,4 +1,4 @@
-import { getMarkdownTheme, type Theme } from "@earendil-works/pi-coding-agent";
+import type { Theme } from "@earendil-works/pi-coding-agent";
 import { Input } from "@earendil-works/pi-tui";
 import type { QuestionData } from "../tool/types.ts";
 import {
@@ -9,24 +9,18 @@ import {
 } from "../view/component-binding.ts";
 import { MultiSelectView } from "../view/components/multi-select-view.ts";
 import { OptionListView } from "../view/components/option-list-view.ts";
-import { PreviewBlockRenderer } from "../view/components/preview/preview-block-renderer.ts";
-import { crossTabLeftWidthWithDonation } from "../view/components/preview/preview-layout-decider.ts";
-import type { PreviewPaneProps } from "../view/components/preview/preview-pane.ts";
-import { PreviewPane } from "../view/components/preview/preview-pane.ts";
 import { SubmitPicker } from "../view/components/submit-picker.ts";
 import { TabBar } from "../view/components/tab-bar.ts";
 import type { WrappingSelectItem, WrappingSelectTheme } from "../view/components/wrapping-select.ts";
 import { DialogView } from "../view/dialog-builder.ts";
 import { QuestionnairePropsAdapter } from "../view/props-adapter.ts";
-import type { StatefulView } from "../view/stateful-view.ts";
 import type { TabBodyHeights, TabComponents } from "../view/tab-components.ts";
 import type { PerTabSelector } from "./selectors/contract.ts";
-import { selectActivePreviewPaneIndex } from "./selectors/derivations.ts";
+import { selectActiveTabIndex } from "./selectors/derivations.ts";
 import {
 	selectDialogProps,
 	selectMultiSelectProps,
 	selectOptionListProps,
-	selectPreviewPaneProps,
 	selectSubmitPickerProps,
 	selectTabBarProps,
 } from "./selectors/projections.ts";
@@ -44,7 +38,6 @@ export interface QuestionnaireBuildConfig {
 
 export interface QuestionnaireBuilt {
 	adapter: QuestionnairePropsAdapter;
-	notesInput: Input;
 	inlineInput: Input;
 	render: (width: number) => string[];
 	invalidate: () => void;
@@ -55,14 +48,13 @@ interface HeightComputers {
 	current: (width: number) => number;
 }
 
-function previewBodyHeights(pane: PreviewPane): (width: number) => TabBodyHeights {
-	return (width) => ({
-		current: pane.naturalHeight(width),
-		max: pane.maxNaturalHeight(width),
-	});
-}
-
-function multiSelectBodyHeights(view: MultiSelectView): (width: number) => TabBodyHeights {
+/**
+ * Both single- and multi-select bodies are now a single view (option list resp.
+ * checkbox list) whose row count does not depend on which row is focused, so
+ * `current` and `max` coincide — mirroring MultiSelectView's
+ * `naturalHeight === render.length` invariant.
+ */
+function viewBodyHeights(view: { naturalHeight(width: number): number }): (width: number) => TabBodyHeights {
 	return (width) => {
 		const h = view.naturalHeight(width);
 		return { current: h, max: h };
@@ -70,7 +62,7 @@ function multiSelectBodyHeights(view: MultiSelectView): (width: number) => TabBo
 }
 
 const isActiveTab: PerTabSelector<boolean> = (s, ctx) =>
-	ctx.i === selectActivePreviewPaneIndex(s.currentTab, ctx.totalQuestions);
+	ctx.i === selectActiveTabIndex(s.currentTab, ctx.totalQuestions);
 
 /**
  * Pure factory: assembles every TUI component, the props adapter, and a
@@ -98,10 +90,7 @@ class QuestionnaireBuilder {
 	private readonly getCurrentTab: () => number;
 
 	private readonly selectTheme: WrappingSelectTheme;
-	private readonly markdownTheme = getMarkdownTheme();
-	private readonly notesInput = new Input();
 	private readonly inlineInput = new Input();
-	private readonly getTerminalWidth = () => this.tui.terminal.columns;
 	private readonly getTerminalRows = () => this.tui.terminal.rows;
 
 	constructor(config: QuestionnaireBuildConfig) {
@@ -118,7 +107,6 @@ class QuestionnaireBuilder {
 
 	build(): QuestionnaireBuilt {
 		const tabs = this.buildTabComponents();
-		this.injectGlobalLeftWidth(tabs);
 		const submitPicker = this.buildSubmitPicker();
 		const tabBar = this.buildTabBar();
 		const heights = this.buildHeightComputers(tabs);
@@ -147,45 +135,9 @@ class QuestionnaireBuilder {
 			items: this.itemsByTab[index] ?? [],
 			theme: this.selectTheme,
 		});
-		const previewBlock = new PreviewBlockRenderer({
-			question,
-			theme: this.theme,
-			markdownTheme: this.markdownTheme,
-		});
-		const preview = new PreviewPane({
-			question,
-			getTerminalWidth: this.getTerminalWidth,
-			optionListView: optionList,
-			previewBlock,
-		});
 		const multiSelect = question.multiSelect ? new MultiSelectView(this.theme, question) : undefined;
-		const bodyHeights = this.buildBodyHeights(question, preview, multiSelect);
-		return { optionList, preview, multiSelect, bodyHeights };
-	}
-
-	private buildBodyHeights(
-		question: QuestionData,
-		preview: PreviewPane,
-		multiSelect: MultiSelectView | undefined,
-	): (width: number) => TabBodyHeights {
-		return question.multiSelect ? multiSelectBodyHeights(multiSelect!) : previewBodyHeights(preview);
-	}
-
-	/**
-	 * Compute cross-tab max adaptive left width and inject into each PreviewPane.
-	 * Mirrors buildHeightComputers pattern — iterates all tabs, takes max.
-	 * Called after buildTabComponents, before buildDialog (so setGlobalLeftWidth
-	 * is set before any rendering occurs).
-	 */
-	private injectGlobalLeftWidth(tabs: ReadonlyArray<TabComponents>): void {
-		const questions = this.questions;
-		const itemsByTab = this.itemsByTab;
-		const tabsDescriptor = questions.map((q) => ({ multiSelect: q.multiSelect }));
-		const globalLeftWidth = (paneWidth: number): number =>
-			crossTabLeftWidthWithDonation(tabsDescriptor, itemsByTab, questions, paneWidth);
-		for (const tab of tabs) {
-			tab.preview.setGlobalLeftWidth(globalLeftWidth);
-		}
+		const bodyHeights = question.multiSelect ? viewBodyHeights(multiSelect!) : viewBodyHeights(optionList);
+		return { optionList, multiSelect, bodyHeights };
 	}
 
 	private buildSubmitPicker(): SubmitPicker | undefined {
@@ -212,11 +164,6 @@ class QuestionnaireBuilder {
 		return { global, current };
 	}
 
-	private pickInitialActivePreview(tabs: ReadonlyArray<TabComponents>): StatefulView<PreviewPaneProps> {
-		const idx = selectActivePreviewPaneIndex(this.initialState.currentTab, this.questions.length);
-		return tabs[idx]?.preview ?? tabs[0]!.preview;
-	}
-
 	private buildDialog(
 		tabs: ReadonlyArray<TabComponents>,
 		submitPicker: SubmitPicker | undefined,
@@ -228,7 +175,6 @@ class QuestionnaireBuilder {
 				theme: this.theme,
 				questions: this.questions,
 				tabBar,
-				notesInput: this.notesInput,
 				isMulti: this.isMulti,
 				tabsByIndex: tabs,
 				submitPicker,
@@ -236,7 +182,7 @@ class QuestionnaireBuilder {
 				getCurrentBodyHeight: heights.current,
 				getTerminalRows: this.getTerminalRows,
 			},
-			{ state: this.initialState, activePreviewPane: this.pickInitialActivePreview(tabs) },
+			{ state: this.initialState },
 		);
 	}
 
@@ -260,11 +206,6 @@ class QuestionnaireBuilder {
 				select: selectOptionListProps,
 			}),
 			perTabBinding({
-				resolve: (tab) => tab.preview,
-				predicate: isActiveTab,
-				select: selectPreviewPaneProps,
-			}),
-			perTabBinding({
 				resolve: (tab) => tab.multiSelect,
 				select: selectMultiSelectProps,
 			}),
@@ -284,14 +225,12 @@ class QuestionnaireBuilder {
 			inlineInput: this.inlineInput,
 			globalBindings,
 			perTabBindings,
-			extraInvalidatables: [this.notesInput],
 		});
 	}
 
 	private handle(adapter: QuestionnairePropsAdapter, dialog: DialogView): QuestionnaireBuilt {
 		return {
 			adapter,
-			notesInput: this.notesInput,
 			inlineInput: this.inlineInput,
 			render: (w) => dialog.render(w),
 			invalidate: () => adapter.invalidate(),

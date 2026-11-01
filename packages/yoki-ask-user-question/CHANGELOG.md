@@ -7,7 +7,25 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Removed
+- **The preview feature is removed end to end.** The tool schema drops `options[].preview`, the tool description and prompt guidelines stop advertising it, and answers no longer carry `preview` or a `selected preview:` envelope fragment.
+- **The TUI preview pane is deleted** (`view/components/preview/` — side-by-side/stacked layout, cross-tab width donation, markdown box renderer): a single-select tab body is now a plain option list, identical in shape to the multi-select one.
+- **The desktop (PiDesk) preview paths are deleted**: the native `view-option-preview` capability fork (PiDesk ≥0.4) and the sibling-markdown fallback for older hosts, along with the pre-open capability probe and the `previewCharBudget()` frame-budget math. The desktop questionnaire now renders the same list/input tree regardless of host capabilities.
+- **The RPC fallback no longer folds previews into select titles** (the `--- N. label preview ---` blocks are gone; the walker's dialogs get shorter).
+- **The `n` notes affordance and the separate notes editor are removed** — the unified free-text row below absorbs their function (see the Changed entry on the merge).
+- **The `yoki:ask-user:prompt` event payload drops `options[].hasPreview`.** Deliberate deviation from the events stability policy (payload removals normally require a `.v2` channel with dual-emit): the field was informational-only, is constant-false after this removal, and no listener in this repo reads it.
+
 ### Changed
+- **"Type something." and per-option notes are merged into ONE free-text field per question** (single- and multi-select alike). The semantics are selection-driven: text typed alongside a selection (an option answer, toggled checkboxes, or a committed multi answer) is saved as that answer's supplement and returned as `user notes:`; text typed with no selection IS the answer (`kind: "custom"`). Concretely:
+  - Enter on the "Type something." row (inputMode) saves the per-tab draft (`draftByTab`) and commits — supplement when a selection exists, custom answer otherwise; an EMPTY Enter now clears the draft (and strips `notes` from an existing answer) instead of committing a `"(no input)"` custom answer.
+  - Order-independent: text saved before selecting an option travels via the draft and merges into the answer at confirm time; text saved after a selection merges immediately.
+  - The old mutual-exclusivity rule is gone — toggled checkboxes plus row text now produce a `multi` answer with notes instead of the text wiping the checkboxes.
+  - The `n` key, the `Notes:` editor below the list, and the footer's `n to add notes` chip are removed; the saved draft renders as a `· ✎ <draft>` suffix on the unfocused "Type something." row, and the Submit-tab review keeps showing `notes:` lines.
+  - Desktop (PiDesk) drops its separate 备注 input: the single 自由输入（可选） field follows the same selection-driven semantics, and the review tab previews supplements inline (`（补充：…）`).
+  - Parity notes: the TUI single-question dialog still finishes on the first confirming Enter, so "select an option, then supplement it" needs a multi-question dialog (Tab back) or the desktop surface; the RPC fallback (option XOR free text, no supplement) and the Telegram host (✏️ 自定义 exclusive mode, no notes) are unchanged.
+- **Desktop review rows state their status in words, colored by `text.tone`** — `⚠ Features：未作答` is now `Features：未作答` in warning color, matching PiDesk `docs/design/79` F2 (emoji do not follow the theme tokens, and the status word must stay in the text so hosts without tone support still read fine). The `可多选` and review-intro captions use `muted`.
+- **`@pidesk/view-sdk` is now `^0.5.1`** — workspace-wide SDK range bump alongside `yoki-plan` and `pi-telegram`; this package uses no new API and is unchanged behaviorally. Impact: one SDK copy resolves at install time across the three view-sdk consumers.
+- **`@pidesk/view-sdk` is now `^0.5.2`** — behavior-only release that repairs the desktop path's silent fallback: the Host rendezvous file used to be a per-machine singleton, so a second PiDesk instance (dev build plus installed app) could point it at its own pipe and every `open()` died on `connect EPERM`, dropping this questionnaire onto the RPC dialog path (PiDesk `docs/design/122`). Impact: the floating questionnaire above the composer renders again on a multi-instance machine; no API, wire or capability change, so nothing here was adapted.
 - **Pi 1.4.0 minimum** — Peer dependencies now require Pi `1.4.0` and Node `22.19`. Impact: installs match the tested runtime.
 
 ### Added

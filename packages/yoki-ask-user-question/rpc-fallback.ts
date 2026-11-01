@@ -12,7 +12,6 @@
  * shared `buildQuestionnaireResponse` envelope.
  *
  * Parity trade-offs vs the TUI, inherent to the select/input API surface: no
- * side-by-side preview pane (previews are folded into the prompt title), no
  * tabbed multi-question review (one dialog per question), and multi-select is
  * a free-text numbers input instead of checkbox rows. The "Type something."
  * escape is preserved on both variants — multi-select treats any non-index
@@ -27,9 +26,6 @@ const MULTI_SELECT_INSTRUCTIONS =
 	'Enter the numbers of all that apply, comma-separated (e.g. "1,3"), or type a custom answer as plain text.';
 const CUSTOM_ANSWER_TITLE = "Type your answer:";
 const MULTI_SELECT_PLACEHOLDER = "1,3";
-
-/** Longest preview slice folded into a select title before truncation. */
-const MAX_PREVIEW_CHARS = 600;
 
 /**
  * The dialog-primitive slice of `ExtensionUIContext` this walker needs.
@@ -64,16 +60,6 @@ function parseIndex(token: string, count: number): number | null {
 	return i >= 0 && i < count ? i : null;
 }
 
-/** Previews folded into the select title — RPC has no side-by-side pane. */
-function buildPreviewBlock(question: QuestionData): string {
-	const blocks = question.options.flatMap((o, i) =>
-		o.preview && o.preview.length > 0
-			? [`--- ${i + 1}. ${o.label} preview ---\n${o.preview.slice(0, MAX_PREVIEW_CHARS)}`]
-			: [],
-	);
-	return blocks.length > 0 ? `\n\n${blocks.join("\n\n")}` : "";
-}
-
 /**
  * Walk the questionnaire one native dialog at a time. Dismissing any dialog
  * (the primitive resolves `undefined`) cancels the whole questionnaire —
@@ -102,7 +88,7 @@ async function askSingleSelect(
 ): Promise<QuestionAnswer | undefined> {
 	const options = q.options.map(formatOptionLine);
 	options.push(`${q.options.length + 1}. ${LABELS_BY_KIND.other}`);
-	const chosen = await ui.select(`${header}${q.question}${buildPreviewBlock(q)}`, options);
+	const chosen = await ui.select(`${header}${q.question}`, options);
 	if (chosen == null) return undefined;
 	const idx = parseIndex(chosen, options.length);
 	// A host returning something outside the offered list is indistinguishable
@@ -115,7 +101,6 @@ async function askSingleSelect(
 			question: q.question,
 			kind: "option",
 			answer: o.label,
-			preview: o.preview && o.preview.length > 0 ? o.preview : undefined,
 		};
 	}
 	// "Type something." sentinel → free-text follow-up.

@@ -8,28 +8,23 @@
   </a>
 </div>
 
-Let the model ask you structured clarifying questions instead of guessing. `yoki-ask-user-question` adds the `ask_user_question` tool to [Pi Agent](https://github.com/badlogic/pi-mono) - a tabbed dialog with single- and multi-select questions, side-by-side previews, per-option notes, and a Submit tab that reviews answers before they go back to the model.
-
-![Side-by-side code preview](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/code-preview.jpg)
+Let the model ask you structured clarifying questions instead of guessing. `yoki-ask-user-question` adds the `ask_user_question` tool to [Pi Agent](https://github.com/badlogic/pi-mono) - a tabbed dialog with single- and multi-select questions and a Submit tab that reviews answers before they go back to the model.
 
 ## Features
 
 - **Multi-question dialogs** - ask several questions in one turn with a tab bar (`Tab` to switch).
-- **Preview pane** - render an ASCII diagram, code snippet, or markdown next to each option, side-by-side or stacked depending on terminal width.
-- **Per-option notes** - press `n` on a previewed option to attach a free-text note that travels back with the answer.
+- **Unified free-text field** - a "Type something." row on every question (single- and multi-select). Text typed with no option selected IS the answer; text typed alongside a selection is returned as that selection's supplement (`user notes:`). Saved drafts survive tab switches and render on the row.
 - **Multi-select questions** - checkboxes with `Space` to toggle, Enter-as-toggle on rows, a `Next` sentinel to advance, and toggles persisted across tab switches.
 - **Submit tab** - review every answer before submitting; warns about unanswered questions and offers a Submit picker.
-- **Chat row on every tab** - redirect the conversation without leaving the dialog.
 - **Terminal-row-aware overflow scroll** - when the dialog is taller than the terminal, the body scrolls between a sticky heading and sticky hints/border; overflow indicators (↑ / ↓ / ↕) show what's clipped.
-- **"Other" free-text fallback** - type a custom answer when no option fits; available on every single-select question, even in preview mode (the input expands to the full pane width while typing).
 - **Desktop host (PiDesk)** - when the process runs under PiDesk (or any host that injects `PIDESK_VIEW_*` / `PI_VIEW_*`), the questionnaire is presented as a **floating widget above the task composer** (same family as the @-mention menu) via `@pidesk/view-sdk` instead of the terminal TUI. Falls back automatically when the desktop socket is unavailable.
 
 ## Screens
 
 | | |
 |---|---|
-| ![Single-question dialog](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/single-question.jpg) | ![Multi-tab + ASCII preview](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/multi-tab-preview.jpg) |
-| ![Multi-select with checkboxes](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/multi-select.jpg) | ![Submit tab review](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/submit-tab.jpg) |
+| ![Single-question dialog](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/single-question.jpg) | ![Multi-select with checkboxes](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/multi-select.jpg) |
+| ![Submit tab review](https://raw.githubusercontent.com/yokii89/MyPiExtension/main/packages/yoki-ask-user-question/docs/submit-tab.jpg) | |
 
 ## Install
 
@@ -41,7 +36,7 @@ Then restart your Pi session.
 
 ## Tool
 
-- **`ask_user_question`** - present one or more structured questions, each with 2+ options, optional `multiSelect`, optional per-option `preview`, and a free-text "Other" fallback available on every single-select question (even with previews). Returns the user's selection(s) plus any notes. See the tool's `promptGuidelines` for usage policy.
+- **`ask_user_question`** - present one or more structured questions, each with 2+ options, optional `multiSelect`, and a built-in free-text field on every question. Text typed with no selection is the answer; text typed alongside a selection comes back as that selection's supplement. See the tool's `promptGuidelines` for usage policy.
 
 ### Schema
 
@@ -55,7 +50,6 @@ ask_user_question({
         {
           label: string,           // 1-5 words, max 60 chars
           description: string,     // explains the choice / its trade-off
-          preview?: string,        // optional markdown shown next to options
         },
         // … 2-4 options total
       ],
@@ -66,7 +60,7 @@ ask_user_question({
 })
 ```
 
-Reserved option labels (rejected at validation): `"Other"`, plus the runtime sentinels (`"Type something."`, `"Chat about this"`, `"Next →"`).
+Reserved option labels (rejected at validation): `"Other"`, plus the runtime sentinels (`"Type something."`, `"Next"`).
 
 Returns:
 
@@ -77,11 +71,10 @@ Returns:
     answers: Array<{
       questionIndex: number,
       question: string,
-      kind: "option" | "custom" | "chat" | "multi",
+      kind: "option" | "custom" | "multi",
       answer: string | null,
       selected?: string[],         // present for multi-select
-      notes?: string,              // free-text note, when typed
-      preview?: string,            // echoed back when option carried a preview
+      notes?: string,              // supplement typed alongside a selection
     }>,
     cancelled: boolean,
     error?: "no_ui" | "no_questions" | "empty_options" | "too_many_questions"

@@ -42,12 +42,6 @@ export const OptionSchema = Type.Object({
 		description:
 			"Explanation of what this option means or what will happen if chosen. Useful for providing context about trade-offs or implications.",
 	}),
-	preview: Type.Optional(
-		Type.String({
-			description:
-				"Optional preview content rendered when this option is focused. Use for mockups, code snippets, or visual comparisons that help users compare options. See the tool description for the expected content format.",
-		}),
-	),
 });
 
 export const QuestionSchema = Type.Object({
@@ -94,9 +88,12 @@ export type QuestionParams = Static<typeof QuestionParamsSchema>;
  * `multi` 是多选专属变体，行侧没有对应项。
  *
  * 各变体语义：
- * - `option`：用户选中了作者定义的某个选项，`answer` 是该选项的 label。
- * - `custom`：用户通过 "Type something." 行输入自由文本，`answer` 是输入内容或 null。
- * - `multi`：用户提交了多选结果，`selected` 携带选中的 label 列表，`answer` 为 null。
+ * - `option`：用户选中了作者定义的某个选项，`answer` 是该选项的 label；自由输入文本
+ *   作为补充落在 `notes`。
+ * - `custom`：用户未选任何选项、通过 "Type something." 行输入自由文本，`answer` 是
+ *   输入内容（空输入不再产生 custom 答案）。
+ * - `multi`：用户提交了多选结果，`selected` 携带选中的 label 列表，`answer` 为 null；
+ *   自由输入文本同样作为补充落在 `notes`。
  */
 export interface QuestionAnswer {
 	questionIndex: number;
@@ -105,12 +102,6 @@ export interface QuestionAnswer {
 	answer: string | null;
 	selected?: string[];
 	notes?: string;
-	/**
-	 * 取自匹配选项 `preview` 字段的 markdown 文本，仅当用户停在一个带 `preview` 的
-	 * 单选选项上时填充。`buildQuestionnaireResponse` 用它把 `selected preview: <preview>`
-	 * 回写进面向模型的 envelope。多选和自定义文本（`kind: "custom"`）回答下为 undefined。
-	 */
-	preview?: string;
 }
 
 export type QuestionnaireError =

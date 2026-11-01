@@ -28,7 +28,6 @@ const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000;
 interface AskUserOption {
 	label: string;
 	description: string;
-	preview?: string;
 }
 
 interface AskUserQuestion {
@@ -48,7 +47,6 @@ interface AskUserAnswer {
 	kind: "option" | "custom" | "multi";
 	answer: string | null;
 	selected?: string[];
-	preview?: string;
 }
 
 interface AskUserResult {
@@ -492,7 +490,6 @@ async function handleCallbackUpdate(update: unknown): Promise<"consume" | "pass"
 			question: q.question,
 			kind: "option",
 			answer: option.label,
-			preview: typeof option.preview === "string" && option.preview.length > 0 ? option.preview : undefined,
 		});
 		return "consume";
 	}

@@ -5,7 +5,6 @@ import {
 	selectDialogProps,
 	selectMultiSelectProps,
 	selectOptionListProps,
-	selectPreviewPaneProps,
 	selectSubmitPickerProps,
 	selectTabBarProps,
 } from "../state/selectors/projections.ts";
@@ -16,7 +15,6 @@ import {
 	globalBinding,
 	perTabBinding,
 } from "../view/component-binding.ts";
-import type { OptionListViewProps } from "../view/components/option-list-view.ts";
 import type { SubmitPickerProps } from "../view/components/submit-picker.ts";
 import type { TabBarProps } from "../view/components/tab-bar.ts";
 import type { WrappingSelectItem } from "../view/components/wrapping-select.ts";
@@ -25,7 +23,7 @@ import { QuestionnairePropsAdapter } from "../view/props-adapter.ts";
 import type { TabComponents } from "../view/tab-components.ts";
 import {
 	makeFakeMultiSelectView,
-	makeFakePreviewPane,
+	makeFakeOptionListView,
 	makeQuestion,
 	makeQuestionnaireState as makeState,
 	makeStatefulView,
@@ -41,8 +39,7 @@ function makeFixture(overQuestions?: QuestionData[]) {
 
 	const tabsByIndex: TabComponents[] = questions.map((q) =>
 		makeTabComponents({
-			optionList: makeStatefulView<OptionListViewProps>(),
-			preview: makeFakePreviewPane(),
+			optionList: makeFakeOptionListView(),
 			multiSelect: q.multiSelect ? makeFakeMultiSelectView() : undefined,
 		}),
 	);
@@ -66,7 +63,6 @@ function makeFixture(overQuestions?: QuestionData[]) {
 
 	const perTabBindings: ReadonlyArray<BoundPerTabBinding> = [
 		perTabBinding({ resolve: (tab) => tab.optionList, predicate: isActiveTab, select: selectOptionListProps }),
-		perTabBinding({ resolve: (tab) => tab.preview, predicate: isActiveTab, select: selectPreviewPaneProps }),
 		perTabBinding({ resolve: (tab) => tab.multiSelect, select: selectMultiSelectProps }),
 	];
 
@@ -92,16 +88,16 @@ function makeFixture(overQuestions?: QuestionData[]) {
 }
 
 describe("QuestionnairePropsAdapter.apply", () => {
-	it("calls dialog.setProps exactly once with state + activePreviewPane", () => {
-		const { adapter, dialog, tabsByIndex } = makeFixture();
+	it("calls dialog.setProps exactly once with the state", () => {
+		const { adapter, dialog } = makeFixture();
 		const state = makeState();
 		adapter.apply(state);
 		const calls = (dialog.setProps as ReturnType<typeof vi.fn>).mock.calls;
 		expect(calls.length).toBe(1);
-		expect(calls[0]![0]).toEqual({ state, activePreviewPane: tabsByIndex[0]!.preview });
+		expect(calls[0]![0]).toEqual({ state });
 	});
 
-	it("drives the active OptionListView via setProps and the active PreviewPane via setProps", () => {
+	it("drives the active OptionListView via setProps", () => {
 		const { adapter, tabsByIndex } = makeFixture();
 		const answers = new Map<number, QuestionAnswer>([
 			[0, { questionIndex: 0, question: "Pick one", kind: "option", answer: "B" }],
@@ -114,18 +110,25 @@ describe("QuestionnairePropsAdapter.apply", () => {
 			inputCursorOffset: 0,
 			confirmed: { index: 1 },
 		});
-		expect(tabsByIndex[0]!.preview.setProps).toHaveBeenLastCalledWith({
-			notesVisible: false,
-			selectedIndex: 1,
-			focused: true,
-			inputMode: false,
-		});
 	});
 
-	it("suppresses option focus when notes is visible", () => {
+	it("suppresses option focus when the Submit tab is active (active pane is the last question)", () => {
+		const { adapter, tabsByIndex, questions } = makeFixture();
+		adapter.apply(makeState({ currentTab: questions.length }));
+		expect(tabsByIndex[1]!.optionList.setProps).toHaveBeenLastCalledWith(expect.objectContaining({ focused: false }));
+	});
+
+	it("threads the saved per-tab draft through to OptionListView.setProps", () => {
 		const { adapter, tabsByIndex } = makeFixture();
-		adapter.apply(makeState({ notesVisible: true }));
-		expect(tabsByIndex[0]!.optionList.setProps).toHaveBeenLastCalledWith(expect.objectContaining({ focused: false }));
+		adapter.apply(makeState({ draftByTab: new Map([[0, "shorter expiry"]]) }));
+		expect(tabsByIndex[0]!.optionList.setProps).toHaveBeenLastCalledWith(
+			expect.objectContaining({ draft: "shorter expiry" }),
+		);
+		// 切到无草稿的 tab：调用里不携带 draft 字段
+		adapter.apply(makeState({ currentTab: 1 }));
+		expect(tabsByIndex[1]!.optionList.setProps).toHaveBeenLastCalledWith(
+			expect.not.objectContaining({ draft: expect.anything() }),
+		);
 	});
 
 	it("focuses the submitPicker only when on the Submit tab", () => {
@@ -243,16 +246,6 @@ describe("QuestionnairePropsAdapter.apply", () => {
 			(inlineInput as unknown as { cursor: unknown }).cursor = 6;
 			adapter.apply(makeState());
 			expect(tabsByIndex[0]!.optionList.setProps).toHaveBeenLastCalledWith(expectUndefined());
-		});
-	});
-});
-
-describe("QuestionnairePropsAdapter.apply — preview pane resolution", () => {
-	it("forwards the resolved pane to dialog.setProps via activePreviewPane", () => {
-		const { adapter, dialog, tabsByIndex } = makeFixture();
-		adapter.apply(makeState({ currentTab: 1 }));
-		expect((dialog.setProps as ReturnType<typeof vi.fn>).mock.calls[0]![0]).toMatchObject({
-			activePreviewPane: tabsByIndex[1]!.preview,
 		});
 	});
 });

@@ -278,20 +278,19 @@ describe("ask_user_question — 'Type something.' free-text flow", () => {
 		expect(r?.details.answers[0].answer).toBe("hello");
 	});
 
-	it("Type something with no input → kind:'custom', answer=null", async () => {
+	it("Type something with no input → nothing commits (empty Enter clears; single Esc cancels, no '(no input)' answer)", async () => {
 		const tool = register();
 		const { custom } = driveCustom((c) => {
 			c.handleInput(KEY.DOWN); // → Second
 			c.handleInput(KEY.DOWN); // → Type something
-			c.handleInput(KEY.ENTER); // confirm with empty buffer
+			c.handleInput(KEY.ENTER); // empty commit → draft clear, stays open
+			c.handleInput(KEY.ESC); // no answers/draft exist → guard does NOT arm, cancels at once
 		});
 		const ctx = { hasUI: true, ui: { custom } } as never;
 		const r = (await tool.execute?.("tc", freeTextParams as never, undefined as never, undefined as never, ctx)) as
 			| ToolResult
 			| undefined;
-		expect(r?.details.answers[0].kind).toBe("custom");
-		expect(r?.details.answers[0].answer).toBeNull();
-		expect(r?.content[0].text).toContain("(no input)");
+		expect(r?.details).toMatchObject({ cancelled: true, answers: [] });
 	});
 
 	it("Type text, backspace removes last char, then Enter", async () => {
@@ -771,66 +770,121 @@ describe("ask_user_question — mixed single+multi question flow", () => {
 	});
 });
 
-const previewQuestionParams = {
+const notesQuestionParams = {
 	questions: [
 		{
 			question: "Pick layout",
 			header: "Layout",
 			options: [
-				{ label: "Centered", description: "Centered logo", preview: "## Centered\n\nbody" },
+				{ label: "Centered", description: "Centered logo" },
 				{ label: "Left", description: "Left logo" },
 			],
 		},
 	],
 };
 
-describe("ask_user_question — notes pre-answer (Slice 5 notes UX)", () => {
-	it("user can press 'n' to add notes BEFORE pressing Enter on a preview-bearing option", async () => {
+const supplementParams = {
+	questions: [
+		{
+			question: "Pick layout",
+			header: "Layout",
+			options: [
+				{ label: "Centered", description: "Centered logo" },
+				{ label: "Left", description: "Left logo" },
+			],
+		},
+		{
+			question: "Pick colors",
+			header: "Colors",
+			options: [
+				{ label: "Warm", description: "Warm palette" },
+				{ label: "Cold", description: "Cold palette" },
+			],
+		},
+	],
+};
+
+describe("ask_user_question — unified free-text (supplement + custom)", () => {
+	it("text typed with no selection commits a custom answer and finishes a single-question dialog", async () => {
 		const tool = register();
 		const { custom } = driveCustom((c) => {
-			// Items: [Centered (preview), Left, "Type something."]
-			// On startup we're focused on Centered (option 0), which has preview.
-			// Slice 5 gate: focusedOptionHasPreview === true → 'n' triggers notes_enter.
-			c.handleInput("n"); // enter notes mode
+			// Items: [Centered, Left, "Type something."] — DOWN×2 to the input row
+			c.handleInput(KEY.DOWN);
+			c.handleInput(KEY.DOWN);
 			c.handleInput("h");
-			c.handleInput("e");
-			c.handleInput("l");
-			c.handleInput("l");
-			c.handleInput("o");
-			c.handleInput(KEY.ESC); // exit notes (commits to notesByTab)
-			c.handleInput(KEY.ENTER); // confirm Centered → notesByTab merges into answer
+			c.handleInput("i");
+			c.handleInput(KEY.ENTER); // no selection → custom commit → done
 		});
 		const ctx = { hasUI: true, ui: { custom } } as never;
 		const r = (await tool.execute?.(
 			"tc",
-			previewQuestionParams as never,
+			notesQuestionParams as never,
 			undefined as never,
 			undefined as never,
 			ctx,
 		)) as ToolResult | undefined;
 		expect(r?.details.cancelled).toBe(false);
-		expect(r?.details.answers[0]).toMatchObject({ answer: "Centered", kind: "option" });
-		expect(r?.details.answers[0].notes).toBe("hello");
+		expect(r?.details.answers[0]).toMatchObject({ kind: "custom", answer: "hi" });
 	});
 
-	it("'n' keypress is ignored when focused option has no preview (notes scoped to preview-bearing options)", async () => {
+	it("select first, then type on the row: text merges into the option answer as notes (multi-question)", async () => {
 		const tool = register();
 		const { custom } = driveCustom((c) => {
-			c.handleInput(KEY.DOWN); // → option Left (no preview)
-			c.handleInput("n"); // ignored — focusedOptionHasPreview === false
-			c.handleInput(KEY.ENTER); // confirms Left
+			// Tab0: confirm Centered → auto-advance to tab1
+			c.handleInput(KEY.ENTER);
+			// Tab-wrap forward to tab0 (tab1 → review → tab0); items: [Centered, Left, "Type something."]
+			c.handleInput(KEY.TAB); // → review
+			c.handleInput(KEY.TAB); // → tab0
+			c.handleInput(KEY.DOWN); // → Left
+			c.handleInput(KEY.DOWN); // → Type something (inputMode)
+			c.handleInput("h");
+			c.handleInput("i");
+			c.handleInput(KEY.ENTER); // selection exists → supplement merge, stays in inputMode
+			c.handleInput(KEY.DOWN); // leave the row (Tab would be swallowed by inputMode)
+			c.handleInput(KEY.TAB); // → tab1
+			c.handleInput(KEY.TAB); // → review
+			c.handleInput(KEY.ENTER); // Submit picker row 0
 		});
 		const ctx = { hasUI: true, ui: { custom } } as never;
-		const r = (await tool.execute?.(
-			"tc",
-			previewQuestionParams as never,
-			undefined as never,
-			undefined as never,
-			ctx,
-		)) as ToolResult | undefined;
+		const r = (await tool.execute?.("tc", supplementParams as never, undefined as never, undefined as never, ctx)) as
+			| ToolResult
+			| undefined;
 		expect(r?.details.cancelled).toBe(false);
-		expect(r?.details.answers[0].answer).toBe("Left");
-		expect(r?.details.answers[0].notes).toBeUndefined();
+		expect(r?.details.answers[0]).toMatchObject({ kind: "option", answer: "Centered", notes: "hi" });
+	});
+
+	it("multi-select: toggled checkboxes + row text → multi answer with notes (Next commits)", async () => {
+		const tool = register();
+		const multiParams = {
+			questions: [
+				{
+					question: "Pick layout",
+					header: "Layout",
+					multiSelect: true,
+					options: [
+						{ label: "Centered", description: "Centered logo" },
+						{ label: "Left", description: "Left logo" },
+					],
+				},
+			],
+		};
+		const { custom } = driveCustom((c) => {
+			// Items: [Centered, Left, "Type something.", Next]
+			c.handleInput(KEY.SPACE); // toggle Centered ON
+			c.handleInput(KEY.DOWN); // → Left
+			c.handleInput(KEY.DOWN); // → Type something (inputMode)
+			c.handleInput("h");
+			c.handleInput("i");
+			c.handleInput(KEY.ENTER); // selection exists → supplement merge, stays in inputMode
+			c.handleInput(KEY.DOWN); // → Next (single DOWN: the row is adjacent)
+			c.handleInput(KEY.ENTER); // multi_confirm → selected + draft merged as notes
+		});
+		const ctx = { hasUI: true, ui: { custom } } as never;
+		const r = (await tool.execute?.("tc", multiParams as never, undefined as never, undefined as never, ctx)) as
+			| ToolResult
+			| undefined;
+		expect(r?.details.cancelled).toBe(false);
+		expect(r?.details.answers[0]).toMatchObject({ kind: "multi", selected: ["Centered"], notes: "hi" });
 	});
 });
 

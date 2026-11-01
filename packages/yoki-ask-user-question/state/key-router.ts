@@ -8,7 +8,6 @@ const KEYBIND_DOWN = "tui.select.down";
 const KEYBIND_CONFIRM = "tui.select.confirm";
 const KEYBIND_CANCEL = "tui.select.cancel";
 
-const NOTES_ACTIVATE_KEY = "n";
 const SPACE_KEY = " ";
 
 export type QuestionnaireAction =
@@ -18,11 +17,15 @@ export type QuestionnaireAction =
 	| { kind: "toggle"; index: number }
 	| { kind: "multi_confirm"; selected: string[]; autoAdvanceTab?: number }
 	| { kind: "cancel" }
-	| { kind: "notes_enter" }
-	| { kind: "notes_exit" }
+	/**
+	 * Enter pressed on the focused "Type something." row (inputMode). Carries the live
+	 * buffer; the reducer decides by selection state whether the text is a supplement
+	 * (merges into the answer's `notes`) or a custom answer (commits), or — when empty —
+	 * a clear of the saved draft.
+	 */
+	| { kind: "draft_commit"; text: string; autoAdvanceTab?: number }
 	| { kind: "submit" }
 	| { kind: "submit_nav"; nextIndex: 0 | 1 }
-	| { kind: "notes_forward"; data: string }
 	/** Flip `state.collapsed`. Always available, regardless of inner mode (see top intercept in `routeKey`). */
 	| { kind: "toggle_collapsed" }
 	/**
@@ -60,21 +63,15 @@ function computeAutoAdvanceTab(state: QuestionnaireState, runtime: Questionnaire
 	return runtime.questions.length;
 }
 
-function buildSingleSelectAnswer(state: QuestionnaireState, runtime: QuestionnaireRuntime): QuestionAnswer | null {
+/**
+ * The non-inputMode confirm target: the focused option row. The "other" and "next"
+ * sentinels return `null` (nothing to confirm outside inputMode).
+ */
+function buildOptionAnswer(state: QuestionnaireState, runtime: QuestionnaireRuntime): QuestionAnswer | null {
 	const q = runtime.questions[state.currentTab];
 	if (!q) return null;
 
 	const item = runtime.currentItem;
-
-	if (state.inputMode) {
-		const label = runtime.inputBuffer;
-		return {
-			questionIndex: state.currentTab,
-			question: q.question,
-			kind: "custom",
-			answer: label.length > 0 ? label : null,
-		};
-	}
 	if (!item) return null;
 	if (item.kind === "other") {
 		return null;
@@ -131,13 +128,13 @@ function prevNavOnUp(state: QuestionnaireState, runtime: QuestionnaireRuntime): 
 
 /**
  * Cancel guard. Esc cancels immediately while the dialog is "cheap" to lose
- * (no answers, no notes, no in-flight custom text). Once any user work exists,
+ * (no answers, no saved drafts, no in-flight custom text). Once any user work exists,
  * the first Esc only arms the guard (`arm_cancel` → footer shows the
  * confirmation hint) and a second Esc commits the cancel.
  */
 function cancelAction(state: QuestionnaireState, runtime: QuestionnaireRuntime): QuestionnaireAction {
 	const hasWork =
-		state.answers.size > 0 || state.notesByTab.size > 0 || (state.inputMode && runtime.inputBuffer.length > 0);
+		state.answers.size > 0 || state.draftByTab.size > 0 || (state.inputMode && runtime.inputBuffer.length > 0);
 	if (!hasWork || state.cancelArmed) return { kind: "cancel" };
 	return { kind: "arm_cancel" };
 }
@@ -147,8 +144,8 @@ function cancelAction(state: QuestionnaireState, runtime: QuestionnaireRuntime):
  * so digits are an advertised affordance. Pressing `1`–`9` moves focus to that row
  * (jump-then-Enter, never auto-confirm — a mis-press must not commit an answer).
  * The `next` sentinel renders WITHOUT a number, so a digit that lands on it is
- * ignored. `inputMode` / `notesVisible` return earlier in `routeKey`, so typed
- * digits still reach the text buffers.
+ * ignored. `inputMode` returns earlier in `routeKey`, so typed digits still reach
+ * the text buffer.
  */
 function digitJumpAction(data: string, runtime: QuestionnaireRuntime): QuestionnaireAction | null {
 	if (data.length !== 1 || data < "1" || data > "9") return null;
@@ -189,17 +186,15 @@ export function routeKey(data: string, state: QuestionnaireState, runtime: Quest
 		return { kind: "ignore" };
 	}
 
-	if (state.notesVisible) {
-		if (kb.matches(data, KEYBIND_CANCEL)) return { kind: "notes_exit" };
-		if (kb.matches(data, KEYBIND_CONFIRM)) return { kind: "notes_exit" };
-		return { kind: "notes_forward", data };
-	}
-
 	if (state.inputMode) {
 		if (kb.matches(data, KEYBIND_CONFIRM)) {
-			const answer = buildSingleSelectAnswer(state, runtime);
-			if (!answer) return { kind: "ignore" };
-			return { kind: "confirm", answer, autoAdvanceTab: computeAutoAdvanceTab(state, runtime) };
+			// Unified free-text commit: the reducer branches on selection state
+			// (supplement vs custom answer vs clear-empty-draft). See `draftCommitHandler`.
+			return {
+				kind: "draft_commit",
+				text: runtime.inputBuffer,
+				autoAdvanceTab: computeAutoAdvanceTab(state, runtime),
+			};
 		}
 		if (kb.matches(data, KEYBIND_CANCEL)) return cancelAction(state, runtime);
 		if (kb.matches(data, KEYBIND_UP)) {
@@ -238,10 +233,6 @@ export function routeKey(data: string, state: QuestionnaireState, runtime: Quest
 	const q = runtime.questions[state.currentTab];
 	if (!q) return { kind: "ignore" };
 
-	if (data === NOTES_ACTIVATE_KEY && !q.multiSelect && state.focusedOptionHasPreview) {
-		return { kind: "notes_enter" };
-	}
-
 	if (kb.matches(data, KEYBIND_UP)) {
 		return prevNavOnUp(state, runtime);
 	}
@@ -264,7 +255,7 @@ export function routeKey(data: string, state: QuestionnaireState, runtime: Quest
 		}
 		if (kb.matches(data, KEYBIND_CONFIRM)) {
 			// Enter on the "Type something." row is handled by the inputMode block above
-			// (→ confirm kind:"custom"). Defensive: never enter the toggle/multi_confirm
+			// (→ draft_commit). Defensive: never enter the toggle/multi_confirm
 			// path for an inputMode-activating row.
 			if (focusedMeta?.activatesInputMode) return { kind: "ignore" };
 			// Enter on a regular row toggles (matching Space) — committing the question is now
@@ -287,7 +278,7 @@ export function routeKey(data: string, state: QuestionnaireState, runtime: Quest
 	}
 
 	if (kb.matches(data, KEYBIND_CONFIRM)) {
-		const answer = buildSingleSelectAnswer(state, runtime);
+		const answer = buildOptionAnswer(state, runtime);
 		if (!answer) return { kind: "ignore" };
 		return { kind: "confirm", answer, autoAdvanceTab: computeAutoAdvanceTab(state, runtime) };
 	}

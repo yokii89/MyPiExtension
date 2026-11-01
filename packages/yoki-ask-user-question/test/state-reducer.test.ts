@@ -18,6 +18,14 @@ describe("reduce — nav", () => {
 		expect(r.effects).toEqual([{ kind: "clear_input_buffer" }]);
 	});
 
+	it("nav onto kind:'other' row with a saved draft restores the buffer from draftByTab", () => {
+		const state = makeState({ draftByTab: new Map([[0, "saved draft"]]) });
+		const ctx = makeCtx({ itemsByTab: [itemsWithOther] });
+		const r = reduce(state, { kind: "nav", nextIndex: 2 }, ctx);
+		expect(r.state.inputMode).toBe(true);
+		expect(r.effects).toEqual([{ kind: "set_input_buffer", value: "saved draft" }]);
+	});
+
 	it("nav onto kind:'other' row with prior kind:'custom' answer restores the buffer", () => {
 		const answers = new Map<number, QuestionAnswer>([
 			[0, { questionIndex: 0, question: "Pick one", kind: "custom", answer: "Hello" }],
@@ -28,7 +36,7 @@ describe("reduce — nav", () => {
 		expect(r.effects).toEqual([{ kind: "set_input_buffer", value: "Hello" }]);
 	});
 
-	it("nav onto kind:'other' row with no prior kind:'custom' emits no input effect", () => {
+	it("nav onto kind:'other' row with no draft and no prior custom emits no input effect", () => {
 		const ctx = makeCtx({ itemsByTab: [itemsWithOther] });
 		const r = reduce(makeState(), { kind: "nav", nextIndex: 2 }, ctx);
 		expect(r.state.inputMode).toBe(true);
@@ -37,7 +45,7 @@ describe("reduce — nav", () => {
 });
 
 describe("reduce — tab_switch", () => {
-	it("emits set_notes_focused(false) + set_notes_value", () => {
+	it("emits clear_input_buffer and resets per-tab focus state", () => {
 		const r = reduce(
 			makeState(),
 			{ kind: "tab_switch", nextTab: 1 },
@@ -45,16 +53,13 @@ describe("reduce — tab_switch", () => {
 		);
 		expect(r.state.currentTab).toBe(1);
 		expect(r.state.optionIndex).toBe(0);
-		expect(r.state.notesVisible).toBe(false);
-		expect(r.effects).toEqual([
-			{ kind: "set_notes_focused", focused: false },
-			{ kind: "set_notes_value", value: "" },
-		]);
+		expect(r.state.inputMode).toBe(false);
+		expect(r.effects).toEqual([{ kind: "clear_input_buffer" }]);
 	});
 });
 
 describe("reduce — confirm", () => {
-	it("regular option without preview emits done with the answer", () => {
+	it("regular option emits done with the answer", () => {
 		const action: QuestionnaireAction = {
 			kind: "confirm",
 			answer: { questionIndex: 0, question: "Pick one", kind: "option", answer: "A" },
@@ -64,31 +69,16 @@ describe("reduce — confirm", () => {
 		expect(r.effects).toEqual([{ kind: "done", result: { answers: [r.state.answers.get(0)!], cancelled: false } }]);
 	});
 
-	it("regular option matching a preview-bearing option augments answer.preview", () => {
-		const questions = [
-			makeQuestion({
-				options: [
-					{ label: "A", description: "a", preview: "code" },
-					{ label: "B", description: "b" },
-				],
-			}),
-		];
+	it("merges the saved draft from draftByTab into the confirmed answer as trimmed notes", () => {
 		const action: QuestionnaireAction = {
 			kind: "confirm",
 			answer: { questionIndex: 0, question: "Pick one", kind: "option", answer: "A" },
 		};
-		const r = reduce(makeState(), action, makeCtx({ questions }));
-		expect(r.state.answers.get(0)?.preview).toBe("code");
-	});
-
-	it("merges pendingNotes from notesByTab into the confirmed answer", () => {
-		const action: QuestionnaireAction = {
-			kind: "confirm",
-			answer: { questionIndex: 0, question: "Pick one", kind: "option", answer: "A" },
-		};
-		const state = makeState({ notesByTab: new Map([[0, "  side note  "]]) });
+		const state = makeState({ draftByTab: new Map([[0, "  side note  "]]) });
 		const r = reduce(state, action, makeCtx());
-		expect(r.state.answers.get(0)?.notes).toBe("  side note  ");
+		expect(r.state.answers.get(0)?.notes).toBe("side note");
+		// 草稿不删除：再次进入 other 行可继续编辑，重复合并幂等
+		expect(r.state.draftByTab.get(0)).toBe("  side note  ");
 	});
 
 	it("autoAdvanceTab dispatches a tab_switch result instead of done", () => {
@@ -100,7 +90,7 @@ describe("reduce — confirm", () => {
 		const ctx = makeCtx({ questions: [makeQuestion(), makeQuestion()], itemsByTab: [itemsRegular, itemsRegular] });
 		const r = reduce(makeState(), action, ctx);
 		expect(r.state.currentTab).toBe(1);
-		expect(r.effects.some((e) => e.kind === "set_notes_focused")).toBe(true);
+		expect(r.effects).toEqual([{ kind: "clear_input_buffer" }]);
 		expect(r.effects.some((e) => e.kind === "done")).toBe(false);
 	});
 });
@@ -157,72 +147,70 @@ describe("reduce — cancel/submit", () => {
 	});
 });
 
-describe("reduce — notes_enter / notes_exit / notes_forward", () => {
-	it("notes_enter seeds state.notesDraft from existing answer.notes and emits set_notes_value", () => {
+describe("reduce — draft_commit (unified free-text)", () => {
+	it("empty text clears the draft and strips notes from an existing answer", () => {
 		const answers = new Map<number, QuestionAnswer>([
-			[0, { questionIndex: 0, question: "q", kind: "option", answer: "A", notes: "old note" }],
+			[0, { questionIndex: 0, question: "Pick one", kind: "option", answer: "A", notes: "old note" }],
 		]);
-		const r = reduce(makeState({ answers }), { kind: "notes_enter" }, makeCtx());
-		expect(r.state.notesVisible).toBe(true);
-		expect(r.state.notesDraft).toBe("old note");
-		expect(r.effects).toEqual([
-			{ kind: "set_notes_value", value: "old note" },
-			{ kind: "set_notes_focused", focused: true },
-		]);
+		const state = makeState({ answers, draftByTab: new Map([[0, "old note"]]) });
+		const r = reduce(state, { kind: "draft_commit", text: "" }, makeCtx());
+		expect(r.state.draftByTab.has(0)).toBe(false);
+		expect(r.state.answers.get(0)?.notes).toBeUndefined();
+		expect(r.effects).toEqual([]);
 	});
 
-	it("notes_exit with empty notesDraft clears notesByTab + strips answer.notes", () => {
+	it("whitespace-only text clears the draft and strips notes too", () => {
 		const answers = new Map<number, QuestionAnswer>([
-			[0, { questionIndex: 0, question: "q", kind: "option", answer: "A", notes: "old note" }],
+			[0, { questionIndex: 0, question: "Pick one", kind: "option", answer: "A", notes: "old note" }],
 		]);
-		const state = makeState({
-			answers,
-			notesByTab: new Map([[0, "old note"]]),
-			notesVisible: true,
-			notesDraft: "",
-		});
-		const r = reduce(state, { kind: "notes_exit" }, makeCtx());
-		expect(r.state.notesVisible).toBe(false);
-		expect(r.state.notesByTab.has(0)).toBe(false);
+		const state = makeState({ answers, draftByTab: new Map([[0, "old note"]]) });
+		const r = reduce(state, { kind: "draft_commit", text: "   " }, makeCtx());
+		expect(r.state.draftByTab.has(0)).toBe(false);
 		expect(r.state.answers.get(0)?.notes).toBeUndefined();
 	});
 
-	it("notes_exit trims state.notesDraft before persisting", () => {
+	it("text + existing option answer merges as trimmed notes (supplement), stays in inputMode", () => {
 		const answers = new Map<number, QuestionAnswer>([
-			[0, { questionIndex: 0, question: "q", kind: "option", answer: "A" }],
+			[0, { questionIndex: 0, question: "Pick one", kind: "option", answer: "A" }],
 		]);
-		const r = reduce(
-			makeState({ answers, notesVisible: true, notesDraft: "  fresh  " }),
-			{ kind: "notes_exit" },
-			makeCtx(),
-		);
-		expect(r.state.notesByTab.get(0)).toBe("fresh");
-		expect(r.state.answers.get(0)?.notes).toBe("fresh");
+		const state = makeState({ answers, inputMode: true, optionIndex: 2 });
+		const r = reduce(state, { kind: "draft_commit", text: "  like A  " }, makeCtx());
+		expect(r.state.draftByTab.get(0)).toBe("like A");
+		expect(r.state.answers.get(0)).toMatchObject({ kind: "option", answer: "A", notes: "like A" });
+		expect(r.state.inputMode).toBe(true);
+		expect(r.effects).toEqual([]);
 	});
 
-	it("notes_exit with whitespace-only notesDraft clears notesByTab + strips answer.notes", () => {
-		const answers = new Map<number, QuestionAnswer>([
-			[0, { questionIndex: 0, question: "q", kind: "option", answer: "A", notes: "old note" }],
-		]);
-		const r = reduce(
-			makeState({
-				answers,
-				notesByTab: new Map([[0, "old note"]]),
-				notesVisible: true,
-				notesDraft: "   ",
-			}),
-			{ kind: "notes_exit" },
-			makeCtx(),
-		);
-		expect(r.state.notesByTab.has(0)).toBe(false);
-		expect(r.state.answers.get(0)?.notes).toBeUndefined();
+	it("text + checked multi-select merges into the multi answer's notes", () => {
+		const ctx = makeCtx({ questions: [makeQuestion({ multiSelect: true })] });
+		const toggled = reduce(makeState(), { kind: "toggle", index: 0 }, ctx);
+		const r = reduce(toggled.state, { kind: "draft_commit", text: "mostly A" }, ctx);
+		expect(r.state.answers.get(0)).toMatchObject({ kind: "multi", selected: ["A"], notes: "mostly A" });
 	});
 
-	it("notes_forward emits a single forward_notes_keystroke effect with no state change", () => {
-		const s = makeState({ notesVisible: true, notesDraft: "hel" });
-		const r = reduce(s, { kind: "notes_forward", data: "l" }, makeCtx());
-		expect(r.state).toBe(s);
-		expect(r.effects).toEqual([{ kind: "forward_notes_keystroke", data: "l" }]);
+	it("text + no selection commits a custom answer and finishes a single-question dialog", () => {
+		const state = makeState({ inputMode: true, optionIndex: 2 });
+		const r = reduce(state, { kind: "draft_commit", text: "  my own answer  " }, makeCtx());
+		expect(r.state.draftByTab.get(0)).toBe("my own answer");
+		expect(r.state.answers.get(0)).toMatchObject({ kind: "custom", answer: "my own answer" });
+		expect(r.effects).toEqual([{ kind: "done", result: { answers: [r.state.answers.get(0)!], cancelled: false } }]);
+	});
+
+	it("text + no selection on a multi-question dialog commits custom and auto-advances", () => {
+		const ctx = makeCtx({ questions: [makeQuestion(), makeQuestion()], itemsByTab: [itemsWithOther, itemsRegular] });
+		const state = makeState({ inputMode: true, optionIndex: 2 });
+		const r = reduce(state, { kind: "draft_commit", text: "typed", autoAdvanceTab: 1 }, ctx);
+		expect(r.state.answers.get(0)).toMatchObject({ kind: "custom", answer: "typed" });
+		expect(r.state.currentTab).toBe(1);
+	});
+
+	it("re-committing edited text replaces a prior custom answer", () => {
+		const answers = new Map<number, QuestionAnswer>([
+			[0, { questionIndex: 0, question: "Pick one", kind: "custom", answer: "first" }],
+		]);
+		const state = makeState({ answers, inputMode: true, optionIndex: 2 });
+		const r = reduce(state, { kind: "draft_commit", text: "second" }, makeCtx());
+		expect(r.state.answers.get(0)).toMatchObject({ kind: "custom", answer: "second" });
 	});
 });
 
@@ -241,7 +229,7 @@ describe("reduce — submit_nav / ignore", () => {
 	});
 });
 
-describe("confirmHandler — custom answer clears multiSelectChecked (mutual exclusivity)", () => {
+describe("confirmHandler — multi-select draft coexistence (merged free-text)", () => {
 	const multiQ: QuestionData = {
 		question: "areas?",
 		header: "H",
@@ -252,7 +240,7 @@ describe("confirmHandler — custom answer clears multiSelectChecked (mutual exc
 		],
 	};
 
-	it("custom confirm on a multi-select tab clears pre-existing checks", () => {
+	it("custom confirm on a multi-select tab no longer clears checked rows (old mutual exclusivity removed)", () => {
 		const state = makeState({
 			currentTab: 0,
 			multiSelectChecked: new Set([0, 1]),
@@ -263,7 +251,7 @@ describe("confirmHandler — custom answer clears multiSelectChecked (mutual exc
 			{ kind: "confirm", answer: { questionIndex: 0, question: "areas?", kind: "custom", answer: "custom-text" } },
 			ctx,
 		);
-		expect(result.state.multiSelectChecked.size).toBe(0);
+		expect(result.state.multiSelectChecked.size).toBe(2);
 		expect(result.state.answers.get(0)?.kind).toBe("custom");
 	});
 
@@ -293,18 +281,17 @@ describe("reduce — toggle_collapsed", () => {
 		expect(r.effects).toEqual([{ kind: "set_overlay_hidden", hidden: false }]);
 	});
 
-	it("preserves orthogonal fields — collapse is a pure render-mode flip, never touches answers/optionIndex/notes", () => {
-		// Regression guard: a future refactor that resets nav/notes on collapse would silently
+	it("preserves orthogonal fields — collapse is a pure render-mode flip, never touches answers/optionIndex/drafts", () => {
+		// Regression guard: a future refactor that resets nav/drafts on collapse would silently
 		// drop the user's mid-edit work. The collapse toggle must be additive only.
 		const answers = new Map<QuestionAnswer["questionIndex"], QuestionAnswer>([
 			[0, { questionIndex: 0, question: "Pick one", kind: "option", answer: "A" }],
 		]);
-		const s = makeState({ optionIndex: 1, notesVisible: true, notesDraft: "in-flight", answers });
+		const s = makeState({ optionIndex: 1, draftByTab: new Map([[0, "in-flight"]]), answers });
 		const r = reduce(s, { kind: "toggle_collapsed" }, makeCtx());
 		expect(r.state.collapsed).toBe(true);
 		expect(r.state.optionIndex).toBe(1);
-		expect(r.state.notesVisible).toBe(true);
-		expect(r.state.notesDraft).toBe("in-flight");
+		expect(r.state.draftByTab.get(0)).toBe("in-flight");
 		expect(r.state.answers).toBe(answers);
 		expect(r.effects).toEqual([{ kind: "set_overlay_hidden", hidden: true }]);
 	});

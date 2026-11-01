@@ -9,21 +9,19 @@ export interface QuestionnaireState {
 	currentTab: number;
 	optionIndex: number;
 	inputMode: boolean;
-	notesVisible: boolean;
 	answers: ReadonlyMap<number, QuestionAnswer>;
 	multiSelectChecked: ReadonlySet<number>;
 	/**
-	 * Pre-answer notes side-band, keyed by tab index. Decoupled from `answers` so adding
-	 * notes does NOT mark a question answered (the Submit-tab missing-check would falsely
-	 * pass otherwise). Merged into the answer at confirm time.
+	 * Unified per-question free-text draft, keyed by tab index — the ONE free-text channel
+	 * of the merged design (former "Type something." custom answer + notes side-band).
+	 * Interpretation is decided by selection state: saved alongside a selection it merges
+	 * into that answer as `notes` (supplement); saved with no selection it commits a
+	 * `kind: "custom"` answer. Empty Enter clears the entry (and strips `notes` from an
+	 * existing answer) instead of committing.
 	 */
-	notesByTab: ReadonlyMap<number, string>;
-	/** True iff the focused option carries a non-empty `preview` string. Gates `notes_enter` and the "n to add notes" hint chip. */
-	focusedOptionHasPreview: boolean;
+	draftByTab: ReadonlyMap<number, string>;
 	/** Focused row in the Submit-tab picker (0 = Submit, 1 = Cancel). Reset on tab switch. */
 	submitChoiceIndex: number;
-	/** Canonical mirror of the in-flight notes editor; runtime mirrors after `forward_notes_keystroke`. */
-	notesDraft: string;
 	/**
 	 * Collapsed mode: the questionnaire shrinks to a single hint row so the agent transcript
 	 * behind the bottom-anchored overlay becomes readable. Toggled by `Ctrl+]` from any state;
@@ -35,7 +33,7 @@ export interface QuestionnaireState {
 	collapsed: boolean;
 	/**
 	 * Cancel guard: true after the first Esc when the dialog holds user work
-	 * (answers, notes, or in-flight custom text). A second Esc then confirms the
+	 * (answers, drafts, or in-flight custom text). A second Esc then confirms the
 	 * cancel; any other action disarms. When no work exists, Esc cancels directly.
 	 */
 	cancelArmed: boolean;

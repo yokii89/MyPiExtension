@@ -1,7 +1,6 @@
 import type { QuestionData } from "../../tool/types.ts";
-import type { PreviewPaneProps } from "../../view/components/preview/preview-pane.ts";
 import type { WrappingSelectItem } from "../../view/components/wrapping-select.ts";
-import type { ActiveView, StatefulView } from "../../view/stateful-view.ts";
+import type { ActiveView } from "../../view/stateful-view.ts";
 import type { TabComponents } from "../../view/tab-components.ts";
 import type { QuestionnaireState } from "../state.ts";
 
@@ -12,7 +11,6 @@ export interface BindingContext {
 	readonly activeView: ActiveView;
 	readonly inputBuffer: string;
 	readonly inputCursorOffset: number | undefined;
-	readonly activePreviewPane: StatefulView<PreviewPaneProps>;
 }
 
 export interface PerTabBindingContext extends BindingContext {

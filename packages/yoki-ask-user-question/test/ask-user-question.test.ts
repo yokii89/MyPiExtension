@@ -63,12 +63,12 @@ describe("buildItemsForQuestion", () => {
 		expect(items[1]).toEqual({ kind: "other", label: "Type something." });
 	});
 
-	it("appends the Type-something sentinel even when a single-select option carries a preview", () => {
+	it("appends the Type-something sentinel after every option for single-select", () => {
 		const items = buildItemsForQuestion({
 			question: "Layout?",
 			header: "Layout",
 			options: [
-				{ label: "Centered", description: "centered logo", preview: "## Centered\n\nbody" },
+				{ label: "Centered", description: "centered logo" },
 				{ label: "Left", description: "left logo" },
 			],
 		});
@@ -80,26 +80,13 @@ describe("buildItemsForQuestion", () => {
 		expect(items.some((i) => i.kind === "other")).toBe(true);
 	});
 
-	it("appends the Type-something sentinel for single-select regardless of preview content", () => {
-		const items = buildItemsForQuestion({
-			question: "Pick",
-			header: "Pick",
-			options: [
-				{ label: "A", description: "a", preview: "" },
-				{ label: "B", description: "b" },
-			],
-		});
-		expect(items).toHaveLength(3);
-		expect(items[2]).toEqual({ kind: "other", label: "Type something." });
-	});
-
-	it("appends 'Type something.' + Next for multiSelect even if an option has a preview (preview is dropped)", () => {
+	it("appends 'Type something.' + Next for multiSelect", () => {
 		const items = buildItemsForQuestion({
 			question: "Areas",
 			header: "Areas",
 			multiSelect: true,
 			options: [
-				{ label: "FE", description: "Frontend", preview: "## FE" },
+				{ label: "FE", description: "Frontend" },
 				{ label: "BE", description: "Backend" },
 			],
 		});
@@ -483,58 +470,7 @@ describe("buildQuestionnaireResponse — multi-question mixed types", () => {
 	});
 });
 
-describe("buildQuestionnaireResponse — preview echo + envelope wrapper shape (Slice 3)", () => {
-	it("echoes preview text in envelope when single-select answer matches a preview-bearing option", () => {
-		const params: QuestionParams = {
-			questions: [
-				{
-					question: "Layout?",
-					header: "Layout",
-					options: [
-						{ label: "Centered", description: "centered logo", preview: "## Centered\n\nbody" },
-						{ label: "Left", description: "left logo" },
-					],
-				},
-			],
-		};
-		const result: QuestionnaireResult = {
-			cancelled: false,
-			answers: [
-				{
-					questionIndex: 0,
-					question: "Layout?",
-					kind: "option",
-					answer: "Centered",
-					preview: "## Centered\n\nbody",
-				},
-			],
-		};
-		const r = buildQuestionnaireResponse(result, params);
-		expect(r.content[0].text).toContain('"Layout?"="Centered"');
-		expect(r.content[0].text).toContain("selected preview: ## Centered");
-	});
-
-	it("omits 'selected preview:' fragment when answer has no preview", () => {
-		const params: QuestionParams = {
-			questions: [
-				{
-					question: "Pick?",
-					header: "Pick",
-					options: [
-						{ label: "A", description: "a" },
-						{ label: "B", description: "b" },
-					],
-				},
-			],
-		};
-		const result: QuestionnaireResult = {
-			cancelled: false,
-			answers: [{ questionIndex: 0, question: "Pick?", kind: "option", answer: "A" }],
-		};
-		const r = buildQuestionnaireResponse(result, params);
-		expect(r.content[0].text).not.toContain("selected preview:");
-	});
-
+describe("buildQuestionnaireResponse — envelope wrapper shape (Slice 3)", () => {
 	it("omits 'user notes:' fragment when answer has no notes", () => {
 		const params: QuestionParams = {
 			questions: [

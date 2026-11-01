@@ -38,6 +38,4 @@ export interface AskUserPromptQuestion {
 export interface AskUserPromptOption {
 	label: string;
 	description: string;
-	/** True iff the option carries rich preview content (content not shipped). */
-	hasPreview: boolean;
 }

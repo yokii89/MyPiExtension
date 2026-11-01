@@ -2,7 +2,6 @@ import type { QuestionAnswer, QuestionData, QuestionnaireResult } from "../tool/
 import type { WrappingSelectItem } from "../view/components/wrapping-select.ts";
 import type { QuestionnaireAction } from "./key-router.ts";
 import { ROW_INTENT_META } from "./row-intent.ts";
-import { computeFocusedOptionHasPreview } from "./selectors/derivations.ts";
 import type { QuestionnaireState } from "./state.ts";
 
 /** Session-lifetime constants. No live-component reads — peripheral values live on canonical state. */
@@ -20,9 +19,6 @@ export interface ApplyContext {
 export type Effect =
 	| { kind: "set_input_buffer"; value: string }
 	| { kind: "clear_input_buffer" }
-	| { kind: "set_notes_value"; value: string }
-	| { kind: "set_notes_focused"; focused: boolean }
-	| { kind: "forward_notes_keystroke"; data: string }
 	/**
 	 * Tell the session to hide or show its underlying overlay. Emitted by the
 	 * `toggle_collapsed` action so the runtime can call `OverlayHandle.setHidden(...)`,
@@ -45,15 +41,6 @@ function orderedAnswers(state: QuestionnaireState, questions: readonly QuestionD
 		if (a) out.push(a);
 	}
 	return out;
-}
-
-function withFocusedOptionHasPreview(
-	state: QuestionnaireState,
-	questions: readonly QuestionData[],
-): QuestionnaireState {
-	const focusedOptionHasPreview = computeFocusedOptionHasPreview(questions, state.currentTab, state.optionIndex);
-	if (state.focusedOptionHasPreview === focusedOptionHasPreview) return state;
-	return { ...state, focusedOptionHasPreview };
 }
 
 function syncMultiSelectFromAnswers(
@@ -84,37 +71,33 @@ function persistMultiSelectAnswer(state: QuestionnaireState, ctx: ApplyContext):
 		out.delete(state.currentTab);
 		return out;
 	}
-	const pendingNotes = state.notesByTab.get(state.currentTab);
+	const draft = state.draftByTab.get(state.currentTab);
 	out.set(state.currentTab, {
 		questionIndex: state.currentTab,
 		question: q.question,
 		kind: "multi",
 		answer: null,
 		selected,
-		...(pendingNotes && pendingNotes.length > 0 ? { notes: pendingNotes } : {}),
+		...(draft && draft.trim().length > 0 ? { notes: draft.trim() } : {}),
 	});
 	return out;
 }
 
 function switchTabResult(state: QuestionnaireState, nextTab: number, ctx: ApplyContext): ApplyResult {
-	const notesValue = state.notesByTab.get(nextTab) ?? state.answers.get(nextTab)?.notes ?? "";
 	const transitioned: QuestionnaireState = {
 		...state,
 		currentTab: nextTab,
 		optionIndex: 0,
 		inputMode: false,
-		notesVisible: false,
 		submitChoiceIndex: 0,
 		multiSelectChecked: syncMultiSelectFromAnswers(state.answers, ctx.questions, nextTab),
-		notesDraft: notesValue,
 	};
-	const finalState = withFocusedOptionHasPreview(transitioned, ctx.questions);
+	// Fresh buffer per tab — re-entering the "Type something." row rehydrates from
+	// `draftByTab` via `navHandler`. Also fixes the historical leak where uncommitted
+	// text survived a Tab switch into the next tab's row.
 	return {
-		state: finalState,
-		effects: [
-			{ kind: "set_notes_focused", focused: false },
-			{ kind: "set_notes_value", value: notesValue },
-		],
+		state: transitioned,
+		effects: [{ kind: "clear_input_buffer" }],
 	};
 }
 
@@ -137,9 +120,16 @@ const navHandler: Handler<"nav"> = (state, action, ctx) => {
 	const items = ctx.itemsByTab[state.currentTab] ?? [];
 	const item = items[action.nextIndex];
 	const inputMode = item ? ROW_INTENT_META[item.kind].activatesInputMode : false;
-	const next = withFocusedOptionHasPreview({ ...state, optionIndex: action.nextIndex, inputMode }, ctx.questions);
+	const next = { ...state, optionIndex: action.nextIndex, inputMode };
 	if (!inputMode) {
 		return { state: next, effects: [{ kind: "clear_input_buffer" }] };
+	}
+	// Re-entering the "Type something." row rehydrates the buffer from the saved draft
+	// first; a committed custom answer (no draft) rehydrates its text so the user can
+	// edit and re-commit.
+	const draft = state.draftByTab.get(state.currentTab);
+	if (draft !== undefined) {
+		return { state: next, effects: [{ kind: "set_input_buffer", value: draft }] };
 	}
 	const prior = state.answers.get(state.currentTab);
 	if (prior?.kind === "custom" && typeof prior.answer === "string") {
@@ -151,29 +141,15 @@ const navHandler: Handler<"nav"> = (state, action, ctx) => {
 const tabSwitchHandler: Handler<"tab_switch"> = (state, action, ctx) => switchTabResult(state, action.nextTab, ctx);
 
 const confirmHandler: Handler<"confirm"> = (state, action, ctx) => {
-	let answer = action.answer;
-	if (answer.kind === "option" && answer.answer) {
-		const q = ctx.questions[answer.questionIndex];
-		const matched = q?.options.find((o) => o.label === answer.answer);
-		if (matched?.preview && matched.preview.length > 0) {
-			answer = { ...answer, preview: matched.preview };
-		}
-	}
-	const pendingNotes = state.notesByTab.get(answer.questionIndex);
-	if (pendingNotes && pendingNotes.length > 0) {
-		answer = { ...answer, notes: pendingNotes };
-	}
+	// Unified draft merge: text saved on the "Type something." row before confirming an
+	// option travels with the answer as its supplement. The draft is NOT deleted — it
+	// rehydrates on row re-entry and re-merging is idempotent.
+	const draft = state.draftByTab.get(action.answer.questionIndex);
+	const trimmed = draft?.trim();
+	const answer = trimmed && trimmed.length > 0 ? { ...action.answer, notes: trimmed } : action.answer;
 	const answers = new Map(state.answers);
 	answers.set(answer.questionIndex, answer);
-	// Custom free-text on a multi-select tab is mutually exclusive with checkbox selections:
-	// clear the checked set immediately so [✔] glyphs vanish on Enter. (A custom answer
-	// carries no `selected` array, so syncMultiSelectFromAnswers keeps it empty on tab-back.)
-	const isCustomMulti = answer.kind === "custom" && ctx.questions[answer.questionIndex]?.multiSelect === true;
-	const next: QuestionnaireState = {
-		...state,
-		answers,
-		...(isCustomMulti ? { multiSelectChecked: new Set<number>() } : {}),
-	};
+	const next: QuestionnaireState = { ...state, answers };
 	if (action.autoAdvanceTab !== undefined) return switchTabResult(next, action.autoAdvanceTab, ctx);
 	return doneFor(next, ctx, false);
 };
@@ -190,7 +166,7 @@ const toggleHandler: Handler<"toggle"> = (state, action, ctx) => {
 const multiConfirmHandler: Handler<"multi_confirm"> = (state, action, ctx) => {
 	const q = ctx.questions[state.currentTab];
 	if (!q) return { state, effects: [] };
-	const pendingNotes = state.notesByTab.get(state.currentTab);
+	const draft = state.draftByTab.get(state.currentTab)?.trim();
 	const answers = new Map(state.answers);
 	answers.set(state.currentTab, {
 		questionIndex: state.currentTab,
@@ -198,7 +174,7 @@ const multiConfirmHandler: Handler<"multi_confirm"> = (state, action, ctx) => {
 		kind: "multi",
 		answer: null,
 		selected: action.selected,
-		...(pendingNotes && pendingNotes.length > 0 ? { notes: pendingNotes } : {}),
+		...(draft && draft.length > 0 ? { notes: draft } : {}),
 	});
 	const synced: QuestionnaireState = {
 		...state,
@@ -209,38 +185,55 @@ const multiConfirmHandler: Handler<"multi_confirm"> = (state, action, ctx) => {
 	return doneFor(synced, ctx, false);
 };
 
-const notesEnterHandler: Handler<"notes_enter"> = (state, _action, _ctx) => {
-	const value = state.answers.get(state.currentTab)?.notes ?? "";
-	return {
-		state: { ...state, notesVisible: true, notesDraft: value },
-		effects: [
-			{ kind: "set_notes_value", value },
-			{ kind: "set_notes_focused", focused: true },
-		],
-	};
-};
-
-const notesExitHandler: Handler<"notes_exit"> = (state, _action, _ctx) => {
-	const trimmed = state.notesDraft.trim();
-	const notes = new Map(state.notesByTab);
+/**
+ * Enter on the focused "Type something." row (inputMode) — the ONE free-text commit of
+ * the merged design. The reducer decides by selection state:
+ * - empty text → clear: drop the draft entry and strip `notes` from an existing answer
+ *   (previously the empty commit produced a `"(no input)"` custom answer — intentionally
+ *   dropped; an empty field now means "no free text").
+ * - text + selection present → save the draft and merge it into the answer's `notes`
+ *   (supplement). Stays in inputMode so the user can keep editing.
+ * - text + no selection → save the draft and commit a `kind: "custom"` answer
+ *   (single-question dialogs finish, multi-question dialogs auto-advance).
+ * Saving BEFORE a later selection makes the supplement order-independent: the option /
+ * multi confirm handlers merge the same draft entry.
+ */
+const draftCommitHandler: Handler<"draft_commit"> = (state, action, ctx) => {
+	const trimmed = action.text.trim();
+	const tab = state.currentTab;
+	const draft = new Map(state.draftByTab);
 	const answers = new Map(state.answers);
 	if (trimmed.length === 0) {
-		notes.delete(state.currentTab);
-		const prev = answers.get(state.currentTab);
+		draft.delete(tab);
+		const prev = answers.get(tab);
 		if (prev?.notes) {
 			const stripped = { ...prev };
 			delete (stripped as { notes?: string }).notes;
-			answers.set(state.currentTab, stripped);
+			answers.set(tab, stripped);
 		}
-	} else {
-		notes.set(state.currentTab, trimmed);
-		const prev = answers.get(state.currentTab);
-		if (prev) answers.set(state.currentTab, { ...prev, notes: trimmed });
+		return { state: { ...state, draftByTab: draft, answers }, effects: [] };
 	}
-	return {
-		state: { ...state, notesByTab: notes, answers, notesVisible: false },
-		effects: [{ kind: "set_notes_focused", focused: false }],
+	draft.set(tab, trimmed);
+	const q = ctx.questions[tab];
+	const existing = answers.get(tab);
+	const hasSelection =
+		existing?.kind === "option" ||
+		existing?.kind === "multi" ||
+		(q?.multiSelect === true && state.multiSelectChecked.size > 0);
+	if (existing && hasSelection) {
+		answers.set(tab, { ...existing, notes: trimmed });
+		return { state: { ...state, draftByTab: draft, answers }, effects: [] };
+	}
+	const answer: QuestionAnswer = {
+		questionIndex: tab,
+		question: q.question,
+		kind: "custom",
+		answer: trimmed,
 	};
+	answers.set(tab, answer);
+	const next: QuestionnaireState = { ...state, draftByTab: draft, answers };
+	if (action.autoAdvanceTab !== undefined) return switchTabResult(next, action.autoAdvanceTab, ctx);
+	return doneFor(next, ctx, false);
 };
 
 const cancelHandler: Handler<"cancel"> = (s, _a, c) => doneFor(s, c, true);
@@ -248,10 +241,6 @@ const submitHandler: Handler<"submit"> = (s, _a, c) => doneFor(s, c, false);
 const submitNavHandler: Handler<"submit_nav"> = (s, a, _c) => ({
 	state: { ...s, submitChoiceIndex: a.nextIndex },
 	effects: [],
-});
-const notesForwardHandler: Handler<"notes_forward"> = (s, a, _c) => ({
-	state: s,
-	effects: [{ kind: "forward_notes_keystroke", data: a.data }],
 });
 const toggleCollapsedHandler: Handler<"toggle_collapsed"> = (s, _a, _c) => ({
 	state: { ...s, collapsed: !s.collapsed },
@@ -276,9 +265,7 @@ const HANDLERS: { [K in QuestionnaireAction["kind"]]: Handler<K> } = {
 	toggle: toggleHandler,
 	multi_confirm: multiConfirmHandler,
 	cancel: cancelHandler,
-	notes_enter: notesEnterHandler,
-	notes_exit: notesExitHandler,
-	notes_forward: notesForwardHandler,
+	draft_commit: draftCommitHandler,
 	submit: submitHandler,
 	submit_nav: submitNavHandler,
 	toggle_collapsed: toggleCollapsedHandler,

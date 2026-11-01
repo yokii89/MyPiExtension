@@ -1,6 +1,5 @@
 import { MULTI_SUBMIT_LABEL, type MultiSelectViewProps } from "../../view/components/multi-select-view.ts";
 import type { OptionListViewProps } from "../../view/components/option-list-view.ts";
-import type { PreviewPaneProps } from "../../view/components/preview/preview-pane.ts";
 import type { SubmitPickerProps } from "../../view/components/submit-picker.ts";
 import type { TabBarProps } from "../../view/components/tab-bar.ts";
 import type { DialogProps } from "../../view/dialog-builder.ts";
@@ -52,12 +51,14 @@ export const selectOptionListProps: PerTabSelector<OptionListViewProps> = (state
 	const items = ctx.itemsByTab[ctx.i] ?? [];
 	const focused = ctx.activeView === "options";
 	const confirmed = selectConfirmedIndicator(ctx.questions, state.currentTab, state.answers, items);
+	const draft = state.draftByTab.get(ctx.i);
 	return {
 		selectedIndex: state.optionIndex,
 		focused,
 		inputBuffer: ctx.inputBuffer,
 		inputCursorOffset: ctx.inputCursorOffset,
 		...(confirmed ? { confirmed } : {}),
+		...(draft ? { draft } : {}),
 	};
 };
 
@@ -70,13 +71,6 @@ export const selectSubmitPickerProps: GlobalSelector<SubmitPickerProps> = (state
 		],
 	};
 };
-
-export const selectPreviewPaneProps: PerTabSelector<PreviewPaneProps> = (state, ctx) => ({
-	notesVisible: state.notesVisible,
-	selectedIndex: state.optionIndex,
-	focused: ctx.activeView === "options",
-	inputMode: state.inputMode,
-});
 
 export const selectTabBarProps: GlobalSelector<TabBarProps> = (state, ctx) => {
 	const tabs = ctx.questions.map((q, i) => ({
@@ -93,7 +87,6 @@ export const selectTabBarProps: GlobalSelector<TabBarProps> = (state, ctx) => {
 	};
 };
 
-export const selectDialogProps: GlobalSelector<DialogProps> = (state, ctx) => ({
+export const selectDialogProps: GlobalSelector<DialogProps> = (state) => ({
 	state,
-	activePreviewPane: ctx.activePreviewPane,
 });

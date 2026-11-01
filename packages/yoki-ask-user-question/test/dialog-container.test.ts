@@ -1,12 +1,11 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import type { Component, Input } from "@earendil-works/pi-tui";
+import type { Component } from "@earendil-works/pi-tui";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { makeTheme } from "@yoki/yoki-test-utils";
 import { describe, expect, it } from "vitest";
 import type { QuestionAnswer, QuestionData } from "../tool/types.ts";
 import { MultiSelectView } from "../view/components/multi-select-view.ts";
 import type { OptionListView } from "../view/components/option-list-view.ts";
-import type { PreviewPane } from "../view/components/preview/preview-pane.ts";
 import { CANCEL_LABEL, SUBMIT_LABEL, SubmitPicker } from "../view/components/submit-picker.ts";
 import type { TabBar } from "../view/components/tab-bar.ts";
 import {
@@ -16,7 +15,6 @@ import {
 	DialogView,
 	HINT_MULTI,
 	HINT_MULTISELECT_SUFFIX,
-	HINT_NOTES_SUFFIX,
 	HINT_SINGLE,
 	INCOMPLETE_WARNING_PREFIX,
 	READY_PROMPT,
@@ -39,20 +37,16 @@ function stubComponent(lines: string[]): Component {
 	};
 }
 
-function stubPreviewPane(lines: string[]): PreviewPane {
+function stubOptionList(lines: string[] = ["<OPTION_LIST>"]): OptionListView {
 	return {
 		...stubComponent(lines),
 		focusedItemRowRange: (_w: number) => [0, 1] as [number, number],
-	} as unknown as PreviewPane;
-}
-
-function stubOptionList(): OptionListView {
-	return stubComponent(["<OPTION_LIST>"]) as unknown as OptionListView;
+		naturalHeight: (w: number) => stubComponent(lines).render(w).length,
+	} as unknown as OptionListView;
 }
 
 type MakeConfigOverrides = Partial<Omit<DialogConfig, "tabsByIndex">> & {
 	state?: DialogState;
-	previewPane?: PreviewPane;
 	initialProps?: DialogProps;
 	tabsByIndex?: ReadonlyArray<TabComponents>;
 	multiSelectByTab?: ReadonlyArray<MultiSelectView | undefined>;
@@ -87,23 +81,19 @@ function makeConfig(over: MakeConfigOverrides = {}): DialogParts {
 	const state: DialogState = over.state ?? {
 		currentTab: 0,
 		optionIndex: 0,
-		notesVisible: false,
 		inputMode: false,
 		answers: new Map(),
 		multiSelectChecked: new Set(),
-		notesByTab: new Map(),
-		focusedOptionHasPreview: false,
+		draftByTab: new Map(),
 		submitChoiceIndex: 0,
-		notesDraft: "",
 		collapsed: false,
 		cancelArmed: false,
 	};
-	const previewPane = over.previewPane ?? stubPreviewPane(["<PREVIEW>"]);
+	const defaultOptionList = stubOptionList();
 	const tabsByIndex: ReadonlyArray<TabComponents> =
 		over.tabsByIndex ??
 		questions.map((_, i) => ({
-			optionList: stubOptionList(),
-			preview: previewPane,
+			optionList: defaultOptionList,
 			multiSelect: over.multiSelectByTab?.[i],
 			bodyHeights: () => ({ current: 0, max: 0 }),
 		}));
@@ -111,7 +101,6 @@ function makeConfig(over: MakeConfigOverrides = {}): DialogParts {
 		theme: over.theme ?? theme,
 		questions,
 		tabBar: over.tabBar ?? (stubComponent(["<TABBAR>", ""]) as unknown as TabBar),
-		notesInput: over.notesInput ?? (stubComponent(["<NOTES_INPUT>"]) as unknown as Input),
 		isMulti: over.isMulti ?? questions.length > 1,
 		tabsByIndex,
 		submitPicker: over.submitPicker,
@@ -123,11 +112,11 @@ function makeConfig(over: MakeConfigOverrides = {}): DialogParts {
 				const q = questions[idx];
 				const mso = tabsByIndex[idx]?.multiSelect;
 				if (q?.multiSelect === true && mso) return (mso as unknown as Component).render(w).length;
-				return (previewPane as unknown as Component).render(w).length;
+				return defaultOptionList.render(w).length;
 			}),
 		getTerminalRows: over.getTerminalRows ?? (() => 24),
 	};
-	const initialProps: DialogProps = over.initialProps ?? { state, activePreviewPane: previewPane };
+	const initialProps: DialogProps = over.initialProps ?? { state };
 	return { config, initialProps };
 }
 
@@ -156,7 +145,7 @@ describe("makeDialog — single-question mode", () => {
 		);
 		const joined = dlg.render(80).join("\n");
 		expect(joined).not.toContain("<TABBAR>");
-		expect(joined).toContain("<PREVIEW>");
+		expect(joined).toContain("<OPTION_LIST>");
 		expect(joined).toContain(HINT_SINGLE);
 	});
 
@@ -190,11 +179,11 @@ describe("makeDialog — single-question mode", () => {
 });
 
 describe("makeDialog — multi-question (question tab)", () => {
-	it("includes TabBar + PreviewPane + multi hint", () => {
+	it("includes TabBar + option list + multi hint", () => {
 		const dlg = makeDialog(makeConfig());
 		const joined = dlg.render(80).join("\n");
 		expect(joined).toContain("<TABBAR>");
-		expect(joined).toContain("<PREVIEW>");
+		expect(joined).toContain("<OPTION_LIST>");
 		expect(joined).toContain(HINT_MULTI);
 	});
 
@@ -218,14 +207,11 @@ describe("makeDialog — multi-question (question tab)", () => {
 		const initialState: DialogState = {
 			currentTab: 0,
 			optionIndex: 0,
-			notesVisible: false,
 			inputMode: false,
 			answers: new Map(),
 			multiSelectChecked: new Set(),
-			notesByTab: new Map(),
-			focusedOptionHasPreview: false,
+			draftByTab: new Map(),
 			submitChoiceIndex: 0,
-			notesDraft: "",
 			collapsed: false,
 			cancelArmed: false,
 		};
@@ -253,55 +239,7 @@ describe("makeDialog — multi-question (question tab)", () => {
 		expect(joined).toContain(HINT_MULTISELECT_SUFFIX.trim());
 	});
 
-	it("appends 'n for notes' when focused option carries a preview", () => {
-		const answer: QuestionAnswer = { questionIndex: 0, question: "Q1?", kind: "option", answer: "A" };
-		const dlg = makeDialog(
-			makeConfig({
-				state: {
-					currentTab: 0,
-					optionIndex: 0,
-					notesVisible: false,
-					inputMode: false,
-					answers: new Map([[0, answer]]),
-					multiSelectChecked: new Set(),
-					notesByTab: new Map(),
-					focusedOptionHasPreview: true,
-					submitChoiceIndex: 0,
-					notesDraft: "",
-					collapsed: false,
-					cancelArmed: false,
-				},
-			}),
-		);
-		const joined = dlg.render(80).join("\n");
-		expect(joined).toContain(HINT_NOTES_SUFFIX.trim());
-	});
-
-	it("notesVisible adds the notes Input below the preview (line count grows)", () => {
-		const hidden = makeDialog(makeConfig()).render(80);
-		const visibleCfg = makeConfig({
-			state: {
-				currentTab: 0,
-				optionIndex: 0,
-				notesVisible: true,
-				inputMode: false,
-				answers: new Map(),
-				multiSelectChecked: new Set(),
-				notesByTab: new Map(),
-				focusedOptionHasPreview: false,
-				submitChoiceIndex: 0,
-				notesDraft: "",
-				collapsed: false,
-				cancelArmed: false,
-			},
-		});
-		const visible = makeDialog(visibleCfg).render(80);
-		expect(visible.length).toBeGreaterThan(hidden.length);
-		expect(visible.join("\n")).toContain("<NOTES_INPUT>");
-		expect(hidden.join("\n")).not.toContain("<NOTES_INPUT>");
-	});
-
-	it("renders multiSelect checkboxes inline ([✔] / [ ]) in place of PreviewPane", () => {
+	it("renders multiSelect checkboxes inline ([✔] / [ ]) in place of the option list", () => {
 		const multiQ: QuestionData = {
 			question: "areas?",
 			header: "Areas",
@@ -314,14 +252,11 @@ describe("makeDialog — multi-question (question tab)", () => {
 		const state: DialogState = {
 			currentTab: 0,
 			optionIndex: 1,
-			notesVisible: false,
 			inputMode: false,
 			answers: new Map(),
 			multiSelectChecked: new Set([0]),
-			notesByTab: new Map(),
-			focusedOptionHasPreview: false,
+			draftByTab: new Map(),
 			submitChoiceIndex: 0,
-			notesDraft: "",
 			collapsed: false,
 			cancelArmed: false,
 		};
@@ -348,7 +283,7 @@ describe("makeDialog — multi-question (question tab)", () => {
 		const joined = dlg.render(80).join("\n");
 		expect(joined).toContain("[✔]");
 		expect(joined).toContain("[ ]");
-		expect(joined).not.toContain("<PREVIEW>");
+		expect(joined).not.toContain("<OPTION_LIST>");
 	});
 });
 
@@ -368,14 +303,11 @@ describe("makeDialog — Submit tab", () => {
 		return {
 			currentTab: 2,
 			optionIndex: 0,
-			notesVisible: false,
 			inputMode: false,
 			answers,
 			multiSelectChecked: new Set(),
-			notesByTab: new Map(),
-			focusedOptionHasPreview: false,
+			draftByTab: new Map(),
 			submitChoiceIndex: 0,
-			notesDraft: "",
 			collapsed: false,
 			cancelArmed: false,
 			...over,
@@ -558,15 +490,13 @@ describe("makeDialog — Submit tab", () => {
 });
 
 describe("makeDialog — setProps swap", () => {
-	it("setProps replaces the rendered pane on subsequent render() calls", () => {
-		const paneA = stubPreviewPane(["<PANE_A>"]);
-		const paneB = stubPreviewPane(["<PANE_B>"]);
-		const cfg = makeConfig({ previewPane: paneA });
+	it("setProps replaces the rendered state on subsequent render() calls", () => {
+		const cfg = makeConfig();
 		const dlg = makeDialog(cfg);
-		expect(dlg.render(80).join("\n")).toContain("<PANE_A>");
-		dlg.setProps({ state: cfg.initialProps.state, activePreviewPane: paneB });
-		expect(dlg.render(80).join("\n")).toContain("<PANE_B>");
-		expect(dlg.render(80).join("\n")).not.toContain("<PANE_A>");
+		expect(dlg.render(80).join("\n")).toContain("Q1?");
+		dlg.setProps({ state: { ...cfg.initialProps.state, currentTab: 1 } });
+		expect(dlg.render(80).join("\n")).toContain("Q2?");
+		expect(dlg.render(80).join("\n")).not.toContain("Q1?");
 	});
 });
 
@@ -579,14 +509,11 @@ describe("makeDialog — width safety", () => {
 						state: {
 							currentTab: ct,
 							optionIndex: 0,
-							notesVisible: ct === 0,
 							inputMode: false,
 							answers: new Map([[0, { questionIndex: 0, question: "q", kind: "option", answer: "A" }]]),
 							multiSelectChecked: new Set(),
-							notesByTab: new Map(),
-							focusedOptionHasPreview: false,
+							draftByTab: new Map(),
 							submitChoiceIndex: 0,
-							notesDraft: "",
 							collapsed: false,
 							cancelArmed: false,
 						},
@@ -644,14 +571,11 @@ describe("makeDialog — body residual padding", () => {
 		const stateTab0: DialogState = {
 			currentTab: 0,
 			optionIndex: 0,
-			notesVisible: false,
 			inputMode: false,
 			answers: new Map(),
 			multiSelectChecked: new Set(),
-			notesByTab: new Map(),
-			focusedOptionHasPreview: false,
+			draftByTab: new Map(),
 			submitChoiceIndex: 0,
-			notesDraft: "",
 			collapsed: false,
 			cancelArmed: false,
 		};

@@ -15,7 +15,7 @@
  * the review tab). Tab switching is view state and never enters form values.
  *
  * Footer actions: 取消（两段式——已有作答/备注时先布防确认）/ 提交（允许部分
- * 作答，未答题在复核页以 ⚠ 标记并可一键跳回，对齐 TUI 的 Submit 页）。
+ * 作答，未答题在复核页写成「未作答」并用 warning 状态色，对齐 TUI 的 Submit 页）。
  */
 
 import {
@@ -24,16 +24,13 @@ import {
 	type LiveViewSession,
 	type ViewAction,
 	type ViewEvent,
+	type ViewListOption,
 	type ViewNode,
 	type ViewResult,
 	type ViewSpec,
 	type ViewTab,
 } from "@pidesk/view-sdk";
-import { LABELS_BY_KIND } from "./state/row-intent.ts";
 import type { QuestionAnswer, QuestionData, QuestionnaireResult, QuestionParams } from "./tool/types.ts";
-
-/** Longest preview slice shown in the desktop pane before truncation. */
-const MAX_PREVIEW_CHARS = 4000;
 
 const TABS_NODE_ID = "questionnaire-tabs";
 const REVIEW_TAB_ID = "review";
@@ -49,10 +46,6 @@ function optionValue(questionIndex: number, optionIndex: number): string {
 
 function customId(questionIndex: number): string {
 	return `q${questionIndex}-custom`;
-}
-
-function notesId(questionIndex: number): string {
-	return `q${questionIndex}-notes`;
 }
 
 function listId(questionIndex: number): string {
@@ -79,17 +72,15 @@ function parseGotoAction(actionId: string): { review: boolean; questionIndex: nu
 	return { review: false, questionIndex: Number(m[1]) };
 }
 
-function hasAnyPreview(question: QuestionData): boolean {
-	return question.options.some((o) => typeof o.preview === "string" && o.preview.length > 0);
-}
-
 interface UiState {
 	/** list values per question (option value keys or [] for multi) */
 	selections: (string | string[])[];
+	/**
+	 * Unified free-text draft per question (merged "custom answer + supplement" input).
+	 * Interpretation is decided at submit time by selection state: text alongside a
+	 * selection becomes that answer's `notes`; text with no selection IS the answer.
+	 */
 	customTexts: string[];
-	notes: string[];
-	/** focused option index for preview, per question */
-	focused: number[];
 	/** 激活页签：`q<i>` 或 "review"（仅多题 tabs 布局使用） */
 	activeTab: string;
 	/** 两段式取消：已布防时，下一次「取消」动作才真正关闭 */
@@ -100,25 +91,9 @@ function initialState(params: QuestionParams): UiState {
 	return {
 		selections: params.questions.map((q) => (q.multiSelect ? [] : "")),
 		customTexts: params.questions.map(() => ""),
-		notes: params.questions.map(() => ""),
-		focused: params.questions.map(() => 0),
 		activeTab: questionTabId(0),
 		cancelArmed: false,
 	};
-}
-
-function buildPreviewMarkdown(question: QuestionData, focusIndex: number): string {
-	const focused = question.options[focusIndex];
-	if (!focused) {
-		const withPreview = question.options.find((o) => o.preview);
-		if (!withPreview) return "";
-		return withPreview.preview?.slice(0, MAX_PREVIEW_CHARS) ?? "";
-	}
-	const body = focused.preview?.slice(0, MAX_PREVIEW_CHARS);
-	if (!body) {
-		return `**${focused.label}**\n\n${focused.description}`;
-	}
-	return `**${focused.label}**\n\n${body}`;
 }
 
 /** 该题是否已有答案：选项（含多选）或自定义文本任一非空。 */
@@ -140,7 +115,7 @@ function nextUnansweredAfter(params: QuestionParams, state: UiState, index: numb
 }
 
 function hasAnyWork(params: QuestionParams, state: UiState): boolean {
-	return params.questions.some((_, i) => isQuestionAnswered(state, i) || (state.notes[i] ?? "").trim().length > 0);
+	return params.questions.some((_, i) => isQuestionAnswered(state, i));
 }
 
 /** 单题卡片的内容节点（不含 card 外壳；tabs 布局与单题布局共用）。 */
@@ -151,19 +126,12 @@ function buildQuestionChildren(
 	tabsMode: boolean,
 	total: number,
 ): ViewNode[] {
-	const items = question.options.map((o, oi) => ({
+	const items: ViewListOption[] = question.options.map((o, oi) => ({
 		value: optionValue(index, oi),
 		label: o.label,
 		description: o.description,
 	}));
-	const showPreview = hasAnyPreview(question);
 	const selection = state.selections[index];
-	const preview = showPreview
-		? {
-				type: "markdown" as const,
-				content: buildPreviewMarkdown(question, state.focused[index] ?? 0),
-			}
-		: null;
 
 	const listNode: ViewNode = {
 		type: "list",
@@ -176,17 +144,9 @@ function buildQuestionChildren(
 	const customNode: ViewNode = {
 		type: "input",
 		id: customId(index),
-		label: LABELS_BY_KIND.other,
-		placeholder: "没有合适选项时在此输入…",
+		label: "自由输入（可选）",
+		placeholder: "没有合适选项时直接输入答案；已选选项时作为补充说明返回",
 		value: state.customTexts[index] ?? "",
-	};
-
-	const notesNode: ViewNode = {
-		type: "input",
-		id: notesId(index),
-		label: "备注（可选）",
-		placeholder: "补充说明，会随答案返回",
-		value: state.notes[index] ?? "",
 	};
 
 	const children: ViewNode[] = [
@@ -196,28 +156,12 @@ function buildQuestionChildren(
 			// card 内用 body 而非 heading：heading 在紧凑浮层里层级过重
 			variant: "body",
 		},
-		...(question.multiSelect ? [{ type: "text" as const, content: "可多选", variant: "caption" as const }] : []),
+		...(question.multiSelect
+			? [{ type: "text" as const, content: "可多选", variant: "caption" as const, tone: "muted" as const }]
+			: []),
 	];
 
-	if (showPreview) {
-		children.push(
-			{
-				type: "row",
-				gap: 16,
-				children: [
-					{ type: "column", gap: 8, children: [listNode, customNode] },
-					{
-						type: "column",
-						gap: 8,
-						children: [preview ?? { type: "text", content: "", variant: "caption" }],
-					},
-				],
-			},
-			notesNode,
-		);
-	} else {
-		children.push(listNode, customNode, notesNode);
-	}
+	children.push(listNode, customNode);
 
 	// 多选题不自动前进（勾选≠确认）：tabs 布局下提供显式「下一题」，
 	// 对齐 TUI 的 Next 哨兵行。单题布局无「下一题」可言（footer 提交）。
@@ -241,9 +185,10 @@ function buildQuestionNode(question: QuestionData, index: number, state: UiState
 	};
 }
 
+/**
+ * 复核行主摘要：有选择 → 选项标签（补充文本另示为后缀）；无选择 → 自由输入文本即答案。
+ */
 function answerSummary(question: QuestionData, state: UiState, index: number): string {
-	const custom = (state.customTexts[index] ?? "").trim();
-	if (custom.length > 0) return custom;
 	const selection = state.selections[index];
 	if (Array.isArray(selection)) {
 		const labels: string[] = [];
@@ -252,29 +197,43 @@ function answerSummary(question: QuestionData, state: UiState, index: number): s
 			const label = parsed ? question.options[parsed.optionIndex]?.label : undefined;
 			if (typeof label === "string") labels.push(label);
 		}
-		return labels.join("、");
-	}
-	if (typeof selection === "string" && selection.length > 0) {
+		if (labels.length > 0) return labels.join("、");
+	} else if (typeof selection === "string" && selection.length > 0) {
 		const parsed = parseOptionValue(selection);
 		const label = parsed ? question.options[parsed.optionIndex]?.label : undefined;
-		return typeof label === "string" ? label : "";
+		if (typeof label === "string") return label;
 	}
-	return "";
+	return (state.customTexts[index] ?? "").trim();
 }
 
-/** 复核页：每题一行「题头：答案」+ 跳回按钮；未作答标 ⚠。允许部分作答。 */
+/** 该题是否已有选项类选择（单选值或多选数组非空）。 */
+function hasSelection(state: UiState, index: number): boolean {
+	const selection = state.selections[index];
+	if (Array.isArray(selection)) return selection.length > 0;
+	return typeof selection === "string" && selection.length > 0;
+}
+
+/**
+ * 复核页：每题一行「题头：答案」+ 跳回按钮；未作答的走 warning 状态色。
+ * 允许部分作答。状态词必须写在文案里、不能只靠颜色（docs/design/79 §3.2）：
+ * `tone` 没有能力位，旧 Host 丢色后「未作答」仍然读得通。
+ */
 function buildReviewChildren(params: QuestionParams, state: UiState): ViewNode[] {
 	const rows: ViewNode[] = params.questions.map((q, i) => {
 		const header = q.header || `问题 ${i + 1}`;
 		const summary = answerSummary(q, state, i);
+		// 有选择 + 自由输入 = 选择答案的补充说明，追加在摘要后一并预览
+		const custom = (state.customTexts[i] ?? "").trim();
+		const supplement = hasSelection(state, i) && custom.length > 0 ? `（补充：${custom}）` : "";
 		return {
 			type: "row",
 			gap: 8,
 			children: [
 				{
 					type: "text",
-					content: summary ? `${header}：${summary}` : `⚠ ${header}：未作答`,
+					content: summary ? `${header}：${summary}${supplement}` : `${header}：未作答`,
 					variant: "body",
+					...(summary ? {} : { tone: "warning" as const }),
 				},
 				{ type: "button", id: gotoQuestionAction(i), label: "修改", variant: "ghost" },
 			],
@@ -283,8 +242,9 @@ function buildReviewChildren(params: QuestionParams, state: UiState): ViewNode[]
 	return [
 		{
 			type: "text",
-			content: "提交后以下答案将返回给模型；标 ⚠ 的题目可点「修改」返回补答。",
+			content: "提交后以下答案将返回给模型；未作答的题目可点「修改」返回补答。",
 			variant: "caption",
+			tone: "muted",
 		},
 		...rows,
 	];
@@ -352,7 +312,7 @@ function parseOptionValue(value: string): { questionIndex: number; optionIndex: 
 /** change 涉及的题号；不属于任何题控件时返回 null。 */
 function questionIndexForNode(params: QuestionParams, nodeId: string): number | null {
 	for (let i = 0; i < params.questions.length; i++) {
-		if (nodeId === listId(i) || nodeId === customId(i) || nodeId === notesId(i)) return i;
+		if (nodeId === listId(i) || nodeId === customId(i)) return i;
 	}
 	return null;
 }
@@ -364,14 +324,8 @@ function applyChange(state: UiState, params: QuestionParams, event: Extract<View
 			if (params.questions[i].multiSelect) {
 				const arr = Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
 				state.selections[i] = arr;
-				const first = arr[0];
-				const parsed = first ? parseOptionValue(first) : null;
-				if (parsed) state.focused[i] = parsed.optionIndex;
 			} else {
-				const str = typeof value === "string" ? value : "";
-				state.selections[i] = str;
-				const parsed = parseOptionValue(str);
-				if (parsed) state.focused[i] = parsed.optionIndex;
+				state.selections[i] = typeof value === "string" ? value : "";
 			}
 			return;
 		}
@@ -379,32 +333,20 @@ function applyChange(state: UiState, params: QuestionParams, event: Extract<View
 			state.customTexts[i] = typeof value === "string" ? value : "";
 			return;
 		}
-		if (nodeId === notesId(i)) {
-			state.notes[i] = typeof value === "string" ? value : "";
-			return;
-		}
 	}
 }
 
+/**
+ * 统一自由输入的提交映射：有选择 → 选择答案 + `notes: 文本`（补充）；无选择 + 文本 →
+ * custom 答案；两者皆无 → 整题跳过。（合并前 custom 文本无条件压过选择。）
+ */
 function buildAnswers(params: QuestionParams, values: Record<string, unknown>): QuestionAnswer[] {
 	const answers: QuestionAnswer[] = [];
 	for (let i = 0; i < params.questions.length; i++) {
 		const q = params.questions[i];
 		const customRaw = values[customId(i)];
-		const custom = typeof customRaw === "string" ? customRaw.trim() : "";
-		const notesRaw = values[notesId(i)];
-		const notes = typeof notesRaw === "string" && notesRaw.trim().length > 0 ? notesRaw.trim() : undefined;
-
-		if (custom.length > 0) {
-			answers.push({
-				questionIndex: i,
-				question: q.question,
-				kind: "custom",
-				answer: custom,
-				notes,
-			});
-			continue;
-		}
+		const draft = typeof customRaw === "string" ? customRaw.trim() : "";
+		const supplement = draft.length > 0 ? draft : undefined;
 
 		if (q.multiSelect) {
 			const raw = values[listId(i)];
@@ -420,31 +362,50 @@ function buildAnswers(params: QuestionParams, values: Record<string, unknown>): 
 					selected.push(q.options[parsed.optionIndex].label);
 				}
 			}
-			if (selected.length === 0) continue;
-			answers.push({
-				questionIndex: i,
-				question: q.question,
-				kind: "multi",
-				answer: null,
-				selected,
-				notes,
-			});
+			if (selected.length > 0) {
+				answers.push({
+					questionIndex: i,
+					question: q.question,
+					kind: "multi",
+					answer: null,
+					selected,
+					...(supplement ? { notes: supplement } : {}),
+				});
+				continue;
+			}
+			if (draft.length > 0) {
+				answers.push({
+					questionIndex: i,
+					question: q.question,
+					kind: "custom",
+					answer: draft,
+				});
+			}
 			continue;
 		}
 
 		const raw = values[listId(i)];
 		const selectedValue = typeof raw === "string" ? raw : "";
 		const parsed = parseOptionValue(selectedValue);
-		if (!parsed || !q.options[parsed.optionIndex]) continue;
-		const option = q.options[parsed.optionIndex];
-		answers.push({
-			questionIndex: i,
-			question: q.question,
-			kind: "option",
-			answer: option.label,
-			preview: option.preview && option.preview.length > 0 ? option.preview : undefined,
-			notes,
-		});
+		if (parsed && q.options[parsed.optionIndex]) {
+			const option = q.options[parsed.optionIndex];
+			answers.push({
+				questionIndex: i,
+				question: q.question,
+				kind: "option",
+				answer: option.label,
+				...(supplement ? { notes: supplement } : {}),
+			});
+			continue;
+		}
+		if (draft.length > 0) {
+			answers.push({
+				questionIndex: i,
+				question: q.question,
+				kind: "custom",
+				answer: draft,
+			});
+		}
 	}
 	return answers;
 }
@@ -551,7 +512,6 @@ async function runDesktopSession(
 					for (let i = 0; i < params.questions.length; i++) {
 						if (!(listId(i) in values)) values[listId(i)] = state.selections[i];
 						if (!(customId(i) in values)) values[customId(i)] = state.customTexts[i];
-						if (!(notesId(i) in values)) values[notesId(i)] = state.notes[i];
 					}
 					session.close({ action: "submit", values });
 					return;

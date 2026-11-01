@@ -1,7 +1,7 @@
 import type { ViewNode, ViewSpec } from "@pidesk/view-sdk";
 import { describe, expect, it, vi } from "vitest";
 import { buildDesktopQuestionnaireSpec, presentQuestionnaireOnDesktop } from "../desktop-view.ts";
-import type { QuestionParams } from "../tool/types.ts";
+import type { QuestionnaireResult, QuestionParams } from "../tool/types.ts";
 
 const PARAMS: QuestionParams = {
 	questions: [
@@ -10,7 +10,7 @@ const PARAMS: QuestionParams = {
 			header: "Library",
 			options: [
 				{ label: "A", description: "fast" },
-				{ label: "B", description: "slow", preview: "```ts\nconst b = 1;\n```" },
+				{ label: "B", description: "slow" },
 			],
 		},
 		{
@@ -47,6 +47,7 @@ interface ClientHarness {
 	closes: Array<{ action?: string; values?: Record<string, unknown> }>;
 	send(event: TestEvent): void;
 	settle(result: { action?: string; values?: Record<string, unknown> }): void;
+	waitForOpen(): Promise<void>;
 	open: ReturnType<typeof vi.fn>;
 	dispose: ReturnType<typeof vi.fn>;
 }
@@ -57,6 +58,10 @@ function makeClient(): ClientHarness {
 	const closes: Array<{ action?: string; values?: Record<string, unknown> }> = [];
 	let handler: ((event: TestEvent, session: unknown) => void) | null = null;
 	let resolveOpen: ((result: { action?: string; values?: Record<string, unknown> }) => void) | null = null;
+	let markOpened!: () => void;
+	const opened = new Promise<void>((resolve) => {
+		markOpened = resolve;
+	});
 	const session = {
 		update: (spec: ViewSpec) => updates.push(spec),
 		close: (result: { action?: string; values?: Record<string, unknown> }) => {
@@ -66,6 +71,7 @@ function makeClient(): ClientHarness {
 	};
 	const open = vi.fn(async (_spec: ViewSpec, opts?: { onEvent?: (event: TestEvent, session: unknown) => void }) => {
 		handler = opts?.onEvent ?? null;
+		markOpened();
 		return await new Promise((resolve) => {
 			resolveOpen = resolve;
 		});
@@ -75,9 +81,37 @@ function makeClient(): ClientHarness {
 		closes,
 		send: (event) => handler?.(event, session),
 		settle: (result) => resolveOpen?.(result),
+		waitForOpen: () => opened,
 		open,
 		dispose: vi.fn(),
 	};
+}
+
+/** 遍历整树（含非激活页签）；tabs 的子节点用一个 column 壳收集，不入 nodeTypes 计数。 */
+function walkNodes(node: ViewNode, acc: ViewNode[] = []): ViewNode[] {
+	acc.push(node);
+	if ("children" in node && Array.isArray(node.children)) {
+		for (const c of node.children) walkNodes(c, acc);
+	}
+	if (node.type === "tabs") {
+		for (const tab of node.tabs) walkNodes({ type: "column", children: tab.children }, acc);
+	}
+	return acc;
+}
+
+function hasNodeType(root: ViewNode, type: ViewNode["type"]): boolean {
+	return walkNodes(root).some((n) => n.type === type);
+}
+
+/** 起一个桌面会话，并等 `open()` 挂上 handler。旧测试直发事件会抢在它之前，
+ * 所以把流程用例共用的五行收成一个 helper。 */
+async function startDesktopSession(
+	params: QuestionParams,
+): Promise<{ client: ClientHarness; pending: Promise<QuestionnaireResult | null> }> {
+	const client = makeClient();
+	const pending = presentQuestionnaireOnDesktop(params, { deps: { connect: () => client as never } });
+	await client.waitForOpen();
+	return { client, pending };
 }
 
 function lastUpdate(client: ClientHarness): ViewSpec {
@@ -130,15 +164,15 @@ describe("desktop questionnaire spec", () => {
 		expect(root.activeTab).toBe("q0");
 	});
 
-	it("tabs mode keeps custom + notes inputs, preview row, and per-question ids", () => {
+	it("tabs mode keeps the unified free-text input and per-question ids", () => {
 		const ids = walkIds(buildDesktopQuestionnaireSpec(PARAMS).root);
 		expect(ids).toContain("tab:q0");
 		expect(ids).toContain("tab:q1");
 		expect(ids).toContain("tab:review");
 		expect(ids).toContain("q0");
 		expect(ids).toContain("q0-custom");
-		expect(ids).toContain("q0-notes");
 		expect(ids).toContain("q1");
+		expect(ids).not.toContain("q0-notes");
 	});
 
 	it("multi-select questions get an explicit next button; review rows can jump back", () => {
@@ -164,10 +198,7 @@ describe("desktop questionnaire spec", () => {
 
 describe("desktop questionnaire flow", () => {
 	it("auto-advances once: unanswered→answered on single-select moves to next tab, re-answers do not", async () => {
-		const client = makeClient();
-		const pending = presentQuestionnaireOnDesktop(PARAMS, {
-			deps: { connect: () => client as never },
-		});
+		const { client, pending } = await startDesktopSession(PARAMS);
 
 		client.send({ type: "change", nodeId: "q0", value: "opt:0:0" });
 		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q1");
@@ -182,10 +213,7 @@ describe("desktop questionnaire flow", () => {
 	});
 
 	it("multi-select toggles and custom typing mark answered without advancing", async () => {
-		const client = makeClient();
-		const pending = presentQuestionnaireOnDesktop(PARAMS, {
-			deps: { connect: () => client as never },
-		});
+		const { client, pending } = await startDesktopSession(PARAMS);
 
 		client.send({ type: "change", nodeId: "q1", value: ["opt:1:0"] });
 		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q0");
@@ -200,17 +228,21 @@ describe("desktop questionnaire flow", () => {
 	});
 
 	it("review tab reflects answers and flags unanswered ones", async () => {
-		const client = makeClient();
-		const pending = presentQuestionnaireOnDesktop(PARAMS, {
-			deps: { connect: () => client as never },
-		});
+		const { client, pending } = await startDesktopSession(PARAMS);
 
 		client.send({ type: "change", nodeId: "q0", value: "opt:0:0" });
 		const review = tabsOf(lastUpdate(client)).tabs[2];
 		expect(review.status).toBe("attention");
 		const texts = JSON.stringify(review.children);
 		expect(texts).toContain("Library：A");
-		expect(texts).toContain("⚠ Features：未作答");
+		expect(texts).toContain("Features：未作答");
+		// 状态色走协议字段，不再拿 emoji 冒充（docs/design/79 F2）
+		expect(texts).not.toContain("⚠");
+		expect(review.children.some((row) => row.type === "row" && hasNodeType(row, "text"))).toBe(true);
+		const warningRow = review.children
+			.flatMap((row) => (row.type === "row" ? row.children : []))
+			.find((n) => n.type === "text" && n.content.includes("未作答"));
+		expect(warningRow).toMatchObject({ tone: "warning" });
 
 		client.send({ type: "change", nodeId: "q1", value: ["opt:1:1"] });
 		const final = tabsOf(lastUpdate(client));
@@ -222,10 +254,7 @@ describe("desktop questionnaire flow", () => {
 	});
 
 	it("goto actions switch tabs: review ↔ question", async () => {
-		const client = makeClient();
-		const pending = presentQuestionnaireOnDesktop(PARAMS, {
-			deps: { connect: () => client as never },
-		});
+		const { client, pending } = await startDesktopSession(PARAMS);
 
 		client.send({ type: "action", actionId: "goto:review" });
 		expect(tabsOf(lastUpdate(client)).activeTab).toBe("review");
@@ -237,10 +266,7 @@ describe("desktop questionnaire flow", () => {
 	});
 
 	it("cancel without any work closes immediately", async () => {
-		const client = makeClient();
-		const pending = presentQuestionnaireOnDesktop(PARAMS, {
-			deps: { connect: () => client as never },
-		});
+		const { client, pending } = await startDesktopSession(PARAMS);
 
 		client.send({ type: "action", actionId: "cancel" });
 		expect(client.closes).toHaveLength(1);
@@ -249,10 +275,7 @@ describe("desktop questionnaire flow", () => {
 	});
 
 	it("cancel arms on first press when work exists, disarms on change, closes on second press", async () => {
-		const client = makeClient();
-		const pending = presentQuestionnaireOnDesktop(PARAMS, {
-			deps: { connect: () => client as never },
-		});
+		const { client, pending } = await startDesktopSession(PARAMS);
 
 		client.send({ type: "change", nodeId: "q0", value: "opt:0:0" });
 		client.send({ type: "action", actionId: "cancel" });
@@ -260,7 +283,7 @@ describe("desktop questionnaire flow", () => {
 		expect(lastUpdate(client).actions?.[0].label).toBe("再按一次确认取消");
 		expect(lastUpdate(client).actions?.[0].variant).toBe("danger");
 
-		client.send({ type: "change", nodeId: "q0-notes", value: "note" });
+		client.send({ type: "change", nodeId: "q0-custom", value: "note" });
 		expect(lastUpdate(client).actions?.[0].label).toBe("取消");
 
 		client.send({ type: "action", actionId: "cancel" });
@@ -273,17 +296,12 @@ describe("desktop questionnaire flow", () => {
 	});
 
 	it("maps submit values to questionnaire answers", async () => {
-		const client = makeClient();
-		const pending = presentQuestionnaireOnDesktop(PARAMS, {
-			deps: { connect: () => client as never },
-		});
+		const { client, pending } = await startDesktopSession(PARAMS);
 		const values = {
 			q0: "opt:0:0",
-			"q0-custom": "",
-			"q0-notes": "prefer A",
+			"q0-custom": "prefer A",
 			q1: ["opt:1:0", "opt:1:1"],
 			"q1-custom": "",
-			"q1-notes": "",
 		};
 		client.send({ type: "action", actionId: "submit", values });
 		const result = await pending;
@@ -302,14 +320,11 @@ describe("desktop questionnaire flow", () => {
 	});
 
 	it("allows partial submission (unanswered questions are skipped)", async () => {
-		const client = makeClient();
-		const pending = presentQuestionnaireOnDesktop(PARAMS, {
-			deps: { connect: () => client as never },
-		});
+		const { client, pending } = await startDesktopSession(PARAMS);
 		client.send({
 			type: "action",
 			actionId: "submit",
-			values: { q0: "opt:0:1", "q0-custom": "", "q0-notes": "", "q1-custom": "", "q1-notes": "" },
+			values: { q0: "opt:0:1", "q0-custom": "", "q1-custom": "" },
 		});
 		const result = await pending;
 		expect(result?.cancelled).toBe(false);
@@ -317,32 +332,27 @@ describe("desktop questionnaire flow", () => {
 		expect(result?.answers[0]).toMatchObject({ kind: "option", answer: "B" });
 	});
 
-	it("custom text wins over option selection", async () => {
-		const client = makeClient();
-		const pending = presentQuestionnaireOnDesktop(PARAMS, {
-			deps: { connect: () => client as never },
-		});
+	it("text alongside a selection becomes that answer's supplement; text alone is the answer", async () => {
+		const { client, pending } = await startDesktopSession(PARAMS);
 		client.send({
 			type: "action",
 			actionId: "submit",
 			values: {
 				q0: "opt:0:0",
 				"q0-custom": "my own answer",
-				"q0-notes": "",
 				q1: [],
-				"q1-custom": "",
-				"q1-notes": "",
+				"q1-custom": "typed instead",
 			},
 		});
 		const result = await pending;
-		expect(result?.answers[0]).toMatchObject({ kind: "custom", answer: "my own answer" });
+		// 选择 + 文本 → 选项答案 + notes 补充
+		expect(result?.answers[0]).toMatchObject({ kind: "option", answer: "A", notes: "my own answer" });
+		// 无选择 + 文本 → custom 答案
+		expect(result?.answers[1]).toMatchObject({ kind: "custom", answer: "typed instead" });
 	});
 
 	it("cancel action yields cancelled result", async () => {
-		const client = makeClient();
-		const pending = presentQuestionnaireOnDesktop(PARAMS, {
-			deps: { connect: () => client as never },
-		});
+		const { client, pending } = await startDesktopSession(PARAMS);
 		client.send({ type: "action", actionId: "cancel" });
 		const result = await pending;
 		expect(result?.cancelled).toBe(true);

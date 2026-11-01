@@ -30,11 +30,10 @@ export function buildQuestionnaireResponse(result: QuestionnaireResult | null | 
 
 /**
  * Format a single answer segment for the envelope. Pure of `a`. The `"Q"="A"` shape and
- * the optional `selected preview:` / `user notes:` suffixes are pinned by envelope tests.
+ * the optional `user notes:` suffix are pinned by envelope tests.
  */
 export function buildAnswerSegment(a: QuestionAnswer): string {
 	const parts: string[] = [`"${a.question}"="${formatAnswerScalar(a, "envelope")}"`];
-	if (a.preview && a.preview.length > 0) parts.push(`selected preview: ${a.preview}`);
 	if (a.notes && a.notes.length > 0) parts.push(`user notes: ${a.notes}`);
 	return `${parts.join(". ")}.`;
 }

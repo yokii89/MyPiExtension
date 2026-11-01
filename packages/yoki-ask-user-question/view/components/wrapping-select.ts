@@ -60,6 +60,12 @@ export class WrappingSelect implements Component {
 	private inputBuffer = "";
 	private inputCursorOffset: number | undefined = undefined;
 	/**
+	 * Saved free-text draft for the list's question (unified supplement/custom draft).
+	 * Rendered as a ` · ✎ <draft>` suffix on the UNFOCUSED "other" row so the saved text
+	 * stays visible after focus leaves the inline input. `undefined`/empty → no suffix.
+	 */
+	private draft: string | undefined = undefined;
+	/**
 	 * Index of the row that was previously confirmed for this list (e.g. the user's prior
 	 * answer when re-entering a multi-question tab). Renders `<label> ✔` in the active-row
 	 * styling but WITHOUT the `❯` pointer — pointer is reserved for the live cursor. When
@@ -121,6 +127,11 @@ export class WrappingSelect implements Component {
 
 	setInputBuffer(text: string): void {
 		this.inputBuffer = text;
+	}
+
+	/** Set the saved free-text draft shown on the unfocused "other" row. Empty/undefined clears. */
+	setDraft(text: string | undefined): void {
+		this.draft = text && text.trim().length > 0 ? text.trim() : undefined;
 	}
 
 	/** Set the cursor offset for the inline input row. `undefined` → end-of-buffer fallback. */
@@ -224,9 +235,14 @@ export class WrappingSelect implements Component {
 		// Optional `confirmedLabelOverride` replaces the static label (used for `kind: "other"`
 		// + `kind: "custom"` answer); the inline-input branch above still wins for `kind: "other" + isActive`.
 		const isConfirmed = index === this.confirmedIndex;
+		// The "other" row carries the saved free-text draft as a suffix when unfocused —
+		// the inline-input branch above wins while focused, so the suffix only ever shows
+		// on the static path (and never on the confirmed-override row, which shows the
+		// committed custom answer text itself).
+		const draftSuffix = item.kind === "other" && !isConfirmed && this.draft ? ` · ✎ ${this.draft}` : "";
 		const label = isConfirmed
 			? `${this.confirmedLabelOverride ?? item.label}${WrappingSelect.CONFIRMED_MARK}`
-			: item.label;
+			: `${item.label}${draftSuffix}`;
 		const applySelectedStyle = isActive || isConfirmed;
 
 		return [

@@ -6,7 +6,6 @@ import { COLLAPSED_HINT } from "../view/dialog-builder.ts";
 import type { QuestionnairePropsAdapter } from "../view/props-adapter.ts";
 import { buildQuestionnaire } from "./build-questionnaire.ts";
 import { type QuestionnaireAction, routeKey } from "./key-router.ts";
-import { computeFocusedOptionHasPreview } from "./selectors/derivations.ts";
 import type { QuestionnaireRuntime, QuestionnaireState } from "./state.ts";
 import { type ApplyContext, type Effect, reduce } from "./state-reducer.ts";
 
@@ -35,23 +34,19 @@ function initialState(): QuestionnaireState {
 		currentTab: 0,
 		optionIndex: 0,
 		inputMode: false,
-		notesVisible: false,
 		answers: new Map(),
 		multiSelectChecked: new Set(),
-		notesByTab: new Map(),
-		focusedOptionHasPreview: false,
+		draftByTab: new Map(),
 		submitChoiceIndex: 0,
-		notesDraft: "",
 		collapsed: false,
 		cancelArmed: false,
 	};
 }
 
 /**
- * Slim runtime: owns the canonical state cell, the input-buffer cell, the
- * two-pass `notesVisible` dispatch loop, and the effect runner. State
- * transitions go through the pure `reduce` reducer; UI fan-out goes through
- * the `QuestionnairePropsAdapter` produced by `buildQuestionnaire`.
+ * Slim runtime: owns the canonical state cell, the input-buffer cell, and the
+ * effect runner. State transitions go through the pure `reduce` reducer; UI
+ * fan-out goes through the `QuestionnairePropsAdapter` produced by `buildQuestionnaire`.
  */
 export class QuestionnaireSession {
 	private state: QuestionnaireState = initialState();
@@ -60,7 +55,6 @@ export class QuestionnaireSession {
 	private readonly isMulti: boolean;
 	private readonly itemsByTab: WrappingSelectItem[][];
 
-	private readonly notesInput: Input;
 	private readonly inlineInput: Input;
 	private readonly viewAdapter: QuestionnairePropsAdapter;
 	private readonly collapseKey: string;
@@ -83,8 +77,6 @@ export class QuestionnaireSession {
 		this.isMulti = this.questions.length > 1;
 		this.itemsByTab = config.itemsByTab;
 		this.collapseKey = config.collapseKey;
-		// Seed from the focused option at start; the reducer keeps it in sync via withFocusedOptionHasPreview.
-		this.state = { ...this.state, focusedOptionHasPreview: computeFocusedOptionHasPreview(this.questions, 0, 0) };
 
 		const built = buildQuestionnaire({
 			tui: this.tui,
@@ -96,7 +88,6 @@ export class QuestionnaireSession {
 			getCurrentTab: () => this.state.currentTab,
 		});
 
-		this.notesInput = built.notesInput;
 		this.inlineInput = built.inlineInput;
 		this.viewAdapter = built.adapter;
 
@@ -130,13 +121,7 @@ export class QuestionnaireSession {
 		const result = reduce(this.state, action, this.applyContext());
 		this.state = result.state;
 		for (const effect of result.effects) this.runEffect(effect);
-		this.state = this.mirrorNotesDraft(this.state);
 		this.viewAdapter.apply(this.state);
-	}
-
-	private mirrorNotesDraft(s: QuestionnaireState): QuestionnaireState {
-		const draft = this.notesInput.getValue();
-		return s.notesDraft === draft ? s : { ...s, notesDraft: draft };
 	}
 
 	private runEffect(effect: Effect): void {
@@ -147,15 +132,6 @@ export class QuestionnaireSession {
 				return;
 			case "clear_input_buffer":
 				this.inlineInput.setValue("");
-				return;
-			case "set_notes_value":
-				this.notesInput.setValue(effect.value);
-				return;
-			case "set_notes_focused":
-				this.notesInput.focused = effect.focused;
-				return;
-			case "forward_notes_keystroke":
-				this.notesInput.handleInput(effect.data);
 				return;
 			case "set_overlay_hidden":
 				// No-op until `setOverlayHandle` has been called (the handle arrives via

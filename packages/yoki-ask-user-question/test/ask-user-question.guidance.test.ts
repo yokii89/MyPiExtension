@@ -22,9 +22,9 @@ beforeEach(() => {
 });
 
 describe("DEFAULT_PROMPT_GUIDELINES — Phase 2 prompt copy", () => {
-	it("documents the automatic custom-answer row and the abandon affordance (no suppress clause)", () => {
+	it("documents the unified free-text row and the abandon affordance (no suppress clause)", () => {
 		const joined = DEFAULT_PROMPT_GUIDELINES.join("\n");
-		expect(joined).toContain("custom-answer row is appended automatically to every question");
+		expect(joined).toContain('free-text row ("Type something.") is appended automatically to every question');
 		expect(joined).not.toContain('suppresses the "Type something." row');
 
 		// 指南只保留最常见的规则；放弃入口仍在工具描述里，且对每个问题都成立。
@@ -32,7 +32,7 @@ describe("DEFAULT_PROMPT_GUIDELINES — Phase 2 prompt copy", () => {
 		registerAskUserQuestionTool(pi);
 		const description = captured.tools.get(TOOL_NAME)!.description;
 		expect(description).toContain("Esc to abandon");
-		expect(description).toContain("appended automatically to every question");
+		expect(description).toContain("appended automatically");
 	});
 });
 

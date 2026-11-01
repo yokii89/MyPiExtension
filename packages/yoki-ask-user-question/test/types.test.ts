@@ -48,24 +48,14 @@ describe("QuestionsSchema — array constraints", () => {
 	});
 });
 
-describe("QuestionSchema — option/preview/multiSelect/header shape", () => {
-	it("accepts options with optional preview field", () => {
-		const q = makeQuestion({
-			options: [
-				{ label: "A", description: "alpha", preview: "## A\n\nbody" },
-				{ label: "B", description: "beta" },
-			],
-		});
-		expect(Value.Check(QuestionsSchema, [q])).toBe(true);
-	});
-
+describe("QuestionSchema — option/multiSelect/header shape", () => {
 	it("accepts a question with all optional fields populated", () => {
 		const q: QuestionData = {
 			question: "Pick architecture",
 			header: "Architecture",
 			options: [
-				{ label: "Monolith", description: "Single deployable unit", preview: "## Monolith\n\nSimple" },
-				{ label: "Microservices", description: "Distributed services", preview: "## Micro\n\nScalable" },
+				{ label: "Monolith", description: "Single deployable unit" },
+				{ label: "Microservices", description: "Distributed services" },
 			],
 			multiSelect: false,
 		};
@@ -155,7 +145,7 @@ describe("QuestionParamsSchema — top-level shape", () => {
 		expect(Value.Check(QuestionParamsSchema, { questions: [makeQuestion()] })).toBe(true);
 	});
 
-	it("accepts full valid payload with preview + multiSelect", () => {
+	it("accepts full valid payload with multiSelect", () => {
 		const payload = {
 			questions: [
 				{
@@ -163,7 +153,7 @@ describe("QuestionParamsSchema — top-level shape", () => {
 					header: "Pick",
 					multiSelect: true,
 					options: [
-						{ label: "A", description: "First", preview: "# A" },
+						{ label: "A", description: "First" },
 						{ label: "B", description: "Second" },
 					],
 				},
@@ -181,16 +171,16 @@ describe("QuestionParamsSchema — top-level shape", () => {
 	});
 });
 
-describe("QuestionAnswer — notes + preview field optionality", () => {
+describe("QuestionAnswer — notes field optionality", () => {
 	it("accepts an answer with notes populated", () => {
 		const a: QuestionAnswer = {
 			questionIndex: 0,
 			question: "Q?",
 			kind: "option",
 			answer: "A",
-			notes: "preview looked good",
+			notes: "looked good",
 		};
-		expect(a.notes).toBe("preview looked good");
+		expect(a.notes).toBe("looked good");
 	});
 
 	it("accepts an answer with selected[] (multi-select) and no answer scalar", () => {
@@ -203,17 +193,6 @@ describe("QuestionAnswer — notes + preview field optionality", () => {
 		};
 		expect(a.selected).toEqual(["Frontend", "Backend"]);
 		expect(a.answer).toBeNull();
-	});
-
-	it("accepts an answer with preview populated (single-select with matched preview-bearing option)", () => {
-		const a: QuestionAnswer = {
-			questionIndex: 0,
-			question: "Q?",
-			kind: "option",
-			answer: "A",
-			preview: "## Heading\n\nbody",
-		};
-		expect(a.preview).toContain("## Heading");
 	});
 });
 
