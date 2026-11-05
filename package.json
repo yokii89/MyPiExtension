@@ -32,6 +32,7 @@
       "./packages/yoki-warp-notify/index.ts",
       "./packages/yoki-web-tools/index.ts",
       "./packages/yoki-image-gen/index.ts",
+      "./packages/yoki-model-busy-retry/index.ts",
       "./packages/yoki-newapi/index.ts",
       "./packages/yoki-skills/extensions/pi-codex-skills/index.ts",
       "./packages/yoki-ui/yoki_ui/index.ts",

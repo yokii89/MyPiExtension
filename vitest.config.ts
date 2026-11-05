@@ -74,8 +74,6 @@ export default defineConfig({
 				"packages/yoki-skills/**",
 				"packages/yoki-newapi/**",
 				"packages/yoki-ui/**",
-				// New package, no vitest suite yet — add it to the gate when tests land.
-				"packages/yoki-model-busy-retry/**",
 			],
 		},
 	},
