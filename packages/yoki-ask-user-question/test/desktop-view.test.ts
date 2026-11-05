@@ -175,15 +175,26 @@ describe("desktop questionnaire spec", () => {
 		expect(ids).not.toContain("q0-notes");
 	});
 
-	it("multi-select questions get an explicit next button; review rows can jump back", () => {
+	it("every question tab carries an explicit advance button; review puts inline submit first", () => {
 		const root = tabsOf(buildDesktopQuestionnaireSpec(PARAMS));
 		// 最后一题是多选：下一题按钮指向复核页
 		expect(root.tabs[1].children.filter((n) => n.type === "button")).toEqual([
 			{ type: "button", id: "goto:review", label: "完成，去复核 →", variant: "ghost" },
 		]);
-		// 单选题靠选中自动前进，无下一题按钮
-		expect(root.tabs[0].children.filter((n) => n.type === "button")).toEqual([]);
-		const reviewIds = walkIds({ type: "column", children: root.tabs[2].children });
+		// 单选页签同样带显式按钮：补充草稿在时自动前进被抑制，按钮是唯一出路
+		expect(root.tabs[0].children.filter((n) => n.type === "button")).toEqual([
+			{ type: "button", id: "goto:1", label: "下一题 →", variant: "ghost" },
+		]);
+		const reviewChildren = root.tabs[2].children;
+		// 进度行 + 页内提交：提交按钮先于「修改」行，自动前进落点的首焦点即提交
+		expect(reviewChildren[0]).toMatchObject({ type: "text", content: "已答 0 / 2" });
+		expect(reviewChildren.filter((n) => n.type === "button")[0]).toEqual({
+			type: "button",
+			id: "submit",
+			label: "提交答案",
+			variant: "primary",
+		});
+		const reviewIds = walkIds({ type: "column", children: reviewChildren });
 		expect(reviewIds).toContain("goto:0");
 		expect(reviewIds).toContain("goto:1");
 	});
@@ -212,6 +223,24 @@ describe("desktop questionnaire flow", () => {
 		await pending;
 	});
 
+	it("a supplement draft keeps the question in place: text + selection stays, explicit button moves on", async () => {
+		const { client, pending } = await startDesktopSession(PARAMS);
+
+		// 先写补充草稿（该题即视为已答），再点选选项：文本 + 选择 = 该答案的
+		// notes 补充，不自动前进（对齐 TUI；选完仍停在本题）
+		client.send({ type: "change", nodeId: "q0-custom", value: "生态最熟" });
+		client.send({ type: "change", nodeId: "q0", value: "opt:0:0" });
+		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q0");
+		expect(tabsOf(lastUpdate(client)).tabs[0].status).toBe("answered");
+
+		// 出路是页签显式按钮
+		client.send({ type: "action", actionId: "goto:1" });
+		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q1");
+
+		client.settle({ action: "cancel", values: {} });
+		await pending;
+	});
+
 	it("multi-select toggles and custom typing mark answered without advancing", async () => {
 		const { client, pending } = await startDesktopSession(PARAMS);
 
@@ -233,6 +262,8 @@ describe("desktop questionnaire flow", () => {
 		client.send({ type: "change", nodeId: "q0", value: "opt:0:0" });
 		const review = tabsOf(lastUpdate(client)).tabs[2];
 		expect(review.status).toBe("attention");
+		// 进度行：页内提交按钮之前，部分作答时如实显示缺了几题
+		expect(review.children[0]).toMatchObject({ type: "text", content: "已答 1 / 2" });
 		const texts = JSON.stringify(review.children);
 		expect(texts).toContain("Library：A");
 		expect(texts).toContain("Features：未作答");
@@ -247,6 +278,7 @@ describe("desktop questionnaire flow", () => {
 		client.send({ type: "change", nodeId: "q1", value: ["opt:1:1"] });
 		const final = tabsOf(lastUpdate(client));
 		expect(final.tabs[2].status).toBe("answered");
+		expect(final.tabs[2].children[0]).toMatchObject({ content: "已答 2 / 2" });
 		expect(JSON.stringify(final.tabs[2].children)).toContain("Features：Billing");
 
 		client.settle({ action: "cancel", values: {} });

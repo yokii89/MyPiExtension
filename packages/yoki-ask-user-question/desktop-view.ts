@@ -7,12 +7,15 @@
  * instead of the terminal TUI overlay or a modal.
  *
  * Multi-question dialogs render one `tabs` node: one tab per question plus a
- * final review tab (per-question answer summary + jump-back buttons). A single
- * question keeps the flat card column (no tab bar). Host owns local tab
- * switching (click / ←→); the extension takes over only via `activeTab` in the
- * echoed spec — auto-advance fires on a single-select question's
- * unanswered→answered transition, targeting the next unanswered question (or
- * the review tab). Tab switching is view state and never enters form values.
+ * final review tab (progress line, an inline primary submit button, and a
+ * per-question answer summary + jump-back buttons). A single question keeps the
+ * flat card column (no tab bar). Host owns local tab switching (click / ←→);
+ * the extension takes over only via `activeTab` in the echoed spec —
+ * auto-advance fires on a single-select question's unanswered→answered
+ * transition while its free-text draft is still empty (text alongside a
+ * selection is a supplement: stay and let the explicit 下一题 button move on),
+ * targeting the next unanswered question (or the review tab). Tab switching is
+ * view state and never enters form values.
  *
  * Footer actions: 取消（两段式——已有作答/备注时先布防确认）/ 提交（允许部分
  * 作答，未答题在复核页写成「未作答」并用 warning 状态色，对齐 TUI 的 Submit 页）。
@@ -163,9 +166,10 @@ function buildQuestionChildren(
 
 	children.push(listNode, customNode);
 
-	// 多选题不自动前进（勾选≠确认）：tabs 布局下提供显式「下一题」，
-	// 对齐 TUI 的 Next 哨兵行。单题布局无「下一题」可言（footer 提交）。
-	if (tabsMode && question.multiSelect === true) {
+	// 页签显式推进按钮：多选「勾选≠确认」必须显式走；单选在补充文本已在草稿时
+	// 自动前进被抑制（见 runDesktopSession），按钮是那时的唯一出路——两类页签
+	// 结构统一（选项 + 自由输入 + 下一题）。单题布局无「下一题」可言（footer 提交）。
+	if (tabsMode) {
 		children.push(
 			index + 1 < total
 				? { type: "button", id: gotoQuestionAction(index + 1), label: "下一题 →", variant: "ghost" }
@@ -214,11 +218,16 @@ function hasSelection(state: UiState, index: number): boolean {
 }
 
 /**
- * 复核页：每题一行「题头：答案」+ 跳回按钮；未作答的走 warning 状态色。
- * 允许部分作答。状态词必须写在文案里、不能只靠颜色（docs/design/79 §3.2）：
- * `tone` 没有能力位，旧 Host 丢色后「未作答」仍然读得通。
+ * 复核页：进度行 + 页内提交按钮 + 每题一行「题头：答案」+ 跳回按钮；未作答的走
+ * warning 状态色。允许部分作答。状态词必须写在文案里、不能只靠颜色
+ * （docs/design/79 §3.2）：`tone` 没有能力位，旧 Host 丢色后「未作答」仍然读得通。
+ *
+ * 提交按钮放在 rows 之前：Host 把自动前进落点页签的首焦点给面板第一个可聚焦
+ * 元素，按钮先于「修改」出现，键盘答完最后一题落到复核页时 Enter 即提交，
+ * 而不是误跳回第 1 题。与 footer「提交」同 actionId，同一取值路径。
  */
 function buildReviewChildren(params: QuestionParams, state: UiState): ViewNode[] {
+	const answered = params.questions.filter((_, i) => isQuestionAnswered(state, i)).length;
 	const rows: ViewNode[] = params.questions.map((q, i) => {
 		const header = q.header || `问题 ${i + 1}`;
 		const summary = answerSummary(q, state, i);
@@ -242,10 +251,16 @@ function buildReviewChildren(params: QuestionParams, state: UiState): ViewNode[]
 	return [
 		{
 			type: "text",
+			content: `已答 ${answered} / ${params.questions.length}`,
+			variant: "body",
+		},
+		{
+			type: "text",
 			content: "提交后以下答案将返回给模型；未作答的题目可点「修改」返回补答。",
 			variant: "caption",
 			tone: "muted",
 		},
+		{ type: "button", id: "submit", label: "提交答案", variant: "primary" },
 		...rows,
 	];
 }
@@ -477,7 +492,10 @@ async function runDesktopSession(
 				// 任何交互都解除取消布防（对齐 TUI：其它动作 disarm）。
 				state.cancelArmed = false;
 				// 自动前进：仅多题布局下单选题选项列表的「未答→已答」确认动作
-				// （点击/Enter）。多选勾选、自定义输入、备注不触发；回改已答题
+				// （点击/Enter），且该题自由输入没有草稿——文本 + 选择 = 补充说明，
+				// 对齐 TUI「补充中不前进」语义。wasAnswered 已隐含这条（纯文本草稿
+				// 也算已答），显式写出是防御：isQuestionAnswered 语义若变，选中
+				// 也不得拉走补充草稿。多选勾选、自定义输入、备注不触发；回改已答题
 				// 也不触发（只前进一次，避免改答案被拉走）。
 				if (
 					index !== null &&
@@ -485,7 +503,8 @@ async function runDesktopSession(
 					params.questions.length > 1 &&
 					!params.questions[index].multiSelect &&
 					!wasAnswered &&
-					isQuestionAnswered(state, index)
+					isQuestionAnswered(state, index) &&
+					(state.customTexts[index] ?? "").trim() === ""
 				) {
 					const next = nextUnansweredAfter(params, state, index);
 					state.activeTab = next === null ? REVIEW_TAB_ID : questionTabId(next);
