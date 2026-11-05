@@ -47,6 +47,9 @@ thoughts/
 # Agent metadata (Claude Code local session state)
 .claude/
 
+# Agent plan drafts (ZCode local session state)
+.zcode/
+
 # Package specific
 .npm/
 coverage/
