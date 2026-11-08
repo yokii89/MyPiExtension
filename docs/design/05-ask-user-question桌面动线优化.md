@@ -1,9 +1,16 @@
 # 05 · ask_user_question 桌面动线优化
 
-> 状态：**已实施（2026-11-04，扩展侧三处；真机复测待做）**
+> 状态：**首轮已实施（2026-11-04）→ 部分回退（2026-11-06）**
 > 基线：[04-ask-user-question-pidesk界面设计稿](./04-ask-user-question-pidesk界面设计稿.html)（状态「基准稿（待优化迭代）」，本篇是其首轮迭代）
 > 关联：pidesk `docs/design/126-扩展View答题列表全量展示`（同日落地：list 不再 280 内滚，选项全量可见）
 > 涉及范围：`packages/yoki-ask-user-question/desktop-view.ts`（+ 测试）；**pidesk 零改动（用户拍板，见 §4）**
+
+> **2026-11-06 回退说明（拍板轮次：推进控件收归 footer）**
+> - §2.1「单选页签补显式下一题 →」与页签内「完成，去复核 →」**整条撤销**：页签内不再放推进按钮，同一动作只在 footer 主按钮出现，标签按作答状态算——当前页签后面还有未答题 → 「下一题」（跳那个未答题，`goto:<i>`），后面没有 → 「复核」（`goto:review`）；复核页 → 「提交」。目标口径与自动前进统一为**只往后**，所以不会出现「点了原地不动」。
+> - §2.2 复核页「已答 N / M」保留；**页内 primary「提交答案」与说明行删除**。§G2 的键盘陷阱解法随之作废：Host 的接管落点首焦点只看「面板内第一个可聚焦元素」，footer 在 panel 之外拿不到，所以落到复核页按 Enter 会触发 q0「修改」；本轮明确接受「复核页 = 鼠标收尾」。
+> - §4「pidesk 零改动」本轮**作废**：Host 本地切页（chip / ←→）现在用既有 `action` 信封回报 `tab:<ViewTab.id>`（pidesk `tabs-node.tabSwitchActionId()` + `TabsView.switchTo`，docs/design/08 §5.1 同步）。零协议字段新增、不需要 capability；扩展侧另有兜底——把 change 的 nodeId 当作「画面上是哪一页」的证据校正 `activeTab`。
+> - 未变的不变量：两段式取消、自由输入双语义、允许部分作答、提交取值优先 Host 快照、状态词入文案、无 Host 回落 TUI。
+> - 证据：`packages/yoki-ask-user-question/test/desktop-view.test.ts`（22 例，含 footer 三态、nodeId 观测、`tab:` 路由与快照吸收、id 族不互认）；全仓 1409 例 + `npm run check` + `npm run coverage` 门禁绿；pidesk 侧 `tabs-node.test.ts` 与 renderer 523 例绿。
 
 ## 1. 动线缺口（对照基准稿逐条复核）
 

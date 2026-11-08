@@ -9,4 +9,5 @@
 | 03 | [newapi 模型能力匹配](./03-newapi思考能力匹配.md) | 中转模型按精确 ID 匹配 pi-ai 内置目录：reasoning + input + 保守 contextWindow；覆盖率与真 pi 验证 | 已实施（reasoning / input / context） | 2026-10-28 |
 | 04 | [Qoder 排队失败的退避重试](./04-Qoder排队失败的退避重试.md) | `10605` 排队错误在 provider 流层拦截；不睡满报价，而是按 1/4 份额切分、拿新报价改写计划，不兜现就连级加大份额 | 已实施（含真机 e2e） | 2026-11-03 |
 | 04 | [ask_user_question · PiDesk 桌面 GUI 设计稿](./04-ask-user-question-pidesk界面设计稿.html) | 桌面问卷浮层 7 屏枚举（单题/多题 tabs/复核/两段式取消/统一自由输入）+ 节点清单 + 交互不变量，作为 GUI 优化基准稿 | 基准稿（待优化迭代） | 2026-11-01 |
-| 05 | [ask_user_question 桌面动线优化](./05-ask-user-question桌面动线优化.md) | 基准稿首轮迭代（仅扩展侧，pidesk 不动）：单选页签补显式「下一题」（回改/补充后有出路）+ 自动前进守卫显式排除补充草稿；复核页「已答 N / M」进度 + 页内 primary「提交答案」（修掉 Enter 误跳 q0 的键盘陷阱）；host 键盘缺口（Esc/X/Enter 死键）拍板本轮不改、记录备后续 | 已实施（真机复测待做） | 2026-11-04 |
+| 05 | [ask_user_question 桌面动线优化](./05-ask-user-question桌面动线优化.md) | 基准稿首轮迭代（仅扩展侧，pidesk 不动）：单选页签补显式「下一题」（回改/补充后有出路）+ 自动前进守卫显式排除补充草稿；复核页「已答 N / M」进度 + 页内 primary「提交答案」（修掉 Enter 误跳 q0 的键盘陷阱）；host 键盘缺口（Esc/X/Enter 死键）拍板本轮不改、记录备后续 | 首轮已实施；**§2.1/§2.2 推进控件与页内提交已被 2026-11-06 轮次回退**（推进收归 footer，G2 键盘路径改为 footer 提交；本轮同时改了 pidesk 本地切页回报） | 2026-11-04 |
+| 06 | [Bash 作业守护：让 bash 有第三态「后台作业」](./06-bash作业守护扩展.md) | 落地 PiDesk doc 129：`bash` 三态（finish/detach/long）+ `tool_execution_inspect_output` + `bash_job_stop`；核心不变量「默认只让路不杀」，唯一 kill 路径 = 显式 `timeout` 或主动停 | 已实施（P0+P1 主体；进度正则/端口探测未做） | 2026-11-06 |
