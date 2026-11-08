@@ -120,6 +120,13 @@ function lastUpdate(client: ClientHarness): ViewSpec {
 	return spec;
 }
 
+/** open() 的首个 spec：会话还没回显过任何 update 时读它。 */
+function firstSpec(client: ClientHarness): ViewSpec {
+	const spec = client.open.mock.calls[0]?.[0];
+	if (!spec) throw new Error("open() never called");
+	return spec as ViewSpec;
+}
+
 function walkIds(node: ViewNode, acc: string[] = []): string[] {
 	if ("id" in node && typeof node.id === "string") acc.push(node.id);
 	if ("children" in node && Array.isArray(node.children)) {
@@ -175,28 +182,36 @@ describe("desktop questionnaire spec", () => {
 		expect(ids).not.toContain("q0-notes");
 	});
 
-	it("every question tab carries an explicit advance button; review puts inline submit first", () => {
+	it("question tabs carry no advance button; review keeps only progress + summary rows", () => {
 		const root = tabsOf(buildDesktopQuestionnaireSpec(PARAMS));
-		// 最后一题是多选：下一题按钮指向复核页
-		expect(root.tabs[1].children.filter((n) => n.type === "button")).toEqual([
-			{ type: "button", id: "goto:review", label: "完成，去复核 →", variant: "ghost" },
-		]);
-		// 单选页签同样带显式按钮：补充草稿在时自动前进被抑制，按钮是唯一出路
-		expect(root.tabs[0].children.filter((n) => n.type === "button")).toEqual([
-			{ type: "button", id: "goto:1", label: "下一题 →", variant: "ghost" },
-		]);
+		// 推进控件收归 footer：页签内只剩「本题答案」相关节点，两处并存会让用户分不清出路
+		expect(root.tabs[0].children.filter((n) => n.type === "button")).toEqual([]);
+		expect(root.tabs[1].children.filter((n) => n.type === "button")).toEqual([]);
+
 		const reviewChildren = root.tabs[2].children;
-		// 进度行 + 页内提交：提交按钮先于「修改」行，自动前进落点的首焦点即提交
 		expect(reviewChildren[0]).toMatchObject({ type: "text", content: "已答 0 / 2" });
-		expect(reviewChildren.filter((n) => n.type === "button")[0]).toEqual({
-			type: "button",
-			id: "submit",
-			label: "提交答案",
-			variant: "primary",
-		});
-		const reviewIds = walkIds({ type: "column", children: reviewChildren });
-		expect(reviewIds).toContain("goto:0");
-		expect(reviewIds).toContain("goto:1");
+		// 说明行与页内提交按钮都已撤销：提交出口全仓只有 footer 主按钮一处
+		const reviewButtons = reviewChildren
+			.flatMap((n) => (n.type === "row" ? n.children : [n]))
+			.filter((n) => n.type === "button");
+		expect(reviewButtons).toEqual([
+			{ type: "button", id: "goto:0", label: "修改", variant: "ghost" },
+			{ type: "button", id: "goto:1", label: "修改", variant: "ghost" },
+		]);
+		expect(JSON.stringify(reviewChildren)).not.toContain("提交后以下答案将返回给模型");
+		expect(JSON.stringify(reviewChildren)).not.toContain("提交答案");
+	});
+
+	it("footer primary button reads as the next action, not as a constant 提交", () => {
+		// 停在 q0、q1 未答 → 下一题（目标就是下一个未答题）
+		const initial = buildDesktopQuestionnaireSpec(PARAMS);
+		expect(initial.actions?.map((a) => [a.id, a.label])).toEqual([
+			["cancel", "取消"],
+			["goto:1", "下一题"],
+		]);
+
+		// 单题布局没有「下一题」可言 → 恒为提交
+		expect(buildDesktopQuestionnaireSpec(SINGLE).actions?.[1]).toMatchObject({ id: "submit", label: "提交" });
 	});
 
 	it("returns null when no desktop host env", async () => {
@@ -208,22 +223,120 @@ describe("desktop questionnaire spec", () => {
 });
 
 describe("desktop questionnaire flow", () => {
-	it("auto-advances once: unanswered→answered on single-select moves to next tab, re-answers do not", async () => {
+	it("auto-advances once: unanswered→answered on single-select moves to next tab", async () => {
 		const { client, pending } = await startDesktopSession(PARAMS);
 
 		client.send({ type: "change", nodeId: "q0", value: "opt:0:0" });
 		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q1");
 		expect(tabsOf(lastUpdate(client)).tabs[0].status).toBe("answered");
 
-		// 回改已答题：不再前进
-		client.send({ type: "change", nodeId: "q0", value: "opt:0:1" });
+		client.settle({ action: "cancel", values: {} });
+		await pending;
+	});
+
+	it("re-editing an answered question stays put and leaves a footer way out", async () => {
+		const { client, pending } = await startDesktopSession(PARAMS);
+
+		client.send({ type: "change", nodeId: "q0", value: "opt:0:0" });
 		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q1");
+
+		// 回改 q0：隐藏页签点不到，所以 q0 的 change 本身就是「用户已切回 q0」的证据
+		// （页签观测）。不前进的不变量保持：已答题再选也不会被拽走。
+		client.send({ type: "change", nodeId: "q0", value: "opt:0:1" });
+		const echoed = tabsOf(lastUpdate(client));
+		expect(echoed.activeTab).toBe("q0");
+		// 出路改由 footer 给：q1 还没答 → 「下一题」指向 q1
+		expect(lastUpdate(client).actions?.[1]).toMatchObject({ id: "goto:1", label: "下一题" });
 
 		client.settle({ action: "cancel", values: {} });
 		await pending;
 	});
 
-	it("a supplement draft keeps the question in place: text + selection stays, explicit button moves on", async () => {
+	it("multi-select toggles mark answered without advancing", async () => {
+		const { client, pending } = await startDesktopSession(PARAMS);
+
+		client.send({ type: "change", nodeId: "q0", value: "opt:0:0" });
+		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q1");
+
+		// 勾完 q1 后两题都答了：若误进「勾选也前进」就会落到复核页，所以停在 q1
+		client.send({ type: "change", nodeId: "q1", value: ["opt:1:0"] });
+		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q1");
+		expect(tabsOf(lastUpdate(client)).tabs[1].status).toBe("answered");
+		// q1 之后无可补的题 → footer 改口「复核」
+		expect(lastUpdate(client).actions?.[1]).toMatchObject({ id: "goto:review", label: "复核" });
+
+		client.settle({ action: "cancel", values: {} });
+		await pending;
+	});
+
+	it("free-text typing marks answered without advancing", async () => {
+		const { client, pending } = await startDesktopSession(PARAMS);
+
+		client.send({ type: "change", nodeId: "q0-custom", value: "自己写的" });
+		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q0");
+		expect(tabsOf(lastUpdate(client)).tabs[0].status).toBe("answered");
+		expect(lastUpdate(client).actions?.[1]).toMatchObject({ id: "goto:1", label: "下一题" });
+
+		client.settle({ action: "cancel", values: {} });
+		await pending;
+	});
+
+	it("tab observations from a nodeId rebase the footer target onto the visible tab", async () => {
+		const { client, pending } = await startDesktopSession(PARAMS);
+
+		// 用户没碰过任何控件、只用 chip 切到 q1（Host 本地切页，老 Host 不发事件）：
+		// 扩展此刻仍以为是 q0。第一次落到 q1 的 change 就把页签账本校正过来。
+		expect(firstSpec(client).actions?.[1]).toMatchObject({ id: "goto:1", label: "下一题" });
+		client.send({ type: "change", nodeId: "q1", value: ["opt:1:1"] });
+		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q1");
+		// 校正后从 q1 往后算：没有未答题了 → 「复核」，而不是按旧账再跳 q1
+		expect(lastUpdate(client).actions?.[1]).toMatchObject({ id: "goto:review", label: "复核" });
+
+		client.settle({ action: "cancel", values: {} });
+		await pending;
+	});
+
+	it("host tab: actions report local tab switches and adopt the flushed form snapshot", async () => {
+		const { client, pending } = await startDesktopSession(PARAMS);
+
+		client.send({ type: "change", nodeId: "q0", value: "opt:0:0" });
+		client.send({ type: "action", actionId: "cancel" });
+		expect(client.closes).toHaveLength(0); // 有工作内容 → 仅布防
+		expect(lastUpdate(client).actions?.[0].label).toBe("再按一次确认取消");
+
+		// Host 本地切页（新 Host）：actionId=tab:<ViewTab.id>，values 是 sendAction 先 flush 的表单快照
+		client.send({ type: "action", actionId: "tab:q1", values: { q1: ["opt:1:0"], "q1-custom": "打字未落盘" } });
+		const echoed = tabsOf(lastUpdate(client));
+		expect(echoed.activeTab).toBe("q1");
+		expect(echoed.tabs[1].status).toBe("answered");
+		expect(JSON.stringify(echoed.tabs[2].children)).toContain("Features：Auth（补充：打字未落盘）");
+		// 切页也是一种交互 → 取消布防解除
+		expect(lastUpdate(client).actions?.[0].label).toBe("取消");
+
+		client.settle({ action: "cancel", values: {} });
+		await pending;
+	});
+
+	it("tab: carries ViewTab ids, clamps out-of-range ones, ignores other id shapes", async () => {
+		const { client, pending } = await startDesktopSession(PARAMS);
+
+		client.send({ type: "action", actionId: "tab:q9" });
+		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q1");
+		client.send({ type: "action", actionId: "tab:review" });
+		expect(tabsOf(lastUpdate(client)).activeTab).toBe("review");
+		expect(lastUpdate(client).actions?.[1]).toMatchObject({ id: "submit", label: "提交" });
+
+		const before = client.updates.length;
+		// 裸下标是 `goto:` 族的写法，Host 只会发页签 id；认错了就当不认识的 id 忽略掉
+		client.send({ type: "action", actionId: "tab:1" });
+		client.send({ type: "action", actionId: "tab:not-a-tab" });
+		expect(client.updates).toHaveLength(before);
+
+		client.settle({ action: "cancel", values: {} });
+		await pending;
+	});
+
+	it("a supplement draft keeps the question in place: text + selection stays, footer moves on", async () => {
 		const { client, pending } = await startDesktopSession(PARAMS);
 
 		// 先写补充草稿（该题即视为已答），再点选选项：文本 + 选择 = 该答案的
@@ -233,24 +346,10 @@ describe("desktop questionnaire flow", () => {
 		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q0");
 		expect(tabsOf(lastUpdate(client)).tabs[0].status).toBe("answered");
 
-		// 出路是页签显式按钮
+		// 出路 = footer 主按钮（同一时刻它算出的目标正是 q1），actionId 仍是 goto:<i>
+		expect(lastUpdate(client).actions?.[1]).toMatchObject({ id: "goto:1", label: "下一题" });
 		client.send({ type: "action", actionId: "goto:1" });
 		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q1");
-
-		client.settle({ action: "cancel", values: {} });
-		await pending;
-	});
-
-	it("multi-select toggles and custom typing mark answered without advancing", async () => {
-		const { client, pending } = await startDesktopSession(PARAMS);
-
-		client.send({ type: "change", nodeId: "q1", value: ["opt:1:0"] });
-		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q0");
-		expect(tabsOf(lastUpdate(client)).tabs[1].status).toBe("answered");
-
-		client.send({ type: "change", nodeId: "q0-custom", value: "自己写的" });
-		expect(tabsOf(lastUpdate(client)).activeTab).toBe("q0");
-		expect(tabsOf(lastUpdate(client)).tabs[0].status).toBe("answered");
 
 		client.settle({ action: "cancel", values: {} });
 		await pending;

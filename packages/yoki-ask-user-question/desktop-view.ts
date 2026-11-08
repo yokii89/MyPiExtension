@@ -7,18 +7,26 @@
  * instead of the terminal TUI overlay or a modal.
  *
  * Multi-question dialogs render one `tabs` node: one tab per question plus a
- * final review tab (progress line, an inline primary submit button, and a
- * per-question answer summary + jump-back buttons). A single question keeps the
- * flat card column (no tab bar). Host owns local tab switching (click / ←→);
- * the extension takes over only via `activeTab` in the echoed spec —
- * auto-advance fires on a single-select question's unanswered→answered
- * transition while its free-text draft is still empty (text alongside a
- * selection is a supplement: stay and let the explicit 下一题 button move on),
- * targeting the next unanswered question (or the review tab). Tab switching is
- * view state and never enters form values.
+ * final review tab (progress line and a per-question answer summary + jump-back
+ * buttons). A single question keeps the flat card column (no tab bar). Host owns
+ * local tab switching (click / ←→) and reports it back as a `tab:<id>` action;
+ * when the Host is too old to send that, the visible tab is inferred from the
+ * `q<i>` / `q<i>-custom` nodeId of whatever `change` arrives, since a hidden tab
+ * panel cannot be interacted with. Auto-advance fires on a single-select
+ * question's unanswered→answered transition while its free-text draft is still
+ * empty (text alongside a selection is a supplement: stay and let the footer's
+ * 下一题 move on), targeting the next unanswered question (or the review tab).
+ * Tab switching is view state and never enters form values.
  *
- * Footer actions: 取消（两段式——已有作答/备注时先布防确认）/ 提交（允许部分
- * 作答，未答题在复核页写成「未作答」并用 warning 状态色，对齐 TUI 的 Submit 页）。
+ * The footer's primary button is the single advance affordance and reads as the
+ * next action from the user's point of view: 下一题 (the first unanswered question
+ * after the visible tab — same direction rule as auto-advance), 复核 when nothing
+ * is left to fill, 提交 on the review tab and in single-question dialogs.
+ *
+ * Footer actions: 取消（两段式——已有作答/备注时先布防确认）/ 主按钮（随页签态变化）。
+ * 复核页不再放页内提交与说明行：Host 把接管落点的首焦点给「面板内第一个可聚焦元素」，
+ * footer 在 panel 之外拿不到它，所以复核页的收尾是鼠标动作（拍板于 2026-11-06，
+ * 代价是把 05 号文档 G2 的键盘提交路径换成 footer 提交）。
  */
 
 import {
@@ -26,7 +34,6 @@ import {
 	type DesktopViewClient,
 	type LiveViewSession,
 	type ViewAction,
-	type ViewEvent,
 	type ViewListOption,
 	type ViewNode,
 	type ViewResult,
@@ -38,6 +45,8 @@ import type { QuestionAnswer, QuestionData, QuestionnaireResult, QuestionParams 
 const TABS_NODE_ID = "questionnaire-tabs";
 const REVIEW_TAB_ID = "review";
 const GOTO_ACTION_RE = /^goto:(review|[0-9]+)$/;
+/** Host 本地切页（chip / ←→）的回报：actionId 走 `tab:<id>`，不新增协议字段。 */
+const TAB_ACTION_RE = /^tab:(review|q[0-9]+)$/;
 
 export interface DesktopViewDeps {
 	connect?: typeof connectDesktopView;
@@ -67,12 +76,38 @@ function gotoReviewAction(): string {
 	return `goto:${REVIEW_TAB_ID}`;
 }
 
+/**
+ * 页签引用 → 跳转目标。三种写法都要认，因为它们来自两个不同的 id 空间：
+ * `review`；`goto:` 族的裸下标（`goto:2`，扩展自己写的按钮 id）；
+ * `tab:` 族的页签 id（`tab:q2`，Host 只认识 `ViewTab.id`，也就是 `questionTabId()` 的产物）。
+ */
+function parseTabRef(raw: string): { review: boolean; questionIndex: number } | null {
+	if (raw === REVIEW_TAB_ID) return { review: true, questionIndex: -1 };
+	const digits = raw.startsWith("q") ? raw.slice(1) : raw;
+	if (/^[0-9]+$/.test(digits)) return { review: false, questionIndex: Number(digits) };
+	return null;
+}
+
 /** "goto:<i>" / "goto:review" → 跳转目标；其它 actionId 返回 null。 */
 function parseGotoAction(actionId: string): { review: boolean; questionIndex: number } | null {
 	const m = GOTO_ACTION_RE.exec(actionId);
-	if (!m) return null;
-	if (m[1] === REVIEW_TAB_ID) return { review: true, questionIndex: -1 };
-	return { review: false, questionIndex: Number(m[1]) };
+	return m ? parseTabRef(m[1]) : null;
+}
+
+/**
+ * "tab:<i>" / "tab:review" → Host 本地切页（chip / ←→）的回报。
+ * 切页本身不发事件是 view/v1 的既有语义，这条 action 只在 Host 侧补；老 Host 不发，
+ * 扩展退回 `observeTabFromChange`（见 change 分支），所以两边都不需要 capability。
+ */
+function parseTabAction(actionId: string): { review: boolean; questionIndex: number } | null {
+	const m = TAB_ACTION_RE.exec(actionId);
+	return m ? parseTabRef(m[1]) : null;
+}
+
+/** 跳转目标 → 页签 id；题目下标越界时夹到合法范围，不让 Host 收到 `q7` 这种空页签。 */
+function tabIdOf(ref: { review: boolean; questionIndex: number }, total: number): string {
+	if (ref.review) return REVIEW_TAB_ID;
+	return questionTabId(Math.min(Math.max(ref.questionIndex, 0), total - 1));
 }
 
 interface UiState {
@@ -121,14 +156,8 @@ function hasAnyWork(params: QuestionParams, state: UiState): boolean {
 	return params.questions.some((_, i) => isQuestionAnswered(state, i));
 }
 
-/** 单题卡片的内容节点（不含 card 外壳；tabs 布局与单题布局共用）。 */
-function buildQuestionChildren(
-	question: QuestionData,
-	index: number,
-	state: UiState,
-	tabsMode: boolean,
-	total: number,
-): ViewNode[] {
+/** 单题卡片与 tabs 页签共用的内容节点（不含外壳）。推进动作在 footer，页签内不放按钮。 */
+function buildQuestionChildren(question: QuestionData, index: number, state: UiState): ViewNode[] {
 	const items: ViewListOption[] = question.options.map((o, oi) => ({
 		value: optionValue(index, oi),
 		label: o.label,
@@ -166,17 +195,8 @@ function buildQuestionChildren(
 
 	children.push(listNode, customNode);
 
-	// 页签显式推进按钮：多选「勾选≠确认」必须显式走；单选在补充文本已在草稿时
-	// 自动前进被抑制（见 runDesktopSession），按钮是那时的唯一出路——两类页签
-	// 结构统一（选项 + 自由输入 + 下一题）。单题布局无「下一题」可言（footer 提交）。
-	if (tabsMode) {
-		children.push(
-			index + 1 < total
-				? { type: "button", id: gotoQuestionAction(index + 1), label: "下一题 →", variant: "ghost" }
-				: { type: "button", id: gotoReviewAction(), label: "完成，去复核 →", variant: "ghost" },
-		);
-	}
-
+	// 推进控件只在 footer：页签内的 ghost 按钮与 footer 主按钮是同一个动作，两处并存
+	// 会让用户分不清哪个是出路；页签内留下的都是「本题答案」相关的节点。
 	return children;
 }
 
@@ -185,7 +205,7 @@ function buildQuestionNode(question: QuestionData, index: number, state: UiState
 	return {
 		type: "card",
 		title: question.header || `问题 ${index + 1}`,
-		children: buildQuestionChildren(question, index, state, false, 1),
+		children: buildQuestionChildren(question, index, state),
 	};
 }
 
@@ -218,13 +238,15 @@ function hasSelection(state: UiState, index: number): boolean {
 }
 
 /**
- * 复核页：进度行 + 页内提交按钮 + 每题一行「题头：答案」+ 跳回按钮；未作答的走
- * warning 状态色。允许部分作答。状态词必须写在文案里、不能只靠颜色
- * （docs/design/79 §3.2）：`tone` 没有能力位，旧 Host 丢色后「未作答」仍然读得通。
+ * 复核页：进度行 + 每题一行「题头：答案」+ 跳回按钮；未作答的走 warning 状态色。
+ * 允许部分作答。状态词必须写在文案里、不能只靠颜色（docs/design/79 §3.2）：
+ * `tone` 没有能力位，旧 Host 丢色后「未作答」仍然读得通。
  *
- * 提交按钮放在 rows 之前：Host 把自动前进落点页签的首焦点给面板第一个可聚焦
- * 元素，按钮先于「修改」出现，键盘答完最后一题落到复核页时 Enter 即提交，
- * 而不是误跳回第 1 题。与 footer「提交」同 actionId，同一取值路径。
+ * 这里不放提交按钮、也不放说明行：提交出口全仓只有 footer 主按钮一处。
+ * 代价已知且已拍板——Host 的接管落点首焦点只看「面板内第一个可聚焦元素」，
+ * footer 在 panel 之外，所以答完最后一题落到复核页时 Enter 会触发 q0 的「修改」
+ * 而不是提交（05 号文档 G2 的解法随之作废）。要恢复键盘收尾，唯一有效做法是
+ * 在 rows 之前重新放一个可聚焦的提交节点，纯排版挪动救不了。
  */
 function buildReviewChildren(params: QuestionParams, state: UiState): ViewNode[] {
 	const answered = params.questions.filter((_, i) => isQuestionAnswered(state, i)).length;
@@ -254,13 +276,6 @@ function buildReviewChildren(params: QuestionParams, state: UiState): ViewNode[]
 			content: `已答 ${answered} / ${params.questions.length}`,
 			variant: "body",
 		},
-		{
-			type: "text",
-			content: "提交后以下答案将返回给模型；未作答的题目可点「修改」返回补答。",
-			variant: "caption",
-			tone: "muted",
-		},
-		{ type: "button", id: "submit", label: "提交答案", variant: "primary" },
 		...rows,
 	];
 }
@@ -280,7 +295,7 @@ function buildTree(params: QuestionParams, state: UiState): ViewNode {
 		id: questionTabId(i),
 		label: q.header || `问题 ${i + 1}`,
 		...(isQuestionAnswered(state, i) ? { status: "answered" as const } : {}),
-		children: buildQuestionChildren(q, i, state, true, params.questions.length),
+		children: buildQuestionChildren(q, i, state),
 	}));
 	tabs.push({
 		id: REVIEW_TAB_ID,
@@ -293,7 +308,32 @@ function buildTree(params: QuestionParams, state: UiState): ViewNode {
 	return { type: "tabs", id: TABS_NODE_ID, tabs, activeTab: state.activeTab };
 }
 
-function buildActions(state: UiState): ViewAction[] {
+const SUBMIT_ACTION: ViewAction = { id: "submit", label: "提交", kind: "submit", variant: "primary" };
+
+/**
+ * footer 主按钮 = 「此刻的下一步」，也是全仓唯一的推进出口：
+ * - 单题布局、复核页 → 提交；
+ * - 题目页签且**后面**还有未答题 → 「下一题」跳下一个未答题（与自动前进同口径，不环绕，
+ *   因此不会出现「当前题是唯一未答时点了不动」）；
+ * - 题目页签且后面没有可补的题 → 「复核」，缺答信息由复核页的「未作答」行承担。
+ *
+ * 起点用 `state.activeTab`，而它已被「change 的 nodeId 反推」和 Host 的 `tab:` 回报
+ * 校准过，所以按钮目标对齐的是画面上那一页，不是扩展自己那本旧账。
+ */
+function footerPrimaryAction(params: QuestionParams, state: UiState): ViewAction {
+	const total = params.questions.length;
+	if (total <= 1 || state.activeTab === REVIEW_TAB_ID) return SUBMIT_ACTION;
+	const match = /^q([0-9]+)$/.exec(state.activeTab);
+	if (!match) return SUBMIT_ACTION;
+	const index = Number(match[1]);
+	if (index >= total) return SUBMIT_ACTION;
+	const next = nextUnansweredAfter(params, state, index);
+	return next === null
+		? { id: gotoReviewAction(), label: "复核", kind: "submit", variant: "primary" }
+		: { id: gotoQuestionAction(next), label: "下一题", kind: "submit", variant: "primary" };
+}
+
+function buildActions(params: QuestionParams, state: UiState): ViewAction[] {
 	return [
 		{
 			id: "cancel",
@@ -301,7 +341,7 @@ function buildActions(state: UiState): ViewAction[] {
 			kind: "submit",
 			variant: state.cancelArmed ? "danger" : "ghost",
 		},
-		{ id: "submit", label: "提交", kind: "submit", variant: "primary" },
+		footerPrimaryAction(params, state),
 	];
 }
 
@@ -314,7 +354,7 @@ function buildSpec(params: QuestionParams, state: UiState): ViewSpec {
 		placementRequired: true,
 		placementHint: { side: "aboveEditor", floating: true },
 		root: buildTree(params, state),
-		actions: buildActions(state),
+		actions: buildActions(params, state),
 	};
 }
 
@@ -332,8 +372,12 @@ function questionIndexForNode(params: QuestionParams, nodeId: string): number | 
 	return null;
 }
 
-function applyChange(state: UiState, params: QuestionParams, event: Extract<ViewEvent, { type: "change" }>): void {
-	const { nodeId, value } = event;
+/**
+ * 写入一个题控件的值（选项列表 / 统一自由输入），返回命中的题号；非题控件返回 null。
+ * 返回值同时是「用户此刻在哪一页」的证据：隐藏页签的面板 `display:none`，
+ * 点不到也 Tab 不进去，所以 change 的 nodeId 自带题号就能校准 `activeTab`（档 1）。
+ */
+function applyChange(state: UiState, params: QuestionParams, nodeId: string, value: unknown): number | null {
 	for (let i = 0; i < params.questions.length; i++) {
 		if (nodeId === listId(i)) {
 			if (params.questions[i].multiSelect) {
@@ -342,12 +386,21 @@ function applyChange(state: UiState, params: QuestionParams, event: Extract<View
 			} else {
 				state.selections[i] = typeof value === "string" ? value : "";
 			}
-			return;
+			return i;
 		}
 		if (nodeId === customId(i)) {
 			state.customTexts[i] = typeof value === "string" ? value : "";
-			return;
+			return i;
 		}
+	}
+	return null;
+}
+
+/** action 携带的表单快照 → 逐控件写入。Host 的 sendAction 会先 flush 未落盘的 change。 */
+function adoptFormValues(state: UiState, params: QuestionParams, values: Record<string, unknown> | undefined): void {
+	if (!values) return;
+	for (const [nodeId, value] of Object.entries(values)) {
+		applyChange(state, params, nodeId, value);
 	}
 }
 
@@ -488,9 +541,13 @@ async function runDesktopSession(
 			if (event.type === "change") {
 				const index = questionIndexForNode(params, event.nodeId);
 				const wasAnswered = index === null ? false : isQuestionAnswered(state, index);
-				applyChange(state, params, event);
+				applyChange(state, params, event.nodeId, event.value);
 				// 任何交互都解除取消布防（对齐 TUI：其它动作 disarm）。
 				state.cancelArmed = false;
+				// 页签观测（档 1）：Host 本地切页（chip / ←→）按 view/v1 语义不发事件，
+				// 但落在某题控件上的 change 自带题号——它就是「画面上是哪一页」的证据。
+				// 写在自动前进之前：前进的起点应当是用户真正在答的那一题，而不是扩展的旧账。
+				if (index !== null) state.activeTab = questionTabId(index);
 				// 自动前进：仅多题布局下单选题选项列表的「未答→已答」确认动作
 				// （点击/Enter），且该题自由输入没有草稿——文本 + 选择 = 补充说明，
 				// 对齐 TUI「补充中不前进」语义。wasAnswered 已隐含这条（纯文本草稿
@@ -537,11 +594,21 @@ async function runDesktopSession(
 				}
 				const goto = parseGotoAction(event.actionId);
 				if (goto) {
-					// 复核页「修改」/ 多选题「下一题」：显式接管激活页签
+					// 复核页「修改」/ footer 主按钮「下一题」「复核」：显式接管激活页签
 					state.cancelArmed = false;
-					state.activeTab = goto.review
-						? REVIEW_TAB_ID
-						: questionTabId(Math.min(Math.max(goto.questionIndex, 0), params.questions.length - 1));
+					state.activeTab = tabIdOf(goto, params.questions.length);
+					session.update(buildSpec(params, state));
+					return;
+				}
+				const tab = parseTabAction(event.actionId);
+				if (tab) {
+					// Host 本地切页（chip / ←→）的回报（档 2）。actionId 走已有的 action 信封，
+					// 协议字段零新增：Host 的 sendAction 不校验 id 是否声明在 spec.actions 里，
+					// 且发 action 前会先 flush 未落盘的 change，所以 values 里是最新的表单。
+					// 老 Host 不发这条 → 退回 change 分支的页签观测兜底。
+					adoptFormValues(state, params, event.values);
+					state.cancelArmed = false;
+					state.activeTab = tabIdOf(tab, params.questions.length);
 					session.update(buildSpec(params, state));
 				}
 			}
