@@ -6,8 +6,8 @@
  * the idle notice, which is a UI notification and therefore user-facing (`ctx.ui.notify`).
  */
 
+import type { DetachReason, JobRecord, KillReason } from "../types.ts";
 import { formatDuration } from "./policy.ts";
-import type { DetachReason, JobRecord, KillReason } from "./types.ts";
 
 const MODE_NOTE: Record<JobRecord["mode"], string> = {
 	finish: "blocking call",

@@ -11,7 +11,7 @@
  * (doc 129 §5.2 「本设计里最关键的一条冗余」). Over-matching would be the dangerous error.
  */
 
-import type { JobMode } from "./types.ts";
+import type { JobMode } from "../types.ts";
 
 export interface ClassifyOptions {
 	extraDetachPatterns?: string[];

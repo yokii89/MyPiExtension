@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { buildSnapshot, loadSnapshot, projectJobRecord, saveSnapshot, trimTail } from "../persist.ts";
+import { buildSnapshot, loadSnapshot, projectJobRecord, saveSnapshot, trimTail } from "../state/persist.ts";
 import type { JobRecord } from "../types.ts";
 
 const dirs: string[] = [];

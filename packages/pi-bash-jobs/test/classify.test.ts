@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyCommand, commandHead } from "../classify.ts";
+import { classifyCommand, commandHead } from "../core/classify.ts";
 
 describe("commandHead", () => {
 	it("falls back to the first executable body, not the whole pipeline", () => {

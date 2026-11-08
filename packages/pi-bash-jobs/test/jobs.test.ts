@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createJobRegistry } from "../jobs.ts";
-import { createRingBuffer } from "../ring.ts";
+import { createJobRegistry } from "../core/jobs.ts";
+import { createRingBuffer } from "../infra/ring.ts";
 import type { JobRecord } from "../types.ts";
 
 const limits = { maxBytes: 64 * 1024, maxLines: 1_000 };

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CONFIG } from "../config.ts";
-import { inspectJobs } from "../inspect.ts";
-import { createJobRegistry } from "../jobs.ts";
-import { createRingBuffer } from "../ring.ts";
+import { createJobRegistry } from "../core/jobs.ts";
+import { createRingBuffer } from "../infra/ring.ts";
+import { inspectJobs } from "../run/inspect.ts";
+import { DEFAULT_CONFIG } from "../state/config.ts";
 
 const limits = { maxBytes: 64 * 1024, maxLines: 1_000 };
 

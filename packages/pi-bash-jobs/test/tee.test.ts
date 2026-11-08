@@ -2,8 +2,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createRingBuffer } from "../ring.ts";
-import { createJobLogTee } from "../tee.ts";
+import { createRingBuffer } from "../infra/ring.ts";
+import { createJobLogTee } from "../infra/tee.ts";
 
 function ringWithLines(lines: string[]) {
 	const ring = createRingBuffer({ maxBytes: 262_144, maxLines: 4_000 });

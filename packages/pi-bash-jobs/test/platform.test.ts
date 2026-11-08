@@ -2,11 +2,11 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { createJobRegistry } from "../jobs.ts";
-import { agentDir, configPath, snapshotPath } from "../paths.ts";
-import { createRingBuffer } from "../ring.ts";
-import { isProcessAlive, killProcessTree, spawnShellCommand } from "../shell.ts";
-import { settleAwareWait } from "../wait.ts";
+import { createJobRegistry } from "../core/jobs.ts";
+import { settleAwareWait } from "../core/wait.ts";
+import { agentDir, configPath, snapshotPath } from "../infra/paths.ts";
+import { createRingBuffer } from "../infra/ring.ts";
+import { isProcessAlive, killProcessTree, spawnShellCommand } from "../infra/shell.ts";
 
 const dirs: string[] = [];
 

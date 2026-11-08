@@ -7,7 +7,7 @@
  * `kill` closes the dev server the user was told would stay up.
  */
 
-import type { DetachReason, JobMode } from "./types.ts";
+import type { DetachReason, JobMode } from "../types.ts";
 
 export interface PolicyConfig {
 	finishSoftBudgetSec: number;

@@ -5,9 +5,9 @@
 
 import type { ExtensionToolContext, ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import type { JobRegistry } from "./jobs.ts";
-import { signalProcessGroup } from "./shell.ts";
-import { type StopInput, stopJob } from "./stop.ts";
+import type { JobRegistry } from "../core/jobs.ts";
+import { signalProcessGroup } from "../infra/shell.ts";
+import { type StopInput, stopJob } from "../run/stop.ts";
 
 const StopParams = Type.Object({
 	job: Type.String({ description: "Job id to stop (`J-3`)" }),

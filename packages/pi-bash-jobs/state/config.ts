@@ -8,7 +8,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { configPath } from "./paths.ts";
+import { configPath } from "../infra/paths.ts";
 
 export type WakeMode = "followUp" | "steer" | "off";
 

@@ -1,12 +1,12 @@
 import type { ExtensionToolContext } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
-import { createBashJobsTool } from "../bashTool.ts";
-import { DEFAULT_CONFIG } from "../config.ts";
-import { createInspectTool } from "../inspectTool.ts";
-import { createJobRegistry } from "../jobs.ts";
-import { createRingBuffer } from "../ring.ts";
-import type { ShellChild, ShellExit } from "../shell.ts";
-import { createStopTool } from "../stopTool.ts";
+import { createJobRegistry } from "../core/jobs.ts";
+import { createRingBuffer } from "../infra/ring.ts";
+import type { ShellChild, ShellExit } from "../infra/shell.ts";
+import { DEFAULT_CONFIG } from "../state/config.ts";
+import { createBashJobsTool } from "../tools/bashTool.ts";
+import { createInspectTool } from "../tools/inspectTool.ts";
+import { createStopTool } from "../tools/stopTool.ts";
 
 const limits = { maxBytes: 4_096, maxLines: 100 };
 

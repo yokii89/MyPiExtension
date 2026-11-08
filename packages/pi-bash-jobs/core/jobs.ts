@@ -8,8 +8,8 @@
  *  - `orphaned` is terminal for exit observation — restored jobs can be read, not awaited.
  */
 
-import type { RingBuffer } from "./ring.ts";
-import type { JobEvent, JobMode, JobRecord, JobStatus, KillReason, SettleInfo } from "./types.ts";
+import type { RingBuffer } from "../infra/ring.ts";
+import type { JobEvent, JobMode, JobRecord, JobStatus, KillReason, SettleInfo } from "../types.ts";
 
 export interface CreateJobInput {
 	command: string;

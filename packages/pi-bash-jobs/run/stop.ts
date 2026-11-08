@@ -6,8 +6,8 @@
  * immediately. Pretending otherwise would be a receipt that lies.
  */
 
-import { formatStopReceipt } from "./format.ts";
-import type { Job, JobRegistry } from "./jobs.ts";
+import { formatStopReceipt } from "../core/format.ts";
+import type { Job, JobRegistry } from "../core/jobs.ts";
 
 export interface StopInput {
 	job: string;

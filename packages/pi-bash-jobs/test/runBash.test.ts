@@ -1,9 +1,9 @@
 import { readFileSync, rmSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { type BashJobsConfig, DEFAULT_CONFIG } from "../config.ts";
-import { createJobRegistry } from "../jobs.ts";
-import { type RunBashDeps, runBash } from "../runBash.ts";
-import type { ShellChild, ShellExit } from "../shell.ts";
+import { createJobRegistry } from "../core/jobs.ts";
+import type { ShellChild, ShellExit } from "../infra/shell.ts";
+import { type RunBashDeps, runBash } from "../run/runBash.ts";
+import { type BashJobsConfig, DEFAULT_CONFIG } from "../state/config.ts";
 
 /** A child process whose output and exit the test drives by hand. */
 function fakeChild() {

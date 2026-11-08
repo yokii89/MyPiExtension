@@ -9,7 +9,7 @@ import {
 	formatJobList,
 	formatStopReceipt,
 	formatTimeoutError,
-} from "../format.ts";
+} from "../core/format.ts";
 import type { JobRecord } from "../types.ts";
 
 const job: JobRecord = {

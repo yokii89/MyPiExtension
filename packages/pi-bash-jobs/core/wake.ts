@@ -7,7 +7,7 @@
  * into a fountain of turns.
  */
 
-import type { WakeNotice } from "./types.ts";
+import type { WakeNotice } from "../types.ts";
 
 export interface WakeQueueOptions {
 	/** How long notices are collected before one message is sent. */

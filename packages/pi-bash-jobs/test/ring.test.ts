@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRingBuffer, tailWithinBytes } from "../ring.ts";
+import { createRingBuffer, tailWithinBytes } from "../infra/ring.ts";
 
 const limits = { maxBytes: 64 * 1024, maxLines: 4_000 };
 

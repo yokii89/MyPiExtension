@@ -7,11 +7,11 @@
  * the window ends.
  */
 
-import type { BashJobsConfig } from "./config.ts";
-import { formatBytes, formatJobLine } from "./format.ts";
-import type { Job, JobRegistry } from "./jobs.ts";
-import { formatDuration } from "./policy.ts";
-import { settleAwareWait, type WaitSlice } from "./wait.ts";
+import { formatBytes, formatJobLine } from "../core/format.ts";
+import type { Job, JobRegistry } from "../core/jobs.ts";
+import { formatDuration } from "../core/policy.ts";
+import { settleAwareWait, type WaitSlice } from "../core/wait.ts";
+import type { BashJobsConfig } from "../state/config.ts";
 
 export interface InspectInput {
 	job?: string;

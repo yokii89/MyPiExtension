@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { DEFAULT_CONFIG, loadConfig, normalizeConfig } from "../config.ts";
+import { DEFAULT_CONFIG, loadConfig, normalizeConfig } from "../state/config.ts";
 
 const dirs: string[] = [];
 

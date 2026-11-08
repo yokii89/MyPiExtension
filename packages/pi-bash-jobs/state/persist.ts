@@ -9,8 +9,8 @@
 
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { snapshotDir, snapshotPath } from "./paths.ts";
-import type { JobRecord } from "./types.ts";
+import { snapshotDir, snapshotPath } from "../infra/paths.ts";
+import type { JobRecord } from "../types.ts";
 
 export const SNAPSHOT_VERSION = 1;
 /** 200 lines × 4 jobs is already unreadable; the rest can be re-read from the live job. */

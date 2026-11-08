@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDuration, nextWaitAction, type PolicyConfig, resolveMode } from "../policy.ts";
+import { formatDuration, nextWaitAction, type PolicyConfig, resolveMode } from "../core/policy.ts";
 
 const config: PolicyConfig = {
 	finishSoftBudgetSec: 300,

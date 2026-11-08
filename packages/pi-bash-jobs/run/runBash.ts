@@ -10,8 +10,7 @@
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { classifyCommand } from "./classify.ts";
-import type { BashJobsConfig } from "./config.ts";
+import { classifyCommand } from "../core/classify.ts";
 import {
 	appendStatus,
 	formatAbortedError,
@@ -20,14 +19,15 @@ import {
 	formatResultTrimNote,
 	formatStoppedStatus,
 	formatTimeoutError,
-} from "./format.ts";
-import type { Job, JobRegistry } from "./jobs.ts";
-import { nextWaitAction, resolveMode, WAIT_TICK_MS } from "./policy.ts";
-import { createRingBuffer, tailWithinBytes } from "./ring.ts";
-import type { ShellChild, ShellExit } from "./shell.ts";
-import type { JobLogTee } from "./tee.ts";
-import type { DetachReason, JobMode } from "./types.ts";
-import { settleAwareWait } from "./wait.ts";
+} from "../core/format.ts";
+import type { Job, JobRegistry } from "../core/jobs.ts";
+import { nextWaitAction, resolveMode, WAIT_TICK_MS } from "../core/policy.ts";
+import { settleAwareWait } from "../core/wait.ts";
+import { createRingBuffer, tailWithinBytes } from "../infra/ring.ts";
+import type { ShellChild, ShellExit } from "../infra/shell.ts";
+import type { JobLogTee } from "../infra/tee.ts";
+import type { BashJobsConfig } from "../state/config.ts";
+import type { DetachReason, JobMode } from "../types.ts";
 
 export interface BashParams {
 	command: string;
@@ -175,15 +175,21 @@ export async function runBash(deps: RunBashDeps, params: BashParams, context: Ru
 	// attach 在同一同步块里紧随 create，child.onData 的首批 commit 不可能先于订阅到达。
 	deps.tee?.()?.attach(job.id, ring);
 
-	// Output path: ring for retention, throttled onUpdate for the streaming tool row. Once the
-	// call returns (detach or finish) the UI stops receiving updates — the job keeps the ring.
+	// Output path: ring for retention, throttled onUpdate for the streaming tool row — the frame
+	// payload is capped like pi's own per-frame snapshot (see flushUpdate). Once the call returns
+	// (detach or finish) the UI stops receiving updates — the job keeps the ring.
 	let acceptingOutput = true;
 	let lastUpdateAt = 0;
 	let updateTimer: NodeJS.Timeout | undefined;
 	const flushUpdate = () => {
 		if (!acceptingOutput || !context.onUpdate) return;
 		lastUpdateAt = deps.now();
-		context.onUpdate({ content: [{ type: "text", text: ring.text() }], details: undefined });
+		// Same size class as pi's native streaming frames (the result cap, 50KB/2000 lines), not
+		// the whole ring: the row does a full-replace render, and at 10 Hz a 256 KB frame means
+		// 2.5 MB/s of serialization for output the model will never read in full. The complete
+		// text still goes out with the final result, and the ring keeps everything for inspect.
+		const text = ring.tailWithin(config.resultMaxLines, config.resultMaxBytes);
+		context.onUpdate({ content: [{ type: "text", text }], details: undefined });
 	};
 	const scheduleUpdate = () => {
 		if (!acceptingOutput || !context.onUpdate) return;

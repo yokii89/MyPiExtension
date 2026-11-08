@@ -4,7 +4,7 @@ import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { afterEach, describe, expect, it } from "vitest";
 import bashJobsExtension from "../index.ts";
-import { buildSnapshot, saveSnapshot } from "../persist.ts";
+import { buildSnapshot, saveSnapshot } from "../state/persist.ts";
 import type { JobRecord } from "../types.ts";
 
 const dirs: string[] = [];

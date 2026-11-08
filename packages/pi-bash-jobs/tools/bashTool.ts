@@ -10,12 +10,12 @@
 import type { ExtensionToolContext, ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { createBashToolDefinition } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import type { BashJobsConfig } from "./config.ts";
-import type { JobRegistry } from "./jobs.ts";
-import { type BashParams, runBash } from "./runBash.ts";
-import { spawnShellCommand } from "./shell.ts";
-import type { JobLogTee } from "./tee.ts";
-import type { WaitSlice } from "./wait.ts";
+import type { JobRegistry } from "../core/jobs.ts";
+import type { WaitSlice } from "../core/wait.ts";
+import { spawnShellCommand } from "../infra/shell.ts";
+import type { JobLogTee } from "../infra/tee.ts";
+import { type BashParams, runBash } from "../run/runBash.ts";
+import type { BashJobsConfig } from "../state/config.ts";
 
 const BashParameters = Type.Object({
 	command: Type.String({ description: "Shell command to execute" }),

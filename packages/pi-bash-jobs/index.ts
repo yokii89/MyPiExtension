@@ -16,18 +16,18 @@
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { createBashJobsTool } from "./bashTool.ts";
-import { loadConfig } from "./config.ts";
-import { formatJobExitNotice, formatJobList } from "./format.ts";
-import { createInspectTool } from "./inspectTool.ts";
-import { createJobRegistry } from "./jobs.ts";
-import { jobLogDir } from "./paths.ts";
-import { buildSnapshot, loadSnapshot, saveSnapshot } from "./persist.ts";
-import { createRingBuffer } from "./ring.ts";
-import { isProcessAlive } from "./shell.ts";
-import { createStopTool } from "./stopTool.ts";
-import { createJobLogTee, type JobLogTee } from "./tee.ts";
-import { createWakeQueue } from "./wake.ts";
+import { formatJobExitNotice, formatJobList } from "./core/format.ts";
+import { createJobRegistry } from "./core/jobs.ts";
+import { createWakeQueue } from "./core/wake.ts";
+import { jobLogDir } from "./infra/paths.ts";
+import { createRingBuffer } from "./infra/ring.ts";
+import { isProcessAlive } from "./infra/shell.ts";
+import { createJobLogTee, type JobLogTee } from "./infra/tee.ts";
+import { loadConfig } from "./state/config.ts";
+import { buildSnapshot, loadSnapshot, saveSnapshot } from "./state/persist.ts";
+import { createBashJobsTool } from "./tools/bashTool.ts";
+import { createInspectTool } from "./tools/inspectTool.ts";
+import { createStopTool } from "./tools/stopTool.ts";
 
 /** How many lines of a job's tail a snapshot keeps for orphan display after a restart. */
 const SNAPSHOT_TAIL_LINES = 200;
@@ -39,8 +39,10 @@ export default function bashJobsExtension(pi: ExtensionAPI): void {
 	const registry = createJobRegistry();
 	/** Jobs the model stopped itself: the tool result already says so, no wake needed. */
 	const stopNotified = new Set<string>();
+	/** Current session id, if any. Used to track the current session's jobs. */
 	let sessionId: string | undefined;
 	let currentContext: ExtensionContext | undefined;
+	/** Debounced snapshot timer.（PERSIST_DEBOUNCE_MS）*/
 	let persistTimer: NodeJS.Timeout | undefined;
 	/** Per-session job log tee (方案 B): recreated per session, flushed on settle/shutdown. */
 	let tee: JobLogTee | undefined;
@@ -106,10 +108,11 @@ export default function bashJobsExtension(pi: ExtensionAPI): void {
 		wake.enqueue({ key: `job:${event.job.id}`, text: formatJobExitNotice(event.job, tail) });
 	});
 
+	/** 新会话开始的事件处理函数，是扩展中状态切换最复杂的部分。它要做的事很多：因为一个会话结束后，后台作业的进程可能还活着，而新的会话可能要用到它们。*/
 	pi.on("session_start", (_event, ctx) => {
 		currentContext = ctx;
-		wake.dispose();
-		wake = createSessionWakeQueue();
+		wake.dispose(); // Drop the old wake queue.
+		wake = createSessionWakeQueue(); // Create a new one.
 		// The old tee belongs to the old session's directory; flush and drop it before the id flips.
 		tee?.dispose();
 		tee = undefined;
@@ -119,12 +122,14 @@ export default function bashJobsExtension(pi: ExtensionAPI): void {
 			// are still ours, and killing them on `/new` would close a dev server the user was told
 			// would stay up. They stay inspectable in the new session instead of becoming invisible
 			// background processes nobody owns.
-			snapshotNow();
+			snapshotNow(); // Write the previous session's snapshot.
 		}
 		sessionId = nextSessionId;
 		tee = config.output.tee
 			? createJobLogTee({ dir: jobLogDir(sessionId), maxBytes: config.output.teeMaxBytes })
 			: undefined;
+		/**尝试恢复孤儿作业 */
+		// 如果注册表里还有作业就说明扩展还存活，作业都还在内存，无需从磁盘读。只有注册表为空时才才需要从磁盘读。
 		if (registry.list().length > 0) return;
 		const restored = loadSnapshot(sessionId, { orphanTtlHours: config.orphanTtlHours });
 		if (restored.length === 0) return;

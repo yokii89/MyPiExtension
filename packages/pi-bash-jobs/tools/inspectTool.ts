@@ -8,9 +8,9 @@
 
 import type { ExtensionToolContext, ToolDefinition } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import type { BashJobsConfig } from "./config.ts";
-import { type InspectInput, inspectJobs } from "./inspect.ts";
-import type { JobRegistry } from "./jobs.ts";
+import type { JobRegistry } from "../core/jobs.ts";
+import { type InspectInput, inspectJobs } from "../run/inspect.ts";
+import type { BashJobsConfig } from "../state/config.ts";
 
 const JobView = Type.Object({
 	id: Type.String(),

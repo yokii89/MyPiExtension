@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createWakeQueue, type WakeQueue } from "../wake.ts";
+import { createWakeQueue, type WakeQueue } from "../core/wake.ts";
 
 interface Harness {
 	queue: WakeQueue;
