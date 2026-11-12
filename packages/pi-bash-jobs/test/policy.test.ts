@@ -100,9 +100,10 @@ describe("nextWaitAction", () => {
 	});
 
 	it("longGraceSec=0 restores 'return immediately' for long calls", () => {
-		expect(
-			nextWaitAction({ ...base, mode: "long", elapsedMs: 0, config: { ...config, longGraceSec: 0 } }),
-		).toEqual({ action: "detach", reason: "grace" });
+		expect(nextWaitAction({ ...base, mode: "long", elapsedMs: 0, config: { ...config, longGraceSec: 0 } })).toEqual({
+			action: "detach",
+			reason: "grace",
+		});
 	});
 
 	it("an unconfigured grace window still falls back to a real value, not zero", () => {

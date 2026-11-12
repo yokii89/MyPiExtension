@@ -1,0 +1,29 @@
+# Normalize line endings: every text file is LF, in the repo and in every working tree.
+# The formatter (biome, `lineEnding: lf`) reads the raw working-tree bytes, so a CRLF checkout
+# on Windows makes `npm run check` fail on 300+ files that are actually committed as LF.
+# `eol=lf` makes the attribute win over `core.autocrlf=true`, so a Windows clone stays LF too.
+* text=auto eol=lf
+
+# Shell entrypoints are executed as-is; LF is required, not merely preferred.
+*.sh text eol=lf
+.husky/* text eol=lf
+
+# Binary assets: never normalize, never diff as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.webp binary
+*.bmp binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tgz binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.mp4 binary
+*.wasm binary
