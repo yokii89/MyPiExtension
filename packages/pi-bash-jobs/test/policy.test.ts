@@ -6,6 +6,7 @@ const config: PolicyConfig = {
 	idleWarnSec: 120,
 	idleDetachSec: 180,
 	explicitTimeoutKills: true,
+	longGraceSec: 20,
 };
 
 const base = { mode: "finish" as const, elapsedMs: 0, idleMs: 0, idleWarned: false, config };
@@ -82,10 +83,32 @@ describe("nextWaitAction", () => {
 		).toEqual({ action: "detach", reason: "timeout" });
 	});
 
-	it("detach/long never reach the wait loop with a kill", () => {
+	it("detach never reaches the wait loop with a kill", () => {
 		expect(nextWaitAction({ ...base, mode: "detach", elapsedMs: 10_000_000 })).toEqual({
 			action: "detach",
 			reason: "budget",
+		});
+	});
+
+	it("long keeps blocking inside the grace window, then hands over to the background", () => {
+		expect(nextWaitAction({ ...base, mode: "long", elapsedMs: 0 })).toEqual({ action: "wait" });
+		expect(nextWaitAction({ ...base, mode: "long", elapsedMs: 19_000 })).toEqual({ action: "wait" });
+		expect(nextWaitAction({ ...base, mode: "long", elapsedMs: 20_000 })).toEqual({
+			action: "detach",
+			reason: "grace",
+		});
+	});
+
+	it("longGraceSec=0 restores 'return immediately' for long calls", () => {
+		expect(
+			nextWaitAction({ ...base, mode: "long", elapsedMs: 0, config: { ...config, longGraceSec: 0 } }),
+		).toEqual({ action: "detach", reason: "grace" });
+	});
+
+	it("an unconfigured grace window still falls back to a real value, not zero", () => {
+		const { longGraceSec: _omitted, ...withoutKnob } = config;
+		expect(nextWaitAction({ ...base, mode: "long", elapsedMs: 1_000, config: withoutKnob })).toEqual({
+			action: "wait",
 		});
 	});
 

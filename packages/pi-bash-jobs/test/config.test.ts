@@ -22,9 +22,10 @@ describe("config defaults", () => {
 	it("matches the doc's conservative numbers", () => {
 		expect(DEFAULT_CONFIG).toMatchObject({
 			replaceBuiltinBash: true,
-			finishSoftBudgetSec: 300,
-			idleWarnSec: 120,
-			idleDetachSec: 180,
+			finishSoftBudgetSec: 600,
+			longGraceSec: 180,
+			idleWarnSec: 300,
+			idleDetachSec: 420,
 			explicitTimeoutKills: true,
 			wakeOnExit: "followUp",
 			keepOnSessionEnd: true,
@@ -33,6 +34,19 @@ describe("config defaults", () => {
 			resultMaxLines: 2_000,
 			output: { maxBytes: 262_144, maxLines: 4_000 },
 		});
+	});
+
+	it("keeps the two progressions ordered", () => {
+		// Two independent chains, both "earlier stage first":
+		//   finish: warn before yield, silence before the hard budget
+		//   long:   its grace window is its own deadline, so it must stay under the finish budget to
+		//           remain a shorter path than the default one.
+		// `long` returns from its own branch in `nextWaitAction` before the idle checks, so
+		// `idleDetachSec` and `longGraceSec` are not ordered against each other.
+		const c = DEFAULT_CONFIG;
+		expect(c.idleWarnSec).toBeLessThan(c.idleDetachSec);
+		expect(c.idleDetachSec).toBeLessThan(c.finishSoftBudgetSec);
+		expect(c.longGraceSec).toBeLessThan(c.finishSoftBudgetSec);
 	});
 
 	it("a missing file means defaults, not a failure", () => {
@@ -55,6 +69,7 @@ describe("normalizeConfig", () => {
 	it("clamps values that would make the policy spin", () => {
 		const config = normalizeConfig({
 			finishSoftBudgetSec: 0,
+			longGraceSec: -5,
 			idleWarnSec: -5,
 			idleDetachSec: 0,
 			orphanTtlHours: 0,
@@ -63,6 +78,8 @@ describe("normalizeConfig", () => {
 			output: { maxBytes: 0, maxLines: 0 },
 		});
 		expect(config.finishSoftBudgetSec).toBeGreaterThanOrEqual(5);
+		// A negative grace is not "spin-safe" nonsense, it is 0: detach right away.
+		expect(config.longGraceSec).toBe(0);
 		expect(config.idleWarnSec).toBeGreaterThanOrEqual(5);
 		expect(config.idleDetachSec).toBeGreaterThanOrEqual(5);
 		expect(config.orphanTtlHours).toBeGreaterThanOrEqual(1);
@@ -70,6 +87,12 @@ describe("normalizeConfig", () => {
 		expect(config.inspectTailLines).toBeGreaterThanOrEqual(1);
 		expect(config.output.maxBytes).toBeGreaterThanOrEqual(4_096);
 		expect(config.output.maxLines).toBeGreaterThanOrEqual(32);
+	});
+
+	it("accepts longGraceSec=0 as the opt-in to the old eager detach", () => {
+		expect(normalizeConfig({ longGraceSec: 0 }).longGraceSec).toBe(0);
+		expect(normalizeConfig({ longGraceSec: 45 }).longGraceSec).toBe(45);
+		expect(normalizeConfig({}).longGraceSec).toBe(DEFAULT_CONFIG.longGraceSec);
 	});
 
 	it("ignores wrong types instead of producing NaN budgets", () => {

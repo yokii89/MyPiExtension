@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 | --- | --- |
-| 状态 | 已实施（P0-a/b/c + P1-a/b/c 主体，2026-11-06；P1 的进度正则与 P2+ 端口探测未做） |
+| 状态 | 已实施（P0-a/b/c + P1-a/b/c 主体，2026-11-06；P1 的进度正则与 P2+ 端口探测未做；`long` 宽限期见 §7） |
 | 包 | `packages/pi-bash-jobs`（`@yoki/pi-bash-jobs`） |
 | 上游设计 | PiDesk `docs/design/129-Bash作业守护与进度巡检扩展.md`（决策 D1–D9）、`docs/design/132-后台事件监听watch.md`（只落 seam） |
 | 验证 | 163 例单测 + 真 `pi --mode rpc` 载入验证（见 §5） |
@@ -82,3 +82,51 @@ Unix 上先 `SIGTERM` 到进程组，`graceMs` 内没退再强杀。
 - **`bash_job_stop` 不能停孤儿**：没有句柄，回执如实说停不了。
 - **事件层的 `tool_execution_update`**：沿用 pi 的白名单链路，PiDesk 侧零协议改动；早退后不再推 update
   （否则 UI 会以为调用还活着），作业继续写自己的 ring。
+
+## 7. `long` 的宽限期（2026-11-11）
+
+**问题**：`mode=long` 原本无条件立即返回。真实会话数据（本机 43 份作业快照、38 条记录）显示
+`long` 全是 `mode=long (explicit)`，而真正 detach 的只有 10 条；一条普通会话因此堆了 11 条
+`bash-job` 通知卡，其中大半是 20 秒内就结束的 `pnpm typecheck` / `vitest run` / `biome check`。
+每条结束都会经 `wake.ts` 唤醒模型一次，对话流里就多一张「后台作业」卡。
+
+**改法**：`long` 先原地阻塞 `longGraceSec`（默认 180s）。
+
+| 情况 | 结果 |
+| --- | --- |
+| 窗口内退出 | 与 `finish` 完全相同：普通结果、无作业回执、无唤醒、PiDesk 不打后台徽标 |
+| 窗口后仍在跑 | 按 `detach` 回执转后台，结束照旧唤醒（`DetachReason: "grace"`） |
+| `longGraceSec: 0` | 逃生阀，恢复旧的「立即返回」 |
+
+**默认阈值必须叠成递进关系**（`test/config.test.ts` 有断言锁定）：
+
+| 阈值 | 旧 | 新 | 含义 |
+| --- | --- | --- | --- |
+| `idleWarnSec` | 120 | 300 | 静默多久弹一次 toast |
+| `idleDetachSec` | 180 | 420 | 静默多久转后台（卡住管道） |
+| `longGraceSec` | 20 | 180 | `long` 宽限期 |
+| `finishSoftBudgetSec` | 300 | 600 | `finish` 阻塞上限 |
+
+断言：`idleWarn < idleDetach < finishSoftBudget`，且 `longGrace < finishSoftBudget`。
+
+`idleDetachSec` 与 `longGraceSec` **不需要**排序：`nextWaitAction` 里 `long` 走自己的分支，
+在 idle 检查之前就返回，静默路径截不到它。两条链各自独立：
+
+```
+finish:  空闲 300s 提醒 → 静默 420s 转后台 → 满 600s 不管输出都转后台
+long:    满 180s 转后台（窗口内退出就当普通结果）
+```
+
+**为什么 `idleWarnSec` 一并拉到 300s**：`ctx.ui.notify` 在 PiDesk 里会落成 **toast 提示条**
+（`ExtensionUiDialogHost` 把 `notice` 降级 `showToast`），对跑 5 分钟的构建弹在 120s 就是干扰。
+300s 提醒、420s 转后台之间留了 120s 缓冲。
+
+**为什么不给 `detach` 也加**：dev server 本来就该一直跑，等它 20 秒就是把本扩展要消除的
+「turn 被占住」原样加回来。`detach` 仍是立即返回。
+
+**为什么改策略层而不是只改提示词**：模型对 `pnpm typecheck` 写 `mode:"long"` 是理性的误用，
+光靠提示词拦不住；宽限期让这种误用**没有代价**。提示词与 README 已同步说明这一点。
+
+**未做**：`classify` 的默认 `long` 名单（`make`、`pnpm install`、`docker build`）未收窄——
+宽限期已经让这些自动分类在 20 秒内结束时不留痕，再动名单只会增加「长任务被当 `finish`
+占住 turn」的反向风险。

@@ -15,7 +15,9 @@ bash({command, mode?, timeout?, label?})
   │    ├─ silent ≥ idle-policy       → yield to background (warn first; never kills)
   │    └─ ran past soft budget       → yield to background (never kills)
   ├─ mode=detach  → return immediately      (dev servers, watchers; never auto-killed)
-  └─ mode=long    → return immediately, wake the model when it exits
+  └─ mode=long    → block through the grace window, then wake the model on exit
+                       ├─ exits inside the window → ordinary result, no job, no wake
+                       └─ still running after it  → background job, woken on exit
 ```
 
 ## Tools
@@ -55,9 +57,10 @@ occupies the turn forever. Registering under the name `bash` overrides the built
 | Key | Default | Meaning |
 |---|---|---|
 | `replaceBuiltinBash` | `true` | Escape valve: `false` leaves pi's bash untouched. |
-| `finishSoftBudgetSec` | `300` | How long a blocking call may hold the turn before yielding. |
-| `idleWarnSec` | `120` | Silence that triggers one notice (no interruption). |
-| `idleDetachSec` | `180` | Silence that triggers a yield. This is the hung-pipe path. |
+| `finishSoftBudgetSec` | `600` | How long a blocking call may hold the turn before yielding. |
+| `longGraceSec` | `180` | How long `mode:"long"` still blocks before it really becomes a background job. `0` restores “return immediately”. |
+| `idleWarnSec` | `300` | Silence that triggers one notice (no interruption). |
+| `idleDetachSec` | `420` | Silence that triggers a yield. This is the hung-pipe path. |
 | `explicitTimeoutKills` | `true` | Whether a caller-supplied `timeout` still kills. `false` makes it yield too. |
 | `wakeOnExit` | `"followUp"` | `followUp` / `steer` / `off`. `followUp` never interrupts a reply in progress. |
 | `keepOnSessionEnd` | `true` | Keep job processes alive when pi exits ("don't close the project I started"). |
@@ -88,10 +91,26 @@ A wrong guess is only ever expensive in one direction, and the design refuses th
 `node download.js` classifies as `finish`, so after the soft budget it **yields** — the download
 keeps running and the model can keep inspecting it. Nothing is killed for being misclassified.
 
+## Why `long` has a grace window
+
+`long` used to return immediately. That is right for a 15-hour download and wrong for everything
+the classifier or the model guesses long: `pnpm install` on a warm cache, a `pnpm build` that takes
+40 seconds, a `git clone` of a small repo. Each of those filed a job, and every finished job wakes
+the model with a `bash-job` notice — so a normal working session accumulated a stack of
+“Bash job J-7 finished after 20s” cards for commands that had already returned their output.
+
+So `long` now blocks through `longGraceSec` (default 180s) first. A command that exits inside the
+window is an ordinary blocking call: same result, no job receipt, no wake, no background badge in
+the UI. Only the part that outlives the window becomes a background job. `detach` deliberately
+skips the window — a dev server is *expected* to keep running, and blocking on it is the exact
+failure this extension removes.
+
 ## Behaviour worth knowing
 
 - **`timeout` is the only implicit kill.** It applies to blocking calls only; passing it together
   with `mode:"detach"` is ignored and the receipt says so.
+- **A `long` call that ends quickly is not a job.** Inside `longGraceSec` it behaves exactly like
+  `finish`; only the part that outlives the window becomes a background job and wakes the model.
 - **What the model reads is capped separately from what the job keeps.** The ring holds
   `output.maxBytes`/`maxLines` per job; the text handed back is capped at
   `resultMaxBytes`/`resultMaxLines` (pi's own bash caps) and the complete output is written to a temp

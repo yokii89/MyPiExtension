@@ -281,9 +281,9 @@ export async function runBash(deps: RunBashDeps, params: BashParams, context: Ru
 		};
 	};
 
-	// mode=detach / mode=long: resolve immediately. No timeout applies — doc 129 §4 keeps the
-	// background path kill-free, and the receipt says so instead of silently arming a timer.
-	if (decision.mode !== "finish") {
+	// mode=detach: resolve immediately, and only for a real service. No timeout applies — doc 129 §4
+	// keeps the background path kill-free, and the receipt says so instead of silently arming a timer.
+	if (decision.mode === "detach") {
 		stopAccepting();
 		job.markDetached();
 		const record = job.snapshot();
@@ -301,6 +301,10 @@ export async function runBash(deps: RunBashDeps, params: BashParams, context: Ru
 		};
 	}
 
+	// mode=long blocks through its grace window first (doc 06 §7): a `long` command that finishes in
+	// 20s is an ordinary blocking call — filing a job for it would arm a wake and draw a background
+	// badge for work that was already over. `detach` skips this, because a dev server is expected
+	// to keep running and blocking on it is exactly what this extension exists to avoid.
 	const waitTick = deps.waitTick ?? settleAwareWait;
 	let abortRequested = false;
 	const onAbort = () => {
@@ -313,13 +317,13 @@ export async function runBash(deps: RunBashDeps, params: BashParams, context: Ru
 	}
 	const detachAbort = () => context.signal?.removeEventListener("abort", onAbort);
 
-	try {
+	const waitForMode = async (mode: JobMode): Promise<DetachReason | null> => {
 		let idleWarned = false;
 		for (;;) {
-			if (settledExit !== undefined) break;
+			if (settledExit !== undefined) return null;
 			const now = deps.now();
 			const action = nextWaitAction({
-				mode: "finish",
+				mode,
 				elapsedMs: now - startedAt,
 				idleMs: now - job.lastOutputAt,
 				idleWarned,
@@ -331,7 +335,7 @@ export async function runBash(deps: RunBashDeps, params: BashParams, context: Ru
 				// Bounded: taskkill can fail on a stuck process, and hanging here would be the exact
 				// failure mode this extension exists to remove.
 				await Promise.race([job.exited, waitTick(5_000, job)]);
-				break;
+				return null;
 			}
 			if (action.action === "notify") {
 				idleWarned = true;
@@ -341,9 +345,19 @@ export async function runBash(deps: RunBashDeps, params: BashParams, context: Ru
 			if (action.action === "detach") {
 				detachAbort();
 				flushUpdate();
-				return detach(action.reason);
+				return action.reason;
 			}
 			await waitTick(WAIT_TICK_MS, job);
+		}
+	};
+
+	try {
+		if (decision.mode === "long") {
+			const reason = await waitForMode("long");
+			if (reason !== null) return detach(reason);
+		} else {
+			const reason = await waitForMode("finish");
+			if (reason !== null) return detach(reason);
 		}
 	} finally {
 		detachAbort();

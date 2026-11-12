@@ -19,8 +19,8 @@ export type JobStatus = "running" | "exited" | "killed" | "orphaned";
 /** Who ended the process. Only these three paths may ever kill a job (doc 129 §4). */
 export type KillReason = "timeout" | "user" | "model";
 
-/** Why a `finish` call stopped blocking. */
-export type DetachReason = "idle" | "budget" | "timeout";
+/** Why a `finish` call stopped blocking (and why a `long` call finally did). */
+export type DetachReason = "idle" | "budget" | "timeout" | "grace";
 
 /** What the registry hands back when a process settles. */
 export interface SettleInfo {

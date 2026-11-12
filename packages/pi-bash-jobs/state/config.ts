@@ -34,6 +34,11 @@ export interface BashJobsConfig {
 	replaceBuiltinBash: boolean;
 	/** Soft budget for a blocking `finish` call; at this point the call yields, the process keeps running. */
 	finishSoftBudgetSec: number;
+	/**
+	 * How long `mode:long` still blocks before it really becomes a background job (doc 06 §7).
+	 * `0` restores the old "return immediately" behaviour for every long call.
+	 */
+	longGraceSec: number;
 	/** Silence long enough to warn once (no interruption). */
 	idleWarnSec: number;
 	/** Silence long enough to yield to the background. Never kills. */
@@ -71,9 +76,10 @@ export interface BashJobsConfig {
 
 export const DEFAULT_CONFIG: BashJobsConfig = {
 	replaceBuiltinBash: true,
-	finishSoftBudgetSec: 300,
-	idleWarnSec: 120,
-	idleDetachSec: 180,
+	finishSoftBudgetSec: 600,
+	longGraceSec: 180,
+	idleWarnSec: 300,
+	idleDetachSec: 420,
 	explicitTimeoutKills: true,
 	wakeOnExit: "followUp",
 	keepOnSessionEnd: true,
@@ -93,6 +99,7 @@ export const DEFAULT_CONFIG: BashJobsConfig = {
 /** Smallest accepted values: below these the extension would spin instead of waiting. */
 const FLOOR = {
 	finishSoftBudgetSec: 5,
+	longGraceSec: 0,
 	idleWarnSec: 5,
 	idleDetachSec: 5,
 	orphanTtlHours: 1,
@@ -158,6 +165,8 @@ export function normalizeConfig(raw: unknown): BashJobsConfig {
 			DEFAULT_CONFIG.finishSoftBudgetSec,
 			FLOOR.finishSoftBudgetSec,
 		),
+		// `0` is meaningful here (detach immediately), so the floor is 0 rather than a "spin-safe" 5s.
+		longGraceSec: positiveNumber(input.longGraceSec, DEFAULT_CONFIG.longGraceSec, FLOOR.longGraceSec),
 		idleWarnSec: positiveNumber(input.idleWarnSec, DEFAULT_CONFIG.idleWarnSec, FLOOR.idleWarnSec),
 		idleDetachSec: positiveNumber(input.idleDetachSec, DEFAULT_CONFIG.idleDetachSec, FLOOR.idleDetachSec),
 		explicitTimeoutKills:

@@ -312,11 +312,56 @@ describe("runBash — mode selection", () => {
 		expect(h.registry.get("J-1")?.status).toBe("running");
 	});
 
-	it("mode=long promises a wake-up", async () => {
-		const h = harness();
+	it("a long command that finishes inside its grace window is an ordinary result", async () => {
+		// The regression this guards: `pnpm typecheck` classified as `long` used to return eagerly,
+		// file a job, and wake the model with "Bash job J-1 finished" 20 seconds later.
+		const h = harness({ exitAtMs: 15_000 });
+		const running = runBash(h.deps, { command: "curl -o big.tar https://x" }, context);
+		h.fake.emit("100%\n");
+		const result = await running;
+		expect(result.content[0]?.text).toBe("100%");
+		expect(result.structuredContent).toMatchObject({ status: "exited", exit_code: 0 });
+		expect(h.registry.get("J-1")?.detached).toBe(false);
+	});
+
+	it("a long command that outlives the grace window becomes a background job", async () => {
+		const h = harness({ config: { longGraceSec: 20 } });
 		const result = await runBash(h.deps, { command: "curl -o big.tar https://x" }, context);
-		expect(result.content[0]?.text).toContain("mode=long");
-		expect(result.content[0]?.text).toContain("woken when it exits");
+		expect(h.clock).toBeGreaterThanOrEqual(20_000);
+		expect(result.content[0]?.text).toContain("moved to the background after");
+		expect(result.content[0]?.text).toContain("Mode: long");
+		expect(result.structuredContent).toMatchObject({ status: "detached" });
+		expect(h.registry.get("J-1")?.detached).toBe(true);
+		expect(h.fake.state.killed).toBe(false);
+	});
+
+	it("longGraceSec=0 keeps the old immediate return for long calls", async () => {
+		const h = harness({ config: { longGraceSec: 0 } });
+		const result = await runBash(h.deps, { command: "curl -o big.tar https://x" }, context);
+		expect(h.clock).toBe(0);
+		expect(result.content[0]?.text).toContain("moved to the background after 0s");
+		expect(result.structuredContent).toMatchObject({ status: "detached" });
+	});
+
+	it("mode=detach never waits for the grace window", async () => {
+		const h = harness();
+		const result = await runBash(h.deps, { command: "pnpm dev", mode: "detach" }, context);
+		expect(h.clock).toBe(0);
+		expect(result.content[0]?.text).toContain("started in the background (mode=detach)");
+	});
+
+	it("an aborted long call inside the grace window is still an abort, not a detach", async () => {
+		const h = harness();
+		const controller = new AbortController();
+		const running = runBash(
+			h.deps,
+			{ command: "curl -o big.tar https://x" },
+			{ ...context, signal: controller.signal },
+		);
+		h.advance(1_000);
+		controller.abort();
+		await expect(running).rejects.toThrow("Command aborted");
+		expect(h.fake.state.killed).toBe(true);
 	});
 
 	it("an explicit mode beats the classifier", async () => {

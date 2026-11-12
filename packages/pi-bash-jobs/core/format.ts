@@ -19,6 +19,7 @@ const DETACH_NOTE: Record<DetachReason, string> = {
 	idle: "no output for a while",
 	budget: "soft budget reached",
 	timeout: "the timeout you passed expired and `explicitTimeoutKills` is off",
+	grace: "still running after the `long` grace window",
 };
 
 /** pi's own wording for a killed command, so users see the message they already know. */

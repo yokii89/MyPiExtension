@@ -5,6 +5,11 @@
  * The one invariant this file exists to protect: **nothing here may yield `kill` unless the
  * caller explicitly asked for a timeout.** A wrong `detach` costs one background job; a wrong
  * `kill` closes the dev server the user was told would stay up.
+ *
+ * `long` is the second, narrower invariant (doc 06 §7): a `long` call that finishes inside its
+ * grace window is an ordinary blocking call. Returning eagerly for `pnpm typecheck` would file a
+ * job, arm a wake and draw a background badge for a command that was over in 20 seconds.
+ * Only the part that outlives the window becomes a background job.
  */
 
 import type { DetachReason, JobMode } from "../types.ts";
@@ -14,6 +19,9 @@ export interface PolicyConfig {
 	idleWarnSec: number;
 	idleDetachSec: number;
 	explicitTimeoutKills: boolean;
+	// Optional so a caller-built config (and every test fixture) keeps working without the new knob.
+	/** How long `mode:long` blocks before it really hands the process to the background. */
+	longGraceSec?: number;
 }
 
 export interface WaitInput {
@@ -34,6 +42,9 @@ export type WaitAction =
 	| { action: "notify"; kind: "idle"; idleSec: number }
 	| { action: "detach"; reason: DetachReason }
 	| { action: "kill"; reason: "timeout" };
+
+/** Used when a `PolicyConfig` was built by hand without the knob; mirrors `DEFAULT_CONFIG`. */
+export const LONG_GRACE_SEC = 180;
 
 /** Priority 1–2 of doc 129 §5.1: explicit arguments beat classification. */
 export interface ModeInput {
@@ -66,13 +77,21 @@ export function resolveMode(input: ModeInput): ModeDecision {
 /**
  * One tick. Order matters and mirrors doc 129 §5.3:
  *
- * 1. explicit timeout (only if it kills) — the caller asked for a hard wall clock;
- * 2. idle-detach — the silence path, which is what catches a hung piped command in ~3 min;
- * 3. budget — the兜底 for scripts whose name says nothing (`node download.js`);
- * 4. idle warning — one shot, does not interrupt.
+ * 1. `long` grace — inside the window this is still a blocking call (doc 06 §7);
+ * 2. explicit timeout (only if it kills) — the caller asked for a hard wall clock;
+ * 3. idle-detach — the silence path, which is what catches a hung piped command in ~3 min;
+ * 4. budget — the兜底 for scripts whose name says nothing (`node download.js`);
+ * 5. idle warning — one shot, does not interrupt.
  */
 export function nextWaitAction(input: WaitInput): WaitAction {
 	const { config } = input;
+	if (input.mode === "long") {
+		const graceMs = (config.longGraceSec ?? LONG_GRACE_SEC) * 1000;
+		// `longGraceSec: 0` (config floor) means "detach right away" — the escape hatch back to the
+		// old behaviour. A settle inside the window falls out of the caller's loop instead.
+		if (graceMs <= 0 || input.elapsedMs >= graceMs) return { action: "detach", reason: "grace" };
+		return { action: "wait" };
+	}
 	if (input.mode !== "finish") return { action: "detach", reason: "budget" };
 
 	const timeoutMs = input.explicitTimeoutSec !== undefined ? input.explicitTimeoutSec * 1000 : undefined;

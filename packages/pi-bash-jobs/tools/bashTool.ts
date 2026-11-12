@@ -28,7 +28,7 @@ const BashParameters = Type.Object({
 	mode: Type.Optional(
 		Type.Union([Type.Literal("finish"), Type.Literal("detach"), Type.Literal("long")], {
 			description:
-				"How the call relates to the turn. finish = block until exit (auto-yields to background, never kills). detach = return immediately, for dev servers. long = return immediately and wake me when it exits. Omit to let the extension classify the command.",
+				"How the call relates to the turn. finish = block until exit (auto-yields to background, never kills). detach = return immediately, for dev servers only. long = block up to the grace window, then continue in the background and wake me when it exits — for work you expect to outlive the turn. Omit to let the extension classify the command.",
 		}),
 	),
 	label: Type.Optional(
@@ -56,7 +56,7 @@ const DESCRIPTION = [
 	"Modes:",
 	'- `finish` (default): wait for the exit code. If it takes too long you get a "moved to the background" receipt with the output so far. Nothing is killed.',
 	"- `detach`: return immediately. Use it for dev servers, watchers, `tail -f` — anything meant to keep running. These are never auto-killed.",
-	"- `long`: return immediately, and wake you up when the process exits. Use it for downloads, builds, `docker pull` — anything long that you want to continue after.",
+	"- `long`: block up to the grace window (~3 min), then continue in the background and wake you when the process exits. A command that finishes inside the window just returns its result. Use it for downloads, builds, `docker pull` — work you expect to outlive the turn.",
 	"- Omit `mode` and the command is classified for you (`pnpm dev` → detach, `git clone` → long, everything else → finish).",
 	"",
 	"`timeout` keeps pi's native meaning: at the deadline the process tree is killed and the call fails. **It only applies to blocking calls** — never pass it to keep a service alive, and never pass it to a long task you want to finish.",
@@ -69,7 +69,8 @@ const PROMPT_SNIPPET =
 
 const PROMPT_GUIDELINES = [
 	'Start dev servers and watchers with `mode:"detach"` and never pass `timeout` to them — a timeout is the only thing that kills a command.',
-	'Start downloads, builds, `git clone`, `docker pull` and similar with `mode:"long"` when you want to continue working; you will be woken when they exit.',
+	'Start downloads, builds, `git clone`, `docker pull` and similar with `mode:"long"` when you want to continue working; you will be woken when it exits. A `long` call that finishes inside its grace window just returns its result, so this is never wasted.',
+	"Keep `mode` off for anything you expect to finish quickly (tests, type checks, git, format, short scripts): `finish` already waits, and turning a 15-second command into a background job is noise for the user.",
 	"Read a background job with tool_execution_inspect_output (pass `waitMs` to wait inside one call instead of polling in separate turns).",
 	"Stop a background job with bash_job_stop; do not use `taskkill`/`kill` from bash — that cannot tell a reused pid from the real process.",
 ];
