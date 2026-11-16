@@ -9,9 +9,11 @@
 
 import { formatBytes, formatJobLine } from "../core/format.ts";
 import type { Job, JobRegistry } from "../core/jobs.ts";
+import { isTerminalStatus } from "../core/notify.ts";
 import { formatDuration } from "../core/policy.ts";
 import { settleAwareWait, type WaitSlice } from "../core/wait.ts";
 import type { BashJobsConfig } from "../state/config.ts";
+import type { JobStatus } from "../types.ts";
 
 export interface InspectInput {
 	job?: string;
@@ -39,6 +41,14 @@ export interface InspectJobView {
 	lines: number;
 	cursor: string;
 	lost: boolean;
+	/**
+	 * True while the process is still alive: the tail is what exists *so far*, not the whole output.
+	 * Without this flag a mid-flight tail reads exactly like a finished one, and a half-flushed
+	 * result gets taken for the final one.
+	 */
+	partial: boolean;
+	/** True when this job has output that is not in `tail` (later lines, or a `grep` hid some). */
+	more: boolean;
 	tail: string;
 }
 
@@ -73,7 +83,8 @@ function grepLines(lines: string[], pattern: string | undefined): string[] {
 function viewOf(job: Job, input: InspectInput, tailLines: number, now: number): InspectJobView {
 	const record = job.snapshot();
 	const since = input.cursor !== undefined ? job.ring.since(input.cursor) : job.ring.since();
-	const tail = grepLines(since.lines, input.grep).slice(-tailLines).join("\n");
+	const matched = grepLines(since.lines, input.grep);
+	const tail = matched.slice(-tailLines).join("\n");
 	return {
 		id: record.id,
 		command: record.command,
@@ -92,6 +103,8 @@ function viewOf(job: Job, input: InspectInput, tailLines: number, now: number): 
 		lines: record.outputLines,
 		cursor: job.ring.cursor(),
 		lost: since.lost,
+		partial: record.status === "running",
+		more: matched.length > (tail === "" ? 0 : tail.split("\n").length),
 		tail,
 	};
 }
@@ -112,9 +125,14 @@ function formatDetail(view: InspectJobView, input: InspectInput): string {
 			view.lost ? " (older lines dropped — the cursor you passed is gone)" : ""
 		}`,
 	];
+	// The flag the receipt-side tail needs: while the process runs, this is not the final output.
+	if (view.partial) {
+		head.push("  partial: true — the process is still running; this tail is not the complete output");
+	}
 	const filter = input.grep ? ` (filtered by "${input.grep}")` : "";
 	const tailHeader = view.tail ? `  tail${filter}:` : `  tail${filter}: (no new output)`;
-	return [...head, tailHeader, ...view.tail.split("\n").map((line) => `    ${line}`)].join("\n");
+	const note = view.more ? ["  …older lines not shown; pass a larger tailLines or a cursor for only new lines"] : [];
+	return [...head, tailHeader, ...view.tail.split("\n").map((line) => `    ${line}`), ...note].join("\n");
 }
 
 function formatSummary(jobs: Job[], now: number): string {
@@ -185,6 +203,26 @@ export async function inspectJobs(
 	const currentNow = now();
 	const tailLines = clampTailLines(input.tailLines, config);
 	const views = targets.map((job) => viewOf(job, input, tailLines, currentNow));
+	// Shared read state (core/notify.ts): the wake path checks this before injecting a notice, so
+	// a job the model just read through does not come back as a "finished" message it must answer.
+	//
+	// Only the detail view counts as reading a job. A listing reports `exited` without printing a
+	// single line, so marking it consumed would suppress the notice that carried the output — the
+	// model would be told "J-5 exited" and never shown what it printed. A `grep` filter is the one
+	// deliberate exception: the model asked to be shown only matches, and the rest stays in the ring.
+	if (input.job) {
+		const job = targets[0] as Job;
+		const view = views[0] as InspectJobView;
+		job.markConsumed({
+			cursor: view.cursor,
+			// The uncommitted trailing line has no cursor, so it is recorded by text: see
+			// `ConsumedRead.pending` — a command whose whole output is one unterminated line must not
+			// read as "nothing new" just because no line was ever committed.
+			pending: job.ring.pending(),
+			at: currentNow,
+			terminal: isTerminalStatus(view.status as JobStatus),
+		});
+	}
 	const text = input.job ? formatDetail(views[0] as InspectJobView, input) : formatSummary(targets, currentNow);
 	return { text, structured: { jobs: views } };
 }

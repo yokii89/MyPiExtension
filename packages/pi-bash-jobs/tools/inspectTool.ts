@@ -30,6 +30,8 @@ const JobView = Type.Object({
 	lines: Type.Number(),
 	cursor: Type.String(),
 	lost: Type.Boolean(),
+	partial: Type.Boolean(),
+	more: Type.Boolean(),
 	tail: Type.String(),
 });
 

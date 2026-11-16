@@ -75,7 +75,10 @@ const PROMPT_GUIDELINES = [
 	"Stop a background job with bash_job_stop; do not use `taskkill`/`kill` from bash — that cannot tell a reused pid from the real process.",
 ];
 
-/** Re-expose pi's session environment so the model can read PI_* (same contract as built-in bash). */
+/** Re-expose pi's session environment so the model can read PI_* (same contract as built-in bash).
+ * 先把环境里可能残留的 5 个 PI_* 变量全部清掉。这是防污染的关键——因为这套环境可能被复用（进程长期存活、跨多个
+ *  session），如果不清掉，旧的会话 id/模型信息会"泄漏"给新子进程。属于"清场"操作。
+ */
 function sessionEnv(ctx: ExtensionToolContext | undefined): NodeJS.ProcessEnv {
 	const env = { ...process.env };
 	delete env.PI_SESSION_ID;

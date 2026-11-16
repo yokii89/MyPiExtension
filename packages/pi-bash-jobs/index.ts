@@ -15,9 +15,10 @@
  *  - the job registry is the only source of truth; nothing here re-derives job state.
  */
 
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { BoundaryState, ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { formatJobExitNotice, formatJobList } from "./core/format.ts";
 import { createJobRegistry } from "./core/jobs.ts";
+import { decideExitWake } from "./core/notify.ts";
 import { createWakeQueue } from "./core/wake.ts";
 import { jobLogDir } from "./infra/paths.ts";
 import { createRingBuffer } from "./infra/ring.ts";
@@ -75,6 +76,7 @@ export default function bashJobsExtension(pi: ExtensionAPI): void {
 		createWakeQueue({
 			coalesceMs: config.wakeCoalesceMs,
 			maxPerHour: config.maxWakePerHour,
+			canSend: () => currentContext?.isIdle() === true,
 			send: (text) => {
 				pi.sendMessage(
 					{
@@ -88,6 +90,41 @@ export default function bashJobsExtension(pi: ExtensionAPI): void {
 			},
 		});
 	let wake = createSessionWakeQueue();
+
+	// Pi's sendMessage queues a frozen follow-up/steer while busy; it has no per-message
+	// withdrawal API. Keep notices here until the matching actionable boundary, then commit
+	// them directly to the transcript so there is no second queue after the final read check.
+	const deliverAtBoundary = (event: BoundaryState) => {
+		// The custom message itself creates runnable context; canContinue may be false before
+		// it is appended (the usual case after an assistant's final answer).
+		if (event.outcome !== "completed") return;
+		const batch = wake.takeReady();
+		if (!batch) return;
+		return {
+			entries: [
+				...event.entries,
+				{
+					type: "custom_message" as const,
+					customType: "bash-job",
+					content: [{ type: "text" as const, text: batch.text }],
+					display: true,
+					details: { kind: "bash-job" },
+				},
+			],
+			continue: true,
+		};
+	};
+	pi.on("turn_end", (event) => {
+		if (config.wakeOnExit === "steer") return deliverAtBoundary(event);
+	});
+	pi.on("agent_before_settle", (event) => {
+		if (config.wakeOnExit !== "off") return deliverAtBoundary(event);
+	});
+	pi.on("agent_settled", () => {
+		// A timer may have expired while busy, or during the last boundary's dispatch.
+		// Retry on a timer after all settled handlers, preserving the coalescing deadline.
+		wake.resume();
+	});
 
 	registry.onEvent((event) => {
 		if (event.type !== "settled") {
@@ -103,9 +140,48 @@ export default function bashJobsExtension(pi: ExtensionAPI): void {
 		if (!event.job.detached) return;
 		if (config.wakeOnExit === "off") return;
 		if (stopNotified.delete(event.job.id)) return;
-		const job = registry.get(event.job.id);
-		const tail = job ? job.ring.tail(20) : "";
-		wake.enqueue({ key: `job:${event.job.id}`, text: formatJobExitNotice(event.job, tail) });
+		const jobId = event.job.id;
+		/**
+		 * News or echo? The inspect tool and this wake share one read state (`job.consumed`), so a job
+		 * the model already saw finish — and that wrote nothing since — stays silent instead of costing
+		 * a turn to answer "noted". (`core/notify.ts` has the rule and its limits.)
+		 *
+		 * This is a function, not a value, because the answer changes while the notice sits in the
+		 * coalescing window: the queue calls it again at delivery time.
+		 */
+		const noticeText = (): string | undefined => {
+			const current = registry.get(jobId);
+			if (!current) return undefined;
+			const finalCursor = current.ring.cursor();
+			const decision = decideExitWake({
+				job: current.snapshot(),
+				finalCursor,
+				finalPending: current.ring.pending(),
+				consumed: current.consumed,
+			});
+			if (!decision.deliver) return undefined;
+			// Only what the model has not been shown: the notice used to replay a tail it had already read.
+			const unread = current.ring.since(current.consumed?.cursor);
+			const tail = unread.lines.slice(-20).join("\n");
+			return formatJobExitNotice({
+				job: current.snapshot(),
+				tail,
+				cursor: finalCursor,
+				alreadyRead: current.consumed !== undefined,
+			});
+		};
+		const text = noticeText();
+		if (text === undefined) return;
+		wake.enqueue({
+			key: `job:${jobId}`,
+			text,
+			// Re-decided after the coalescing window: an inspect that returned the terminal state in the
+			// meantime turns this notice into an echo, and an echo costs a full turn.
+			refresh: () => {
+				const latest = noticeText();
+				return latest === undefined ? undefined : { text: latest };
+			},
+		});
 	});
 
 	/** 新会话开始的事件处理函数，是扩展中状态切换最复杂的部分。它要做的事很多：因为一个会话结束后，后台作业的进程可能还活着，而新的会话可能要用到它们。*/
@@ -167,6 +243,7 @@ export default function bashJobsExtension(pi: ExtensionAPI): void {
 		}
 		snapshotNow();
 		wake.dispose();
+		currentContext = undefined;
 		tee?.dispose();
 		tee = undefined;
 	});

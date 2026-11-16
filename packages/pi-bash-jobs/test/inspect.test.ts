@@ -150,3 +150,61 @@ describe("inspect — long poll", () => {
 		expect(result.structured.jobs[0]?.status).toBe("exited");
 	});
 });
+
+/**
+ * Defects B and C on the inspect side: the read state it reports is the one the wake path trusts,
+ * and a mid-flight tail must not read like a finished one.
+ */
+describe("inspect — read state and partial tails", () => {
+	it("marks the job as read when a detail view is returned", async () => {
+		const { deps, job, ring } = setup();
+		ring.append("compiled\n");
+		const result = await inspectJobs(deps, { job: "J-1" });
+		expect(job.consumed).toMatchObject({ cursor: result.structured.jobs[0]?.cursor, terminal: false });
+	});
+
+	it("does NOT mark a job as read from a listing, which shows no output", async () => {
+		// A listing reports `J-5 exited` without printing one line. If it counted as a read, the wake
+		// that carries the output would be suppressed and the model would never see what it printed.
+		const { deps, job } = setup();
+		await inspectJobs(deps, {});
+		expect(job.consumed).toBeUndefined();
+	});
+
+	it("reports a terminal read as terminal, which is what suppresses the echo notice", async () => {
+		const { deps, job, registry, ring } = setup();
+		ring.append("root: 200\nwebhook: 404\n");
+		registry.settle("J-1", { exitCode: 0 });
+		const result = await inspectJobs(deps, { job: "J-1" });
+		expect(result.structured.jobs[0]?.status).toBe("exited");
+		expect(job.consumed).toMatchObject({ terminal: true });
+	});
+
+	it("flags a running job's tail as partial, so half-flushed output is not taken for final", async () => {
+		// The field report: the command was still running, the tail already looked complete, and
+		// nothing said so.
+		const { deps, ring } = setup();
+		ring.append("root: 200 ip=...\nwebhook: 404\n");
+		const result = await inspectJobs(deps, { job: "J-1" });
+		const view = result.structured.jobs[0];
+		expect(view?.partial).toBe(true);
+		expect(result.text).toContain("partial: true");
+		expect(result.text).toContain("not the complete output");
+	});
+
+	it("does not flag an exited job as partial", async () => {
+		const { deps, registry } = setup();
+		registry.settle("J-1", { exitCode: 0 });
+		const result = await inspectJobs(deps, { job: "J-1" });
+		expect(result.structured.jobs[0]?.partial).toBe(false);
+		expect(result.text).not.toContain("partial: true");
+	});
+
+	it("says when a tail is capped, instead of letting it read as the whole output", async () => {
+		const { deps, ring } = setup();
+		ring.append("a\nb\nc\n");
+		const result = await inspectJobs(deps, { job: "J-1", tailLines: 2 });
+		expect(result.structured.jobs[0]?.more).toBe(true);
+		expect(result.text).toContain("older lines not shown");
+	});
+});

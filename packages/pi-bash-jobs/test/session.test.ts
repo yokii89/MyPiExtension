@@ -2,13 +2,21 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import bashJobsExtension from "../index.ts";
 import { buildSnapshot, saveSnapshot } from "../state/persist.ts";
 import type { JobRecord } from "../types.ts";
 
 const dirs: string[] = [];
 const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+/**
+ * `test/setup.ts` pins `process.platform` to `"linux"` for the rest of the suite. The wake-delivery
+ * suite below spawns a *real* shell, and under that pin pi resolves `/usr/bin/bash`, which Windows
+ * cannot spawn — every job would exit ENOENT and the ordering under test would never happen. So the
+ * real host platform is restored for the files that need it, and reset back afterwards.
+ */
+const HOST_PLATFORM = process.env.OS === "Windows_NT" ? "win32" : process.platform;
+const PINNED_PLATFORM = process.platform;
 
 function agentDirWith(config?: unknown): string {
 	const dir = mkdtempSync(join(tmpdir(), "bash-jobs-session-"));
@@ -213,5 +221,128 @@ describe("session lifecycle", () => {
 		expect(command).toBeDefined();
 		await command?.options.handler("", ctx);
 		expect(notices.join("\n")).toContain("No bash jobs in this session.");
+	});
+});
+
+/**
+ * The reported defect, end to end through the real wiring: a detached job settles, its notice waits
+ * in the coalescing window, the model inspects and gets the terminal state — and the notice must
+ * then be dropped instead of waking the model to answer "noted".
+ *
+ * These use the real spawn and real timers, because the bug lived in the *ordering* between the
+ * settle event and the inspect answer, not in any single function.
+ */
+describe("wake delivery after an inspect already read the job", () => {
+	const DELIVERY_WAIT_MS = 400;
+	// Real spawn, so the real platform: see HOST_PLATFORM above.
+	beforeAll(() => {
+		Object.defineProperty(process, "platform", { configurable: true, value: HOST_PLATFORM });
+	});
+	afterAll(() => {
+		Object.defineProperty(process, "platform", { configurable: true, value: PINNED_PLATFORM });
+	});
+
+	function wait(ms: number): Promise<void> {
+		return new Promise((resolve) => setTimeout(resolve, ms));
+	}
+
+	/** The wake message body: `content` is a parts array, so read it part by part. */
+	function sentText(item: FakePi["sent"][number]): string {
+		const content = item.message.content;
+		if (typeof content === "string") return content;
+		if (!Array.isArray(content)) return "";
+		return content
+			.map((part) => (typeof part === "string" ? part : String((part as { text?: string }).text ?? "")))
+			.join("\n");
+	}
+
+	interface Wired {
+		fake: FakePi;
+		ctx: ExtensionContext;
+		bash: (params: unknown) => Promise<{ content: { text?: string }[]; structuredContent?: { job_id?: string } }>;
+		inspect: (params: unknown) => Promise<{ content: { text?: string }[] }>;
+	}
+
+	function wire(config: unknown): Wired {
+		agentDirWith(config);
+		const fake = fakePi();
+		bashJobsExtension(fake.pi);
+		// A real cwd: these tests spawn a real shell, and a missing directory makes the child exit
+		// with an error before it prints anything.
+		const ctx = {
+			cwd: process.cwd(),
+			isIdle: () => true,
+			ui: { notify: () => {} },
+			sessionManager: { getSessionId: () => "sess-wake", getSessionFile: () => "/sessions/sess-wake.jsonl" },
+		} as unknown as ExtensionContext;
+		fake.emit("session_start", { type: "session_start", reason: "startup" }, ctx);
+		const tool = (name: string) =>
+			fake.tools.find((candidate) => candidate.name === name) as unknown as {
+				execute: (
+					id: string,
+					params: unknown,
+					signal: undefined,
+					update: undefined,
+					ctx: unknown,
+				) => Promise<never>;
+			};
+		return {
+			fake,
+			ctx,
+			bash: (params) => tool("bash").execute("call-1", params, undefined, undefined, ctx),
+			inspect: (params) =>
+				tool("tool_execution_inspect_output").execute("call-2", params, undefined, undefined, ctx),
+		};
+	}
+
+	/** A detached job that prints one line and exits — no `long` classification involved. */
+	function probe(wired: Wired): Promise<{ content: { text?: string }[]; structuredContent?: { job_id?: string } }> {
+		return wired.bash({ command: 'printf "root: 200\\n"', mode: "detach" });
+	}
+
+	it("delivers the notice when the model never looked (control)", async () => {
+		const wired = wire({ wakeCoalesceMs: 50 });
+		await probe(wired);
+		await wait(DELIVERY_WAIT_MS);
+		expect(wired.fake.sent.length).toBeGreaterThan(0);
+		const text = wired.fake.sent.map(sentText).join("\n");
+		expect(text).toContain("finished");
+		expect(text).toContain("root: 200");
+	});
+
+	it("drops the notice when the inspect in the coalescing window already reported the terminal state", async () => {
+		// The field sequence with a realistic 5s window: settle → notice buffered → the model's
+		// `inspect_output` returns `exited` with the output → the buffered notice must be dropped.
+		const wired = wire({ wakeCoalesceMs: 600 });
+		const started = await probe(wired);
+		const jobId = started.structuredContent?.job_id as string;
+		// Well inside the coalescing window: the job has exited, the notice is still queued.
+		await wait(200);
+		const read = await wired.inspect({ job: jobId });
+		expect(read.content[0]?.text).toContain(`${jobId} — exited`);
+		expect(read.content[0]?.text).toContain("root: 200");
+		// Past the window the notice would have been sent. It must not be.
+		await wait(1_000);
+		expect(wired.fake.sent).toEqual([]);
+	});
+
+	it("still delivers when the job writes after the model's last read", async () => {
+		// Same wiring, but the read happens while the job is still alive, so the exit is news.
+		const wired = wire({
+			wakeCoalesceMs: 50,
+			// Keep the idle policy out of the way: this job is intentionally silent between its lines.
+			idleWarnSec: 30,
+			idleDetachSec: 60,
+		});
+		const started = await wired.bash({ command: 'sh -c "printf one; sleep 0.6; printf two"', mode: "detach" });
+		const jobId = started.structuredContent?.job_id as string;
+		await wait(150);
+		const read = await wired.inspect({ job: jobId });
+		expect(read.content[0]?.text).toContain("running");
+		await wait(1_500);
+		expect(wired.fake.sent.length).toBeGreaterThan(0);
+		const text = wired.fake.sent.map(sentText).join("\n");
+		expect(text).toContain("New output since your last read");
+		expect(text).toContain("two");
 	});
 });

@@ -61,4 +61,10 @@ export interface WakeNotice {
 	/** Stable key, used to collapse duplicates inside one coalescing window. */
 	key: string;
 	text: string;
+	/**
+	 * Re-checked until actual delivery (after coalescing, rate limiting and any busy-agent delay).
+	 * Return the current text, or undefined when the model has consumed the final result.
+	 * The queue retains this callback while waiting for a Pi delivery boundary.
+	 */
+	refresh?: () => Pick<WakeNotice, "text"> | undefined;
 }

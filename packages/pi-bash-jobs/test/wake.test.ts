@@ -126,6 +126,73 @@ describe("wake queue", () => {
 		queue.dispose();
 	});
 
+	it("re-checks a notice before sending and drops it when it has become an echo", () => {
+		// The coalescing window is exactly where the echo was born: the job settles, its notice is
+		// buffered for `wakeCoalesceMs`, and in that window the model's long-polling inspect returns
+		// `exited` with every line. Sending the notice afterwards costs a turn to answer "noted".
+		const h = harness({ coalesceMs: 5_000 });
+		let read = false;
+		h.queue.enqueue({
+			key: "job:J-14",
+			text: "Bash job J-14 finished",
+			refresh: () => (read ? undefined : { text: "Bash job J-14 finished" }),
+		});
+		read = true;
+		h.advance(5_000);
+		expect(h.sent).toHaveLength(0);
+		expect(h.queue.pending()).toBe(0);
+	});
+
+	it("sends the refreshed text, not the text captured at enqueue time", () => {
+		const h = harness({ coalesceMs: 1_000 });
+		let tail = "first tail";
+		h.queue.enqueue({ key: "job:J-2", text: `finished: ${tail}`, refresh: () => ({ text: `finished: ${tail}` }) });
+		tail = "second tail";
+		h.advance(1_000);
+		expect(h.sent).toEqual(["finished: second tail"]);
+	});
+
+	it("does not spend an hourly slot on a message that was never sent", () => {
+		const h = harness({ coalesceMs: 0, maxPerHour: 1 });
+		h.queue.enqueue({ key: "a", text: "x", refresh: () => undefined });
+		h.queue.flush();
+		expect(h.sent).toHaveLength(0);
+		// The single allowed send is still available for real news.
+		h.queue.enqueue({ key: "b", text: "real" });
+		h.queue.flush();
+		expect(h.sent).toEqual(["real"]);
+	});
+
+	it("keeps notices without a refresh hook (a stop, a watch) exactly as queued", () => {
+		const h = harness({ coalesceMs: 0 });
+		h.queue.enqueue({ key: "stop:J-3", text: "stopped" });
+		h.queue.flush();
+		expect(h.sent).toEqual(["stopped"]);
+	});
+
+	it("replaces the refresh callback together with a duplicate key", () => {
+		const h = harness({ coalesceMs: 0 });
+		h.queue.enqueue({ key: "same", text: "old", refresh: () => ({ text: "stale" }) });
+		h.queue.enqueue({ key: "same", text: "new", refresh: () => undefined });
+		h.queue.flush();
+		expect(h.sent).toEqual([]);
+		expect(h.queue.pending()).toBe(0);
+	});
+
+	it("removes consumed notices even while the hourly gate is closed", () => {
+		const h = harness({ coalesceMs: 0, maxPerHour: 1 });
+		h.queue.enqueue({ key: "first", text: "first" });
+		h.queue.flush();
+		let consumed = false;
+		h.queue.enqueue({ key: "held", text: "held", refresh: () => (consumed ? undefined : { text: "held" }) });
+		h.queue.flush();
+		consumed = true;
+		h.queue.flush();
+		expect(h.sent).toEqual(["first"]);
+		expect(h.queue.pending()).toBe(0);
+		expect(h.hasTimer).toBe(false);
+	});
+
 	it("dispose drops everything still buffered", () => {
 		const h = harness({ coalesceMs: 1_000 });
 		h.queue.enqueue({ key: "a", text: "x" });

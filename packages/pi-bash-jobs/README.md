@@ -62,11 +62,12 @@ occupies the turn forever. Registering under the name `bash` overrides the built
 | `idleWarnSec` | `300` | Silence that triggers one notice (no interruption). |
 | `idleDetachSec` | `420` | Silence that triggers a yield. This is the hung-pipe path. |
 | `explicitTimeoutKills` | `true` | Whether a caller-supplied `timeout` still kills. `false` makes it yield too. |
-| `wakeOnExit` | `"followUp"` | `followUp` / `steer` / `off`. `followUp` never interrupts a reply in progress. |
+| `wakeOnExit` | `"followUp"` | `followUp` delivers at `agent_before_settle`, `steer` at `turn_end`, `off` disables wakes. While idle, delivery starts a turn after coalescing. |
 | `keepOnSessionEnd` | `true` | Keep job processes alive when pi exits ("don't close the project I started"). |
 | `orphanTtlHours` | `24` | How long a restored orphan stays visible. |
 | `wakeCoalesceMs` | `5000` | Wake coalescing window (shared with event watches). |
 | `maxWakePerHour` | `24` | Hourly wake ceiling; notices are held, never dropped. |
+| `wakeRedundantWindowMs` | `15000` | Deprecated; accepted but ignored. A running read always leaves completion unread; only an inspect reporting the terminal result consumes it. |
 | `inspectTailLines` / `inspectMaxTailLines` | `80` / `1000` | Default and hard cap for `tailLines`. |
 | `inspectWaitMaxMs` | `120000` | Hard cap for `waitMs`. |
 | `resultMaxBytes` / `resultMaxLines` | `51200` / `2000` | What the model reads from one call — the same caps pi's own bash uses. The ring keeps more; when this trims, the complete output is written to a temp file and its path is returned. |
@@ -86,6 +87,10 @@ and absolute Windows paths; a pinned version (`serve@14`) is the same program as
 - `long`: `curl -o/-O`, `wget`, `git clone`, `docker pull|build|push`, installs
   (`npm i`, `pnpm install`, `pip install`), `ffmpeg`, `yt-dlp`, `rsync`, `robocopy`, `certbot`, `make`.
 - everything else: `finish`.
+
+**Reverse signals win over the name.** A probe that merely smells like a download stays `finish`:
+`curl` with a small `--max-time`/`--connect-timeout`/`-m` bound (< 60s), `-o /dev/null` (`-o nul`),
+`-I` (HEAD), or `-w '%{http_code}'`/`--write-out`. `curl -o big.tar https://x` is still `long`.
 
 A wrong guess is only ever expensive in one direction, and the design refuses that direction:
 `node download.js` classifies as `finish`, so after the soft budget it **yields** — the download
@@ -125,6 +130,21 @@ failure this extension removes.
 - **Wakes are coalesced** into one message per window, deduplicated, and rate-limited. A blocking
   call that already returned its result never wakes the model — that would be the same news twice.
   The rate-limit retry timer is unref'd, so a held notice cannot keep a host process alive.
+- **Completion is consumed per job.** `tool_execution_inspect_output({ job })` records the status
+  and output cursor returned for that job. After a terminal result has been read, its pending
+  completion notice is suppressed if the output has not changed. Reading only `running` never
+  consumes completion, even if the job exits immediately afterwards without more output. A listing
+  without `job` leaves the output unread, so it also leaves the notice enabled.
+- **Notices stay cancellable until delivery.** Coalescing and hourly rate limiting retain the
+  refresh callback. While Pi is busy, notices stay in this extension's queue: passing them to
+  `sendMessage` would freeze them in Pi's internal queue before a later inspect could consume them.
+  `followUp` commits a refreshed batch at `agent_before_settle`; `steer` commits at `turn_end`, after
+  the current tool batch. These boundaries append the notice directly and request one continuation.
+  Idle delivery uses `sendMessage`; `agent_settled` re-arms any timer that expired while busy.
+  Only unread output is included, along with its cursor.
+- **`partial: true` while the process is alive.** An inspect of a `running` job says its tail is not
+  the complete output, so half-flushed lines are not mistaken for the final result. A capped tail is
+  flagged too (`older lines not shown`).
 - **Orphans are read-only.** After a restart (or a pi crash) a job appears as `orphaned`: output is
   there, the exit code is not. We will not pretend to be waiting for it. With
   `keepOnSessionEnd: false` the kill happens *before* the snapshot, so the next run sees `killed`
@@ -147,5 +167,8 @@ failure this extension removes.
 npx vitest run packages/pi-bash-jobs
 ```
 
-The state machine, classification, ring buffer, persistence, wake queue and tool wiring are all
-tested without spawning a model. `test/platform.test.ts` exercises the real spawn/exit/kill path.
+The state machine, classification, ring buffer, persistence, wake queue and tool wiring use
+controlled clocks and processes. `test/delivery-sdk.test.ts` runs the real `AgentSession` loop with
+a local scripted model, verifies tool/command registration, and checks model-call counts and
+transcript notices after an expired timer and a terminal inspect. No model service is contacted.
+`test/platform.test.ts` exercises the real spawn/exit/kill path.

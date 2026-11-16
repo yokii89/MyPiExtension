@@ -57,6 +57,31 @@ const DETACH_RULES: Rule[] = [
 	},
 ];
 
+/**
+ * Reverse signals: shapes that look long by name but are really a probe. Checked before the
+ * rule tables, because "`curl` and `-o` appeared somewhere" must not outvote `--max-time 15`.
+ *
+ * The asymmetry is deliberate: a probe that really takes ten minutes still classifies as
+ * `finish`, which blocks and then yields — nothing is killed either way.
+ */
+const PROBE_RULES: { label: string; test: RegExp }[] = [
+	{
+		label: "curl probe (short --max-time)",
+		// `--max-time 15`, `-m 5`, `--max-time=8`: a bound under a minute cannot be a long download.
+		test: /^curl\b[\s\S]*(?:--max-time|--connect-timeout|-m)\s*=?\s*(?:[0-9]|[1-5][0-9])(?:\s|$)/,
+	},
+	{
+		label: "curl probe (status only)",
+		// `-o /dev/null` / `-O /dev/null` / `-o nul`: the body is thrown away, only the code is wanted.
+		test: /^curl\b[\s\S]*(?:-o|--output)\s*=?\s*(?:\/dev\/null|nul)(?:\s|$)/i,
+	},
+	{
+		label: "curl probe (headers / silent status)",
+		// `-I` is a HEAD request (headers only); `-w '%{http_code}'` prints a code, not a body.
+		test: /^curl\b[\s\S]*(?:\s-I(?:\s|$)|"%\{http_code\}"|--write-out)/,
+	},
+];
+
 /** Long tasks: worth yielding early, but the caller usually wants the exit code eventually. */
 const LONG_RULES: Rule[] = [
 	{ mode: "long", label: "curl download", test: /^curl\b.*\s(?:-o|-O|--output)(?:\s|=|$)/ },
@@ -246,6 +271,9 @@ function toRules(patterns: string[] | undefined, mode: JobMode): Rule[] {
  */
 export function classifyCommand(command: string, options: ClassifyOptions = {}): ClassifiedCommand {
 	const head = commandHead(command);
+	for (const probe of PROBE_RULES) {
+		if (probe.test.test(head)) return { mode: "finish", reason: probe.label, head };
+	}
 	// Detach before long: a server mistaken for a download would still never be killed, but a
 	// download mistaken for a server would never wake the model on completion.
 	const rules = [

@@ -75,20 +75,44 @@ describe("attach receipt", () => {
 });
 
 describe("exit notice", () => {
-	it("reports the exit code, duration, and tail", () => {
-		const text = formatJobExitNotice(
-			{ ...job, status: "exited", exitCode: 0, exitedAt: 2 * 3_600_000 + 3 * 60_000 },
-			"download 100%",
-		);
+	it("reports the exit code, duration, and the unread tail with a cursor", () => {
+		const text = formatJobExitNotice({
+			job: { ...job, status: "exited", exitCode: 0, exitedAt: 2 * 3_600_000 + 3 * 60_000 },
+			tail: "download 100%",
+			cursor: "41",
+			alreadyRead: true,
+		});
 		expect(text).toContain("finished: exit 0 after 2h03m");
 		expect(text).toContain("download 100%");
-		expect(text).toContain('tool_execution_inspect_output({ job: "J-7" })');
+		expect(text).toContain('tool_execution_inspect_output({ job: "J-7", cursor: "41" })');
+	});
+
+	it("does not replay a tail that was already read", () => {
+		// J-27 in the field: inspect had already returned `exited` with every line, and the notice
+		// still pasted the same tail and told the model to read a job it had finished reading.
+		const text = formatJobExitNotice({
+			job: { ...job, status: "exited", exitCode: 0, exitedAt: 1_000 },
+			tail: "",
+			cursor: "41",
+			alreadyRead: true,
+		});
+		expect(text).toContain("finished: exit 0 after 1s");
+		expect(text).not.toContain("Last output");
+		expect(text).not.toContain("New output since");
+		// No dangling "read the rest" pointing at a job the model has already read through.
+		expect(text).not.toContain("Read the rest");
+		expect(text).toContain("Nothing to collect");
 	});
 
 	it("names the killer when a job was killed", () => {
-		const text = formatJobExitNotice({ ...job, status: "killed", killedBy: "timeout", exitedAt: 1_000 }, "");
+		const text = formatJobExitNotice({
+			job: { ...job, status: "killed", killedBy: "timeout", exitedAt: 1_000 },
+			tail: "",
+			cursor: "0",
+			alreadyRead: false,
+		});
 		expect(text).toContain("killed (timeout)");
-		expect(text).toContain("(no output)");
+		expect(text).toContain("No output was captured");
 	});
 });
 

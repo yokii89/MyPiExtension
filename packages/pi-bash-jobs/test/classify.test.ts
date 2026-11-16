@@ -130,3 +130,50 @@ describe("classifyCommand", () => {
 		expect(classifyCommand("rm -rf node_modules/.vite").mode).toBe("finish");
 	});
 });
+
+/**
+ * The field bug (defect A): a 2–4s `curl` probe was classified `long` because the word `curl` and
+ * `-o` appeared somewhere, so it went to the background, cost a turn to answer, and woke the model
+ * about output it had already read. Reverse signals must win over the name. `finish` is the safe
+ * direction either way: it blocks and then yields, and nothing is killed.
+ */
+describe("classifyCommand — probe reverse signals", () => {
+	it.each([
+		// A small `--max-time`/`-m` bound cannot be a long download.
+		['curl -sS -o /dev/null -w "root: %{http_code}" https://example.com/ --max-time 15', "finish"],
+		["curl -m 5 -O https://x", "finish"],
+		["curl --max-time=8 -o x.tar https://x", "finish"],
+		["curl --connect-timeout 5 -o x.tar https://x", "finish"],
+		// The body is thrown away, only the status code is wanted.
+		["curl -o /dev/null https://x", "finish"],
+		["curl -sS -o nul https://x", "finish"],
+		// HEAD request / write-out: no body is downloaded at all.
+		["curl -I https://x", "finish"],
+		["curl -sS -w '%{http_code}' https://x", "finish"],
+	] as const)("%s → %s (a probe, not a download)", (command, mode) => {
+		expect(classifyCommand(command).mode).toBe(mode);
+	});
+
+	it.each([
+		["curl -o big.tar https://x", "long"],
+		["curl --max-time 120 -o big.tar https://x", "long"],
+		["curl --max-time 3600 -o big.tar https://x", "long"],
+		["wget https://x", "long"],
+	] as const)("%s → %s (a real download keeps `long`)", (command, mode) => {
+		expect(classifyCommand(command).mode).toBe(mode);
+	});
+
+	it("a probe reason says which signal decided it, so a wrong call is debuggable", () => {
+		expect(classifyCommand("curl -m 5 -o x.tar https://x").reason).toContain("probe");
+	});
+
+	it("classifies the reported multi-command probe string as finish", () => {
+		// The exact shape from the field report: two probes in one command string, `;`-separated, with
+		// a line continuation. The head is the first segment, and every segment is a probe.
+		const command = [
+			'curl -sS -o /dev/null -w "root: %{http_code}\\n" https://example.com/ --max-time 15; \\',
+			"curl -sS -o /dev/null -w \"webhook: %{http_code}\\n\" -X POST https://example.com/webhook/x -d '{}' --max-time 15",
+		].join("\n");
+		expect(classifyCommand(command).mode).toBe("finish");
+	});
+});

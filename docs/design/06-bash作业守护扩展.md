@@ -2,10 +2,10 @@
 
 | 项 | 内容 |
 | --- | --- |
-| 状态 | 已实施（P0-a/b/c + P1-a/b/c 主体，2026-11-06；P1 的进度正则与 P2+ 端口探测未做；`long` 宽限期见 §7） |
+| 状态 | 已实施（P0-a/b/c + P1-a/b/c 主体，2026-11-06；`long` 宽限期见 §7；回声与投递竞态修复见 §8–9；P1 的进度正则与 P2+ 端口探测未做） |
 | 包 | `packages/pi-bash-jobs`（`@yoki/pi-bash-jobs`） |
 | 上游设计 | PiDesk `docs/design/129-Bash作业守护与进度巡检扩展.md`（决策 D1–D9）、`docs/design/132-后台事件监听watch.md`（只落 seam） |
-| 验证 | 163 例单测 + 真 `pi --mode rpc` 载入验证（见 §5） |
+| 验证 | 18 文件 280 例单测（含真实 AgentSession 的 4 个投递场景）+ 真 `pi --mode rpc` 载入验证（见 §5） |
 
 ## 1. 解决什么
 
@@ -63,12 +63,13 @@ Unix 上先 `SIGTERM` 到进程组，`graceMs` 内没退再强杀。
 
 ## 5. 验证
 
-- **单测**：`npx vitest run packages/pi-bash-jobs` → 13 文件 163 例通过。覆盖分类（含 `cd x &&`、
-  `sudo -u`、`npx`、Windows 全路径、`docker compose up -d` 反例）、状态机转移表（先 warn 后 detach、
-  explicit timeout 抢先于 detach）、环形缓冲（`\r`、跨块多字节、字节/行上限、cursor 丢失标记）、
-  注册表（id/TTL/恢复为 orphan）、唤醒合批与每小时闸、持久化圆环比、工具 schema 与 PI_* 环境注入、
-  真实 spawn/exit/kill。
-- **覆盖率**：本包 92.27% 语句 / 82.11% 分支 / 89.69% 函数；仓库全局阈值（87/79/89/88）仍全绿。
+- **单测**：`npx vitest run packages/pi-bash-jobs` → 18 文件 280 例通过。覆盖分类（含 `cd x &&`、
+  `sudo -u`、`npx`、Windows 全路径、`docker compose up -d` 反例、curl 探测反向信号）、状态机转移表
+  （先 warn 后 detach、explicit timeout 抢先于 detach、`long` 宽限窗内同步返回）、环形缓冲
+  （`\r`、跨块多字节、字节/行上限、cursor 丢失标记、未提交尾行）、注册表（id/TTL/恢复为 orphan、
+  已读状态单调推进）、唤醒合批与每小时闸、唤醒投递前的回声复查、持久化圆环比、工具 schema 与
+  PI_* 环境注入、真实 spawn/exit/kill。
+- **前一轮覆盖率记录（§9 修改前）**：本包 94.00% 语句 / 86.47% 分支 / 92.74% 函数 / 96.58% 行；当时仓库全局阈值（87/79/89/88）全绿。本轮另按仓库 pre-push 钩子执行全量覆盖率检查。
 - **真 pi 载入**：`pi --mode rpc -e ./packages/pi-bash-jobs/index.ts` 启动，
   `getAllTools()` 里 `bash` 的 `sourceInfo.path` 指向本包、schema 含 `mode`——
   即覆盖生效、`tool_execution_inspect_output` 已注册（用一次性扩展打印后删除，不入库）。
@@ -130,3 +131,47 @@ long:    满 180s 转后台（窗口内退出就当普通结果）
 **未做**：`classify` 的默认 `long` 名单（`make`、`pnpm install`、`docker build`）未收窄——
 宽限期已经让这些自动分类在 20 秒内结束时不留痕，再动名单只会增加「长任务被当 `finish`
 占住 turn」的反向风险。
+
+## 8. 现场回声缺陷修复（2026-11-10）
+
+真实会话里，一个 2–4s 的 `curl` 探测被判为 `long` 转入后台；agent 已用 `inspect_output` 读到终态并
+给出结论后，下一轮仍被注入 `Bash job J-14/J-27 finished` 完成通知——两条通知 = 两个只为回「收到」的
+turn。四个缺陷分别落地：
+
+| # | 缺陷 | 修复 | 位置 |
+| --- | --- | --- | --- |
+| A | 探测类命令被判 `long` | 反向信号先于 long 表：`--max-time`/`--connect-timeout`/`-m` 小值（< 60s）、`-o /dev/null\|nul`、`-I`、`-w %{http_code}` | `core/classify.ts` |
+| A | 误判后仍立即转后台 | `long` 宽限窗 `longGraceSec`（默认 180s）：自动分类与显式 `mode:"long"` 均在窗内退出时直接返回真实结果，见 §7 | `run/runBash.ts`、`core/policy.ts` |
+| B | 已读终态仍注入完成通知 | `job.consumed` 由 inspect 与唤醒路径共享；投递前按 cursor/状态判定 news vs echo；合批、限流与忙碌等待后均重新检查 | `core/notify.ts`、`core/jobs.ts`、`core/wake.ts`、`index.ts` |
+| C | 通知重放旧 tail | 只附未读行 + cursor；无新输出时明说 `Nothing to collect`，不再引导 re-read | `core/format.ts`、`index.ts` |
+| D | running 的 tail 像终态 | inspect 增加 `partial` 字段与文本行；被 `tailLines` 截断时另有 `more` 提示 | `run/inspect.ts`、`tools/inspectTool.ts` |
+
+不变量：**「已读」只有一份状态**（`Job.consumed`）——inspect 详情写入、唤醒读取；列表不写（不展示
+输出），`grep` 过滤仍写入（模型明确只要匹配）。未提交尾行按文本比对，因为 cursor 只描述已提交行。
+后续修复取消了基于时间窗抑制 running 读取后退出的规则，见 §9。
+
+`longGraceSec` 沿用 §7 的统一宽限期策略；`wakeRedundantWindowMs` 已弃用，兼容读取但不再影响通知。
+
+## 9. 延迟完成通知的二级队列竞态
+
+检查实现确认：§8 的复查只覆盖了本扩展的合批队列。`pi.sendMessage(..., { triggerTurn: true,
+deliverAs: "followUp" })` 在 Agent 忙碌时仍只是入队到 Pi 的内部 follow-up 队列；此时扩展已经丢弃
+`refresh` 回调。Agent 随后读到终态，无法撤销 Pi 队列里的旧通知，因此它仍可能在最终回复后触发新轮次。
+`steer` 也存在相同的二级队列边界。
+
+修复后的投递路径：
+
+1. 任务结束后按任务 ID 入扩展队列，合批、限流和忙碌等待期间都保留 `refresh`。
+2. Agent 忙碌时不调用 `sendMessage`。`followUp` 在 `agent_before_settle`、`steer` 在 `turn_end`
+   （该工具批次结果已落盘）再次检查已读状态，再直接返回 `custom_message` 边界条目和 `continue: true`。
+   这样投递后没有第二个等待 Agent 处理的队列。
+3. 空闲时仍用 `sendMessage` 启动轮次。`agent_settled` 只重新挂定时器，保留尚未到期的合批截止时间，
+   并处理计时器在忙碌期间已经到期的通知。
+4. 只读到 `running` 始终保留完成通知，不再根据退出与读取的时间距离推断“已知退出”。已读终态不可
+   被之后迟到的 running 读取降级；终态读取优先于墙上时钟回拨。弃用 `wakeRedundantWindowMs`。
+5. 已消费通知在限流期间也会移除，不占发送额度；同 key 替换同时更新文本与刷新函数。
+
+新增 `test/delivery.test.ts` 覆盖成功/失败终态、只读 running、批量通知按 ID 过滤、限流重试、零合批
+窗口的 long poll、会话切换与停用通知。`test/delivery-sdk.test.ts` 使用真实 `AgentSession` / 扩展运行时
+和本地脚本模型验证 follow-up / steer 的已读、未读四种场景：检查实际消息条目和模型调用次数，同时确认
+工具、`/bash-jobs` 命令注册；无需网络或模型凭据。

@@ -10,6 +10,7 @@
 
 import type { RingBuffer } from "../infra/ring.ts";
 import type { JobEvent, JobMode, JobRecord, JobStatus, KillReason, SettleInfo } from "../types.ts";
+import { type ConsumedRead, cursorSeq } from "./notify.ts";
 
 export interface CreateJobInput {
 	command: string;
@@ -29,6 +30,13 @@ export interface Job extends JobRecord {
 	/** Called by runBash when `execute()` returns while the process is still alive. */
 	markDetached(): void;
 	snapshot(): JobRecord;
+	/**
+	 * What the model was last *shown* — shared by the inspect tool and the wake path, so a notice
+	 * can tell "news" from "echo of what this session already read" (see `core/notify.ts`).
+	 */
+	consumed?: ConsumedRead;
+	/** Remember what an inspect answer contained for this job. */
+	markConsumed(read: ConsumedRead): void;
 }
 
 export interface JobRegistryOptions {
@@ -90,6 +98,17 @@ export function createJobRegistry(options: JobRegistryOptions = {}): JobRegistry
 			exited: settle.promise,
 			markDetached() {
 				job.detached = true;
+			},
+			consumed: undefined,
+			markConsumed(read) {
+				// Monotonic in both directions: a stale answer (a long poll that started earlier) must
+				// not move the shared read state backwards and re-arm a notice that was suppressed.
+				const previous = job.consumed;
+				if (previous?.terminal && !read.terminal) return;
+				if (previous && cursorSeq(read.cursor) < cursorSeq(previous.cursor)) return;
+				// A final result takes precedence over a progress read even if the wall clock moved back.
+				if (previous && read.at < previous.at && (previous.terminal || !read.terminal)) return;
+				job.consumed = { ...read };
 			},
 			snapshot() {
 				return {

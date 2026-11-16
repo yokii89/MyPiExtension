@@ -36,7 +36,7 @@ export function cycleThinkingLevel(
 	if (levels.length === 0) return "off";
 	const clamped = clampThinkingLevel(model, current) as ThinkingLevel;
 	const idx = levels.indexOf(clamped);
-	const base = idx >= 0 ? idx : 0;
+	const base = Math.max(idx, 0);
 	const next = (base + direction + levels.length) % levels.length;
 	return levels[next] ?? "off";
 }

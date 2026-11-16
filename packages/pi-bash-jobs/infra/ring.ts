@@ -49,6 +49,14 @@ export interface RingBuffer {
 	/** Last `n` lines (default all), including the pending partial line. */
 	tail(n?: number): string;
 	/**
+	 * The line that has been written but not yet terminated (`Password:`, a progress fragment).
+	 *
+	 * It has no cursor — `cursor()` counts committed lines — so it is the one piece of output a
+	 * cursor cannot describe. Callers that compare "what was the model shown" with "what exists now"
+	 * must compare this text too, otherwise a trailing fragment reads as nothing new.
+	 */
+	pending(): string;
+	/**
 	 * The streaming-frame shape: last `maxLines` lines within `maxBytes`, collected backward in
 	 * one pass. Never builds the too-large intermediate that a `tailWithinBytes(tail(n))` pair
 	 * would join and re-encode, and stops as soon as the byte budget is spent.
@@ -185,6 +193,9 @@ export function createRingBuffer(limits: RingLimits): RingBuffer {
 			for (let i = 0; i < count; i++) all[i] = at(i).text;
 			if (pending.length > 0) all.push(pending);
 			return all.join("\n");
+		},
+		pending() {
+			return pending;
 		},
 		tail(n) {
 			const hasPending = pending.length > 0;

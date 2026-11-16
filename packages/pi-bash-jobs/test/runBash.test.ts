@@ -364,6 +364,14 @@ describe("runBash — mode selection", () => {
 		expect(h.fake.state.killed).toBe(true);
 	});
 
+	it("an explicit long also returns an ordinary result inside the grace window", async () => {
+		const h = harness({ exitAtMs: 500 });
+		const result = await runBash(h.deps, { command: "curl -o big.tar https://x", mode: "long" }, context);
+		expect(h.clock).toBe(1_000);
+		expect(result.structuredContent).toMatchObject({ status: "exited", exit_code: 0 });
+		expect(h.registry.get("J-1")?.detached).toBe(false);
+	});
+
 	it("an explicit mode beats the classifier", async () => {
 		const h = harness();
 		const result = await runBash(h.deps, { command: "pnpm dev", mode: "finish" }, context);

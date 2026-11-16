@@ -98,7 +98,7 @@ export function formatDetachReceipt(input: DetachReceiptInput): string {
 		`Command: ${job.command}`,
 		`Mode: ${job.mode} — ${MODE_NOTE[job.mode]}. The process is still running; nothing was killed.`,
 		"",
-		`Output so far (last ${input.tailLines} lines):`,
+		`Output so far (last ${input.tailLines} lines${job.status === "running" ? ", partial — the process has not exited" : ""}):`,
 		input.tail || "(no output yet)",
 		"",
 		"Next:",
@@ -136,21 +136,46 @@ export function formatIdleNotice(job: JobRecord, idleSec: number, detachInSec: n
 }
 
 /** Background job finished → the wake message (doc 129 §7.3). */
-export function formatJobExitNotice(job: JobRecord, tail: string): string {
+export interface ExitNoticeInput {
+	job: JobRecord;
+	/** Lines the model has not been shown yet; empty when nothing came after the last read. */
+	tail: string;
+	/** Cursor that covers every line in this notice, so a follow-up inspect can ask for only more. */
+	cursor: string;
+	/** True when a previous inspect already showed this job's terminal state and nothing came since. */
+	alreadyRead: boolean;
+}
+
+/**
+ * The wake message. It must not be a stale echo: no repeated tail when there is nothing new, and
+ * no "read the rest" pointing at a job the model already read through. The cursor is the point —
+ * it lets the next inspect ask for only what this notice did not show.
+ */
+export function formatJobExitNotice(input: ExitNoticeInput): string {
+	const { job, cursor, alreadyRead } = input;
 	const duration = formatDuration(Math.max(0, (job.exitedAt ?? job.startedAt) - job.startedAt));
 	const outcome =
 		job.status === "killed" ? `killed (${job.killedBy ?? "unknown"})` : `exit ${job.exitCode ?? "unknown"}`;
 	const head = [`Bash job ${jobTitle(job)} finished: ${outcome} after ${duration}.`, `Command: ${job.command}`].join(
 		"\n",
 	);
-	return [
-		head,
-		"",
-		`Last output (tail):`,
-		tail || "(no output)",
-		"",
-		`Read the rest: tool_execution_inspect_output({ job: "${job.id}" }).`,
-	].join("\n");
+	const lines = [head];
+	if (input.tail) {
+		lines.push("", alreadyRead ? "New output since your last read:" : "Last output (tail):", input.tail);
+		lines.push("", `Read the rest: tool_execution_inspect_output({ job: "${job.id}", cursor: "${cursor}" }).`);
+	} else if (alreadyRead) {
+		// Nothing was written after the last read. Pointing at an inspect here would send the model to
+		// re-read a job it has already read through — the exact turn this notice exists to save.
+		lines.push("", `No new output since your last read (cursor ${cursor}). Nothing to collect.`);
+	} else {
+		lines.push(
+			"",
+			"No output was captured for this job.",
+			"",
+			`Details: tool_execution_inspect_output({ job: "${job.id}" }).`,
+		);
+	}
+	return lines.join("\n");
 }
 
 export function formatStopReceipt(job: JobRecord, killed: boolean): string {

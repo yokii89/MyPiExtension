@@ -55,6 +55,11 @@ export interface BashJobsConfig {
 	wakeCoalesceMs: number;
 	/** Upper bound on wake messages per hour per session — a fountain guard, not a budget. */
 	maxWakePerHour: number;
+	/**
+	 * @deprecated Accepted for compatibility but ignored. Only a terminal inspect consumes a
+	 * completion; a running read must not suppress the later exit based on timing.
+	 */
+	wakeRedundantWindowMs: number;
 	/** Default `tailLines` for the inspect tool. */
 	inspectTailLines: number;
 	/** Hard cap on `tailLines` regardless of what the model asks for. */
@@ -86,6 +91,7 @@ export const DEFAULT_CONFIG: BashJobsConfig = {
 	orphanTtlHours: 24,
 	wakeCoalesceMs: 5_000,
 	maxWakePerHour: 24,
+	wakeRedundantWindowMs: 15_000,
 	inspectTailLines: 80,
 	inspectMaxTailLines: 1_000,
 	inspectWaitMaxMs: 120_000,
@@ -105,6 +111,7 @@ const FLOOR = {
 	orphanTtlHours: 1,
 	wakeCoalesceMs: 0,
 	maxWakePerHour: 1,
+	wakeRedundantWindowMs: 0,
 	inspectTailLines: 1,
 	inspectMaxTailLines: 1,
 	inspectWaitMaxMs: 0,
@@ -179,6 +186,11 @@ export function normalizeConfig(raw: unknown): BashJobsConfig {
 		orphanTtlHours: positiveNumber(input.orphanTtlHours, DEFAULT_CONFIG.orphanTtlHours, FLOOR.orphanTtlHours),
 		wakeCoalesceMs: positiveNumber(input.wakeCoalesceMs, DEFAULT_CONFIG.wakeCoalesceMs, FLOOR.wakeCoalesceMs),
 		maxWakePerHour: positiveNumber(input.maxWakePerHour, DEFAULT_CONFIG.maxWakePerHour, FLOOR.maxWakePerHour),
+		wakeRedundantWindowMs: positiveNumber(
+			input.wakeRedundantWindowMs,
+			DEFAULT_CONFIG.wakeRedundantWindowMs,
+			FLOOR.wakeRedundantWindowMs,
+		),
 		inspectTailLines: positiveNumber(input.inspectTailLines, DEFAULT_CONFIG.inspectTailLines, FLOOR.inspectTailLines),
 		inspectMaxTailLines: positiveNumber(
 			input.inspectMaxTailLines,
